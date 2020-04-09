@@ -16,8 +16,7 @@ pub fn main() {
 }
 
 pub fn install(destination: &PathBuf) {
-    let client = github::setup_client();
-    let assets = github::get_release_assets(&client);
+    let assets = github::get_release_assets().expect("Failed to get Release Assets");
 
     let asset_marker: &str;
     if cfg!(windows) {
@@ -29,7 +28,7 @@ pub fn install(destination: &PathBuf) {
     }
     for asset in assets {
         if asset.name.contains(asset_marker) {
-            github::download(&client, &asset);
+            github::download(&asset).unwrap();
             archive::unpack(&PathBuf::from(&asset.name), &destination);
         }
     }
