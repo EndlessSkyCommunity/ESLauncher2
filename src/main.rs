@@ -2,12 +2,12 @@ mod archive;
 mod github;
 mod music;
 
+use image;
 use nfd2::Response;
 use orbtk::prelude::*;
 use orbtk::theme::DEFAULT_THEME_CSS;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
-use image;
 
 static WIDTH: f64 = 460.0;
 static HEIGHT: f64 = 400.0;
@@ -60,34 +60,28 @@ impl Template for MainView {
         self.name("MainView").child(
             Grid::create()
                 .rows(Rows::create().row(215.0).row(HEIGHT / 3.0).row("*").build())
-                .class("content")
+                .id("content")
                 .child(
                     ImageWidget::create()
                         .attach(Grid::row(0))
-                        .image(
-                            Image::from_data(
-                                460,
-                                215,
-                                header_image()
-                            ).unwrap()
-                        )
+                        .image(Image::from_data(460, 215, header_image()).unwrap())
                         .build(ctx),
                 )
                 .child(
                     TextBlock::create()
                         .name("DestinationText")
-                        .class("destination-text")
+                        .id("destination-text")
                         .attach(Grid::row(1))
                         .text("No folder chosen")
                         .build(ctx),
                 )
                 .child(
                     Button::create()
-                        .class("folder-button")
+                        .id("folder-button")
                         .attach(Grid::row(1))
                         .horizontal_alignment("end")
-                        .width(100.0)
-                        .text("Select Folder")
+                        .width(110.0)
+                        .text("Pick Folder")
                         .on_click(move |states, _| {
                             match nfd2::open_pick_folder(None).unwrap() {
                                 Response::Okay(path) => {
@@ -101,7 +95,7 @@ impl Template for MainView {
                 )
                 .child(
                     Button::create()
-                        .class("install-button")
+                        .id("install-button")
                         .attach(Grid::row(2))
                         .horizontal_alignment("center")
                         .text("Install")
