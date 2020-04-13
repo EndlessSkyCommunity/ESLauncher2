@@ -5,7 +5,7 @@ use std::io::{BufReader, Cursor};
 #[folder = "assets/"]
 struct Asset;
 
-pub(crate) fn play() -> Option<()> {
+pub fn play() -> Option<()> {
     let device = rodio::default_output_device()?;
     let song = Asset::get("endless-prototype.ogg")?;
     let reader = BufReader::new(Cursor::new(song.to_owned()));

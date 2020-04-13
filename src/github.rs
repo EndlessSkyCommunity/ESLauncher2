@@ -25,24 +25,16 @@ pub struct GithubReleaseAsset {
 
 pub fn get_release_assets() -> Result<Vec<GithubReleaseAsset>, Error> {
     let res =
-        ureq::get("https://api.github.com/repos/MCOfficer/endless-sky/releases/tags/continuous")
+        ureq::get("https://api.github.com/repos/endless-sky/endless-sky/releases/tags/continuous")
             .set("User-Agent", "ESLauncher2")
-            .set(
-                "Authorization",
-                "token 90c09eab100fc2e98170e1b23d61674d72744879",
-            )
             .call();
     let release: GithubRelease = serde_json::from_value(res.into_json()?)?;
     println!("{:#?}", release);
 
     let res = ureq::get(&format!(
-        "https://api.github.com/repos/MCOfficer/endless-sky/releases/{}/assets",
+        "https://api.github.com/repos/endless-sky/endless-sky/releases/{}/assets",
         release.id
     ))
-    .set(
-        "Authorization",
-        "token 90c09eab100fc2e98170e1b23d61674d72744879",
-    )
     .call();
 
     let assets: GithubReleaseAssets = serde_json::from_value(res.into_json()?)?;
