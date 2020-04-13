@@ -10,11 +10,13 @@ use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 
 static WIDTH: f64 = 460.0;
-static HEIGHT: f64 = 400.0;
+static HEIGHT: f64 = 500.0;
 
 #[derive(Debug, Clone)]
 enum Action {
     SelectDestination(PathBuf),
+    StartInstallation(),
+    Log(String),
 }
 
 #[derive(AsAny)]
@@ -43,10 +45,24 @@ impl State for MainViewState {
         if let Some(action) = self.action.take() {
             match action {
                 Action::SelectDestination(path) => {
+                    ctx.child("install-button").set("enabled", true);
                     ctx.child("destination-text")
                         .set("text", String16::from(String::from(path.to_string_lossy())));
-                    ctx.child("install-button").set("enabled", true);
                     self.destination.replace(path);
+                }
+                Action::StartInstallation() => {
+                    ctx.child("install-button").set("enabled", false);
+                    install(&self.destination.borrow());
+                }
+                Action::Log(msg) => {
+                    println!("{}", msg);
+                    let mut text: String = ctx
+                        .child("log-box")
+                        .get_mut::<String16>("text")
+                        .to_string()
+                        .clone();
+                    text.push_str(&*format!("\n{}", msg));
+                    ctx.child("log-box").set("text", String16::from(text));
                 }
             }
         }
@@ -59,7 +75,14 @@ impl Template for MainView {
     fn template(self, id: Entity, ctx: &mut BuildContext) -> Self {
         self.name("MainView").child(
             Grid::create()
-                .rows(Rows::create().row(215.0).row(HEIGHT / 3.0).row("*").build())
+                .rows(
+                    Rows::create()
+                        .row(215.0)
+                        .row(75.0)
+                        .row(50.0)
+                        .row("*")
+                        .build(),
+                )
                 .id("content")
                 .child(
                     ImageWidget::create()
@@ -68,29 +91,37 @@ impl Template for MainView {
                         .build(ctx),
                 )
                 .child(
-                    TextBlock::create()
-                        .name("DestinationText")
-                        .id("destination-text")
+                    Container::create()
+                        .element("container")
+                        .class("content")
+                        .padding(10.0)
                         .attach(Grid::row(1))
-                        .text("No folder chosen")
-                        .build(ctx),
-                )
-                .child(
-                    Button::create()
-                        .id("folder-button")
-                        .attach(Grid::row(1))
-                        .horizontal_alignment("end")
-                        .width(110.0)
-                        .text("Pick Folder")
-                        .on_click(move |states, _| {
-                            match nfd2::open_pick_folder(None).unwrap() {
-                                Response::Okay(path) => {
-                                    state(id, states).action(Action::SelectDestination(path))
-                                }
-                                _ => (),
-                            };
-                            true
-                        })
+                        .child(
+                            TextBlock::create()
+                                .name("DestinationText")
+                                .id("destination-text")
+                                .attach(Grid::row(1))
+                                .margin(10.0)
+                                .text("No folder chosen")
+                                .build(ctx),
+                        )
+                        .child(
+                            Button::create()
+                                .id("folder-button")
+                                .attach(Grid::row(1))
+                                .horizontal_alignment("end")
+                                .width(110.0)
+                                .text("Pick Folder")
+                                .on_click(move |states, _| {
+                                    match nfd2::open_pick_folder(None).unwrap() {
+                                        Response::Okay(path) => state(id, states)
+                                            .action(Action::SelectDestination(path)),
+                                        _ => (),
+                                    };
+                                    true
+                                })
+                                .build(ctx),
+                        )
                         .build(ctx),
                 )
                 .child(
@@ -101,9 +132,19 @@ impl Template for MainView {
                         .text("Install")
                         .enabled(false)
                         .on_click(move |states, _| {
-                            install(&state(id, states).destination.borrow());
+                            state(id, states).action(Action::StartInstallation());
                             true
                         })
+                        .build(ctx),
+                )
+                .child(
+                    TextBox::create()
+                        .id("log-box")
+                        .attach(Grid::row(3))
+                        .horizontal_alignment("center")
+                        .width(WIDTH - 20.0)
+                        .text("")
+                        .enabled(false)
                         .build(ctx),
                 )
                 .build(ctx),
