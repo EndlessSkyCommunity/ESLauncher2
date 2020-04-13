@@ -14,8 +14,8 @@ tar = "0.4"
 zip-extensions = "0.4"
 nfd2 = "0.2.0"
 rodio = { version="0.11", features=["vorbis"], default_features=false }
-rust-embed= { version="5.5", default_features=false }
-orbtk = "0.3.1-alpha1"
+orbtk = { git = "https://github.com/redox-os/orbtk.git", branch = "develop" }
+image = "0.23"
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.

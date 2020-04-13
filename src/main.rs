@@ -4,14 +4,20 @@ mod music;
 
 use nfd2::Response;
 use orbtk::prelude::*;
+use orbtk::theme::DEFAULT_THEME_CSS;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
+use image;
+
+static WIDTH: f64 = 460.0;
+static HEIGHT: f64 = 400.0;
 
 #[derive(Debug, Clone)]
 enum Action {
     SelectDestination(PathBuf),
 }
 
+#[derive(AsAny)]
 pub struct MainViewState {
     destination: RefCell<PathBuf>,
     action: Cell<Option<Action>>,
@@ -33,7 +39,7 @@ impl MainViewState {
 }
 
 impl State for MainViewState {
-    fn update(&self, ctx: &mut Context<'_>) {
+    fn update(&mut self, _: &mut Registry, ctx: &mut Context<'_>) {
         if let Some(action) = self.action.take() {
             match action {
                 Action::SelectDestination(path) => {
@@ -50,31 +56,42 @@ impl State for MainViewState {
 widget!(MainView<MainViewState>);
 
 impl Template for MainView {
-    fn template(self, _: Entity, ctx: &mut BuildContext) -> Self {
-        let folder_state = self.clone_state();
-        let install_state = self.clone_state();
+    fn template(self, id: Entity, ctx: &mut BuildContext) -> Self {
         self.name("MainView").child(
             Grid::create()
-                .rows(Rows::create().row(72.0).row("*").build())
+                .rows(Rows::create().row(215.0).row(HEIGHT / 3.0).row("*").build())
+                .class("content")
+                .child(
+                    ImageWidget::create()
+                        .attach(Grid::row(0))
+                        .image(
+                            Image::from_data(
+                                460,
+                                215,
+                                header_image()
+                            ).unwrap()
+                        )
+                        .build(ctx),
+                )
                 .child(
                     TextBlock::create()
                         .name("DestinationText")
-                        .selector(Selector::from("span").id("destination-text"))
-                        .attach(Grid::row(0))
-                        .text("test")
-                        .margin((0.0, 0.0, 0.0, 2.0))
-                        .vertical_alignment("center")
+                        .class("destination-text")
+                        .attach(Grid::row(1))
+                        .text("No folder chosen")
                         .build(ctx),
                 )
                 .child(
                     Button::create()
-                        .selector(Selector::from("button").id("folder-button"))
-                        .attach(Grid::row(0))
+                        .class("folder-button")
+                        .attach(Grid::row(1))
+                        .horizontal_alignment("end")
+                        .width(100.0)
                         .text("Select Folder")
-                        .on_click(move |_| {
+                        .on_click(move |states, _| {
                             match nfd2::open_pick_folder(None).unwrap() {
                                 Response::Okay(path) => {
-                                    folder_state.action(Action::SelectDestination(path))
+                                    state(id, states).action(Action::SelectDestination(path))
                                 }
                                 _ => (),
                             };
@@ -84,13 +101,13 @@ impl Template for MainView {
                 )
                 .child(
                     Button::create()
-                        .selector(Selector::from("button").id("install-button"))
-                        .attach(Grid::row(1))
+                        .class("install-button")
+                        .attach(Grid::row(2))
+                        .horizontal_alignment("center")
                         .text("Install")
-                        .text("Select Folder")
                         .enabled(false)
-                        .on_click(move |_| {
-                            install(&install_state.destination.borrow());
+                        .on_click(move |states, _| {
+                            install(&state(id, states).destination.borrow());
                             true
                         })
                         .build(ctx),
@@ -107,9 +124,14 @@ fn main() {
         .window(|ctx| {
             Window::create()
                 .title("ESLauncher2")
-                .position((100.0, 100.0))
-                .size(420.0, 730.0)
+                .position((500.0, 100.0))
+                .size(WIDTH, HEIGHT)
                 .resizeable(true)
+                .theme(
+                    ThemeValue::create_from_css(DEFAULT_THEME_CSS)
+                        .extension_css(include_str!("../assets/style.css"))
+                        .build(),
+                )
                 .child(MainView::create().build(ctx))
                 .build(ctx)
         })
@@ -135,4 +157,20 @@ pub fn install(destination: &PathBuf) {
             archive::unpack(&PathBuf::from(&asset.name), &destination);
         }
     }
+}
+
+fn header_image() -> Vec<u32> {
+    let array: &[u8] = include_bytes!("../assets/header.jpg");
+    let img = image::load_from_memory_with_format(array, image::ImageFormat::Jpeg).unwrap();
+    img.into_rgba()
+        .pixels()
+        .map(|p| {
+            ((p[3] as u32) << 24) | ((p[0] as u32) << 16) | ((p[1] as u32) << 8) | (p[2] as u32)
+        })
+        .collect()
+}
+
+// helper to request MainViewState
+fn state<'a>(id: Entity, states: &'a mut StatesContext) -> &'a mut MainViewState {
+    states.get_mut(id)
 }
