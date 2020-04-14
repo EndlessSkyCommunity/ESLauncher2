@@ -41,7 +41,8 @@ impl MainViewState {
 }
 
 impl State for MainViewState {
-    fn update(&mut self, _: &mut Registry, ctx: &mut Context<'_>) {
+
+    //install(&destination);
         if let Some(action) = self.action.take() {
             match action {
                 Action::SelectDestination(path) => {
@@ -55,14 +56,11 @@ impl State for MainViewState {
                     install(&self.destination.borrow());
                 }
                 Action::Log(msg) => {
-                    println!("{}", msg);
-                    let mut text: String = ctx
-                        .child("log-box")
-                        .get_mut::<String16>("text")
-                        .to_string()
-                        .clone();
-                    text.push_str(&*format!("\n{}", msg));
-                    ctx.child("log-box").set("text", String16::from(text));
+                    let child = TextBlock::create().class("log-line").text(msg);
+                    let entity = ctx.entity_of_child("log-box").unwrap();
+                    ctx.append_child_to(child, entity);
+                    ctx.child("log-scroll")
+                        .set("scroll_offset", Point::new(0.0, std::f64::MIN));
                 }
             }
         }
@@ -138,13 +136,18 @@ impl Template for MainView {
                         .build(ctx),
                 )
                 .child(
-                    TextBox::create()
-                        .id("log-box")
+                    ScrollViewer::create()
+                        .id("log-scroll")
                         .attach(Grid::row(3))
                         .horizontal_alignment("center")
                         .width(WIDTH - 20.0)
-                        .text("")
-                        .enabled(false)
+                        .scroll_viewer_mode(("disabled", "auto"))
+                        .child(
+                            Stack::create()
+                                .id("log-box")
+                                .attach(Grid::row(3))
+                                .build(ctx),
+                        )
                         .build(ctx),
                 )
                 .build(ctx),
@@ -171,8 +174,6 @@ fn main() {
                 .build(ctx)
         })
         .run();
-
-    //install(&destination);
 }
 
 pub fn install(destination: &PathBuf) {
