@@ -41,8 +41,7 @@ impl MainViewState {
 }
 
 impl State for MainViewState {
-
-    //install(&destination);
+    fn update(&mut self, _: &mut Registry, ctx: &mut Context<'_>) {
         if let Some(action) = self.action.take() {
             match action {
                 Action::SelectDestination(path) => {
