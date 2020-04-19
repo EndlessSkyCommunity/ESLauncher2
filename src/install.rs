@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 
 pub fn install(sender: Sender<String>, destination: PathBuf) {
-    let assets = github::get_release_assets().expect("Failed to get Release Assets");
+    let assets = github::get_release_assets(&sender).expect("Failed to get Release Assets");
 
     let asset_marker: &str;
     if cfg!(windows) {
@@ -15,8 +15,9 @@ pub fn install(sender: Sender<String>, destination: PathBuf) {
     }
     for asset in assets {
         if asset.name.contains(asset_marker) {
-            github::download(&asset).unwrap();
-            archive::unpack(&PathBuf::from(&asset.name), &destination);
+            github::download(&sender, &asset).unwrap();
+            archive::unpack(&sender, &PathBuf::from(&asset.name), &destination);
         }
     }
+    sender.send(String::from("Done!")).ok();
 }

@@ -7,14 +7,17 @@ mod music;
 mod worker;
 
 use crate::worker::{Work, Worker};
-use iced::{button, Align, Button, Column, Container, Element, Length, Sandbox, Settings, Text};
+use iced::{
+    button, scrollable, Align, Button, Column, Container, Element, Font, HorizontalAlignment,
+    Length, Sandbox, Scrollable, Settings, Text,
+};
 use nfd2::Response;
 use std::path::PathBuf;
 
-static WIDTH: u16 = 460;
-static HEIGHT: u16 = 500;
+static LOG_FONT: Font = Font::External { name: "DejaVuSansMono", bytes: include_bytes!("../assets/DejaVuSansMono-Bold.ttf") };
 
 pub fn main() {
+    music::play();
     ESLauncher::run(Settings::default())
 }
 
@@ -23,6 +26,7 @@ struct ESLauncher {
     destination: PathBuf,
     destination_chooser: button::State,
     install_button: button::State,
+    log_scrollable: scrollable::State,
     worker: Option<worker::Worker>,
 }
 
@@ -40,6 +44,7 @@ impl Sandbox for ESLauncher {
             destination: PathBuf::default(),
             destination_chooser: button::State::default(),
             install_button: button::State::default(),
+            log_scrollable: scrollable::State::default(),
             worker: None,
         }
     }
@@ -67,9 +72,16 @@ impl Sandbox for ESLauncher {
 
     fn view(&mut self) -> Element<'_, Self::Message> {
         let logbox = match &self.worker {
-            Some(worker) => self.worker.as_mut().unwrap().logs().iter().cloned().fold(
+            Some(_) => self.worker.as_mut().unwrap().logs().iter().fold(
                 Column::new().padding(20).align_items(Align::Center),
-                |column, log| column.push(Text::new(log)),
+                |column, log| {
+                    column.push(
+                        Text::new(log)
+                            .size(14)
+                            .font(LOG_FONT)
+                            .horizontal_alignment(HorizontalAlignment::Left),
+                    )
+                },
             ),
             None => Column::new(),
         };
@@ -85,11 +97,11 @@ impl Sandbox for ESLauncher {
                 Button::new(&mut self.install_button, Text::new("Install"))
                     .on_press(Message::StartInstallation),
             )
-            .push(logbox);
+            .push(Scrollable::new(&mut self.log_scrollable).push(logbox)); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         Container::new(content)
-            .width(Length::from(WIDTH))
-            .height(Length::from(HEIGHT))
+            .width(Length::Fill)
+            .height(Length::Fill)
             .center_x()
             .center_y()
             .into()

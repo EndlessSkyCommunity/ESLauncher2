@@ -1,5 +1,4 @@
 use crate::install;
-use std::borrow::Borrow;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
