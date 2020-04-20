@@ -9,12 +9,15 @@ mod worker;
 use crate::worker::{Work, Worker};
 use iced::{
     button, scrollable, Align, Button, Column, Container, Element, Font, HorizontalAlignment,
-    Length, Sandbox, Scrollable, Settings, Text,
+    Length, Row, Sandbox, Scrollable, Settings, Text,
 };
 use nfd2::Response;
 use std::path::PathBuf;
 
-static LOG_FONT: Font = Font::External { name: "DejaVuSansMono", bytes: include_bytes!("../assets/DejaVuSansMono-Bold.ttf") };
+static LOG_FONT: Font = Font::External {
+    name: "DejaVuSansMono",
+    bytes: include_bytes!("../assets/DejaVuSansMono-Bold.ttf"),
+};
 
 pub fn main() {
     music::play();
@@ -85,18 +88,26 @@ impl Sandbox for ESLauncher {
             ),
             None => Column::new(),
         };
+
+        let mut install_button = Button::new(&mut self.install_button, Text::new("Install"));
+        if !self.destination.eq(&PathBuf::default()) {
+            install_button = install_button.on_press(Message::StartInstallation)
+        }
+
         let content = Column::new()
             .padding(20)
             .align_items(Align::Center)
-            .push(Text::new(self.destination.to_string_lossy()))
             .push(
-                Button::new(&mut self.destination_chooser, Text::new("Pick Folder"))
-                    .on_press(Message::SelectDestination),
+                Row::new()
+                    .padding(20)
+                    .align_items(Align::Center)
+                    .push(Text::new(self.destination.to_string_lossy()))
+                    .push(
+                        Button::new(&mut self.destination_chooser, Text::new("Pick Folder"))
+                            .on_press(Message::SelectDestination),
+                    ),
             )
-            .push(
-                Button::new(&mut self.install_button, Text::new("Install"))
-                    .on_press(Message::StartInstallation),
-            )
+            .push(install_button            )
             .push(Scrollable::new(&mut self.log_scrollable).push(logbox)); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         Container::new(content)
