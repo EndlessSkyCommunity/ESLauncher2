@@ -1,19 +1,18 @@
 use crate::Message;
-use iced::{button, Align, Button, Column, Container, Element, Row, Text};
-use std::path::PathBuf;
+use iced::{button, text_input, Align, Button, Column, Container, Element, Row, Text, TextInput};
 
 #[derive(Debug, Clone)]
 pub struct InstallationFrameState {
-    pub destination: PathBuf,
-    pub destination_chooser: button::State,
+    pub name: String,
+    pub name_chooser: text_input::State,
     pub install_button: button::State,
 }
 
 impl Default for InstallationFrameState {
     fn default() -> Self {
         InstallationFrameState {
-            destination: PathBuf::default(),
-            destination_chooser: button::State::default(),
+            name: String::default(),
+            name_chooser: text_input::State::default(),
             install_button: button::State::default(),
         }
     }
@@ -21,7 +20,7 @@ impl Default for InstallationFrameState {
 
 pub fn view(state: &mut InstallationFrameState) -> Element<Message> {
     let mut install_button = Button::new(&mut state.install_button, Text::new("Install"));
-    if !state.destination.eq(&PathBuf::default()) {
+    if !state.name.is_empty() {
         install_button = install_button.on_press(Message::StartInstallation)
     }
 
@@ -31,11 +30,13 @@ pub fn view(state: &mut InstallationFrameState) -> Element<Message> {
                 Row::new()
                     .padding(20)
                     .align_items(Align::Center)
-                    .push(Text::new(state.destination.to_string_lossy()))
-                    .push(
-                        Button::new(&mut state.destination_chooser, Text::new("Pick Folder"))
-                            .on_press(Message::SelectDestination),
-                    ),
+                    .push(Text::new("Name:"))
+                    .push(TextInput::new(
+                        &mut state.name_chooser,
+                        "Choose Name",
+                        &state.name,
+                        Message::NameChanged,
+                    )),
             )
             .push(install_button),
     )

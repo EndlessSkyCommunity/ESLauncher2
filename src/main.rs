@@ -15,7 +15,7 @@ use iced::{
     scrollable, Align, Column, Container, Element, Font, HorizontalAlignment, Length, Sandbox,
     Scrollable, Settings, Text,
 };
-use nfd2::Response;
+use platform_dirs::{AppDirs, AppUI};
 use std::sync::mpsc::Receiver;
 
 static LOG_FONT: Font = Font::External {
@@ -39,7 +39,7 @@ struct ESLauncher {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    SelectDestination,
+    NameChanged(String),
     StartInstallation,
 }
 
@@ -63,19 +63,16 @@ impl Sandbox for ESLauncher {
 
     fn update(&mut self, message: Self::Message) {
         match message {
-            Message::SelectDestination => {
-                if let Response::Okay(path) = nfd2::open_pick_folder(None).unwrap() {
-                    self.installation_frame.destination = path;
-                }
-            }
+            Message::NameChanged(name) => self.installation_frame.name = name,
             Message::StartInstallation => {
-                if self.worker.is_none() {
-                    self.worker = Some(Worker::new(Work::Install {
-                        destination: self.installation_frame.destination.clone(),
-                    }));
-                }
+                let mut destination = AppDirs::new(Some("ESLauncher2"), AppUI::Graphical)
+                    .unwrap()
+                    .data_dir;
+                destination.push("instances");
+                destination.push(&self.installation_frame.name);
+                self.worker = Some(Worker::new(Work::Install { destination }));
             }
-        };
+        }
     }
 
     fn view(&mut self) -> Element<'_, Self::Message> {
