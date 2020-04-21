@@ -2,18 +2,15 @@ use flate2::read::GzDecoder;
 use std::ffi::OsStr;
 use std::fs::{create_dir, File};
 use std::path::PathBuf;
-use std::sync::mpsc::Sender;
 use tar::Archive;
 use zip_extensions::zip_extract;
 
-pub fn unpack(sender: &Sender<String>, archive_file: &PathBuf, destination: &PathBuf) {
-    sender
-        .send(format!(
-            "Extracting {} to {}",
-            archive_file.to_string_lossy(),
-            destination.to_string_lossy()
-        ))
-        .ok();
+pub fn unpack(archive_file: &PathBuf, destination: &PathBuf) {
+    info!(
+        "Extracting {} to {}",
+        archive_file.to_string_lossy(),
+        destination.to_string_lossy()
+    );
     match archive_file.extension().and_then(OsStr::to_str) {
         Some("gz") => {
             let file = File::open(archive_file).unwrap();

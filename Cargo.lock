@@ -585,6 +585,7 @@ dependencies = [
  "chrono",
  "flate2",
  "iced",
+ "log",
  "nfd2",
  "rodio",
  "serde",

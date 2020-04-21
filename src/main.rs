@@ -1,8 +1,11 @@
 #![forbid(unsafe_code)]
+#[macro_use]
+extern crate log;
 
 mod archive;
 mod github;
 mod install;
+mod logger;
 mod music;
 mod worker;
 
@@ -13,6 +16,7 @@ use iced::{
 };
 use nfd2::Response;
 use std::path::PathBuf;
+use std::sync::mpsc::Receiver;
 
 static LOG_FONT: Font = Font::External {
     name: "DejaVuSansMono",
@@ -31,6 +35,8 @@ struct ESLauncher {
     install_button: button::State,
     log_scrollable: scrollable::State,
     worker: Option<worker::Worker>,
+    log_reader: Receiver<String>,
+    log_buffer: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -43,12 +49,15 @@ impl Sandbox for ESLauncher {
     type Message = Message;
 
     fn new() -> ESLauncher {
+        let log_reader = logger::init();
         ESLauncher {
             destination: PathBuf::default(),
             destination_chooser: button::State::default(),
             install_button: button::State::default(),
             log_scrollable: scrollable::State::default(),
             worker: None,
+            log_reader,
+            log_buffer: vec![],
         }
     }
 
@@ -74,20 +83,22 @@ impl Sandbox for ESLauncher {
     }
 
     fn view(&mut self) -> Element<'_, Self::Message> {
-        let logbox = match &self.worker {
-            Some(_) => self.worker.as_mut().unwrap().logs().iter().fold(
-                Column::new().padding(20).align_items(Align::Center),
-                |column, log| {
-                    column.push(
-                        Text::new(log)
-                            .size(14)
-                            .font(LOG_FONT)
-                            .horizontal_alignment(HorizontalAlignment::Left),
-                    )
-                },
-            ),
-            None => Column::new(),
-        };
+        // Update logs
+        while let Ok(line) = self.log_reader.try_recv() {
+            self.log_buffer.push(line);
+        }
+
+        let logbox = self.log_buffer.iter().fold(
+            Column::new().padding(20).align_items(Align::Center),
+            |column, log| {
+                column.push(
+                    Text::new(log)
+                        .size(14)
+                        .font(LOG_FONT)
+                        .horizontal_alignment(HorizontalAlignment::Left),
+                )
+            },
+        );
 
         let mut install_button = Button::new(&mut self.install_button, Text::new("Install"));
         if !self.destination.eq(&PathBuf::default()) {
@@ -107,7 +118,7 @@ impl Sandbox for ESLauncher {
                             .on_press(Message::SelectDestination),
                     ),
             )
-            .push(install_button            )
+            .push(install_button)
             .push(Scrollable::new(&mut self.log_scrollable).push(logbox)); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         Container::new(content)
