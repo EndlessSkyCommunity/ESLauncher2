@@ -1,7 +1,7 @@
 use log::{Level, LevelFilter, Log, Metadata, Record};
 use std::sync::mpsc;
 
-const BLACKLIST: [&'static str; 4] = ["gfx_backend_", "winit", "wgpu_", "iced_"];
+const BLACKLIST: [&str; 4] = ["gfx_backend_", "winit", "wgpu_", "iced_"];
 
 struct ChanneledLogger {
     channel: mpsc::SyncSender<String>,
