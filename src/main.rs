@@ -6,18 +6,18 @@ mod archive;
 mod github;
 mod install;
 mod install_frame;
+mod instances;
 mod instances_frame;
 mod logger;
 mod music;
 mod worker;
 
+use crate::instances::get_instances_dir;
 use crate::worker::{Work, Worker};
 use iced::{
     scrollable, Align, Column, Container, Element, Font, HorizontalAlignment, Length, Row, Sandbox,
     Scrollable, Settings, Text,
 };
-use platform_dirs::{AppDirs, AppUI};
-use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 
 static LOG_FONT: Font = Font::External {
@@ -68,11 +68,13 @@ impl Sandbox for ESLauncher {
     fn update(&mut self, message: Self::Message) {
         match message {
             Message::NameChanged(name) => self.installation_frame.name = name,
-            Message::StartInstallation => {
-                let mut destination = get_instances_dir();
-                destination.push(&self.installation_frame.name);
-                self.worker = Some(Worker::new(Work::Install { destination }));
-            }
+            Message::StartInstallation => match get_instances_dir() {
+                Some(mut destination) => {
+                    destination.push(&self.installation_frame.name);
+                    self.worker = Some(Worker::new(Work::Install { destination }));
+                }
+                None => error!("Could not get instances directory from AppDirs"),
+            },
         }
     }
 
@@ -100,9 +102,14 @@ impl Sandbox for ESLauncher {
             .push(
                 Row::new()
                     .push(instances_frame::view(&mut self.instances_frame))
-                    .push(install_frame::view(&mut self.installation_frame)),
+                    .push(install_frame::view(&mut self.installation_frame))
+                    .spacing(100),
             )
-            .push(Scrollable::new(&mut self.log_scrollable).push(logbox)); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
+            .push(
+                Scrollable::new(&mut self.log_scrollable)
+                    .push(logbox)
+                    .padding(20),
+            ); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         Container::new(content)
             .width(Length::Fill)
@@ -111,31 +118,4 @@ impl Sandbox for ESLauncher {
             .center_y()
             .into()
     }
-}
-
-fn get_instances_dir() -> PathBuf {
-    let mut dir = AppDirs::new(Some("ESLauncher2"), AppUI::Graphical)
-        .unwrap()
-        .data_dir;
-    dir.push("instances");
-    dir
-}
-
-fn get_instances() -> Vec<instances_frame::Instance> {
-    let buf = get_instances_dir();
-    let dir = buf.as_path();
-    let mut vec = vec![];
-    if dir.exists() {
-        for result in dir.read_dir().unwrap() {
-            if let Ok(entry) = result {
-                if entry.file_type().unwrap().is_dir() {
-                    vec.push(instances_frame::Instance {
-                        path: entry.path(),
-                        name: entry.file_name().into_string().unwrap(),
-                    });
-                }
-            }
-        }
-    }
-    vec
 }

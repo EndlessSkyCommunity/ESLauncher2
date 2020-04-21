@@ -1,5 +1,8 @@
 use crate::Message;
-use iced::{button, text_input, Align, Button, Column, Container, Element, Row, Text, TextInput};
+use iced::{
+    button, text_input, Align, Button, Column, Container, Element, HorizontalAlignment, Length,
+    Text, TextInput,
+};
 
 #[derive(Debug, Clone)]
 pub struct InstallFrameState {
@@ -27,18 +30,24 @@ pub fn view(state: &mut InstallFrameState) -> Element<Message> {
     Container::new(
         Column::new()
             .push(
-                Row::new()
-                    .padding(20)
-                    .align_items(Align::Center)
-                    .push(Text::new("Name:"))
-                    .push(TextInput::new(
-                        &mut state.name_chooser,
-                        "Choose Name",
-                        &state.name,
-                        Message::NameChanged,
-                    )),
+                Text::new("Install")
+                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .width(Length::Fill),
             )
-            .push(install_button),
+            .push(
+                TextInput::new(
+                    &mut state.name_chooser,
+                    "Choose Name",
+                    &state.name,
+                    Message::NameChanged,
+                )
+                .padding(10),
+            )
+            .push(install_button)
+            .spacing(20)
+            .align_items(Align::End),
     )
+    .padding(20)
+    .max_width(400)
     .into()
 }
