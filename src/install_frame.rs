@@ -2,15 +2,15 @@ use crate::Message;
 use iced::{button, text_input, Align, Button, Column, Container, Element, Row, Text, TextInput};
 
 #[derive(Debug, Clone)]
-pub struct InstallationFrameState {
+pub struct InstallFrameState {
     pub name: String,
     pub name_chooser: text_input::State,
     pub install_button: button::State,
 }
 
-impl Default for InstallationFrameState {
+impl Default for InstallFrameState {
     fn default() -> Self {
-        InstallationFrameState {
+        InstallFrameState {
             name: String::default(),
             name_chooser: text_input::State::default(),
             install_button: button::State::default(),
@@ -18,7 +18,7 @@ impl Default for InstallationFrameState {
     }
 }
 
-pub fn view(state: &mut InstallationFrameState) -> Element<Message> {
+pub fn view(state: &mut InstallFrameState) -> Element<Message> {
     let mut install_button = Button::new(&mut state.install_button, Text::new("Install"));
     if !state.name.is_empty() {
         install_button = install_button.on_press(Message::StartInstallation)

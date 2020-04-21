@@ -5,7 +5,7 @@ extern crate log;
 mod archive;
 mod github;
 mod install;
-mod installation_frame;
+mod install_frame;
 mod logger;
 mod music;
 mod worker;
@@ -30,7 +30,7 @@ pub fn main() {
 
 #[derive(Debug)]
 struct ESLauncher {
-    installation_frame: installation_frame::InstallationFrameState,
+    installation_frame: install_frame::InstallFrameState,
     log_scrollable: scrollable::State,
     worker: Option<worker::Worker>,
     log_reader: Receiver<String>,
@@ -49,7 +49,7 @@ impl Sandbox for ESLauncher {
     fn new() -> ESLauncher {
         let log_reader = logger::init();
         ESLauncher {
-            installation_frame: installation_frame::InstallationFrameState::default(),
+            installation_frame: install_frame::InstallFrameState::default(),
             log_scrollable: scrollable::State::default(),
             worker: None,
             log_reader,
@@ -96,7 +96,7 @@ impl Sandbox for ESLauncher {
         let content = Column::new()
             .padding(20)
             .align_items(Align::Center)
-            .push(installation_frame::view(&mut self.installation_frame))
+            .push(install_frame::view(&mut self.installation_frame))
             .push(Scrollable::new(&mut self.log_scrollable).push(logbox)); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         Container::new(content)
