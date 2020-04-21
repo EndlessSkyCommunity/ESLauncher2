@@ -1,8 +1,11 @@
 use crate::{archive, github};
 use std::error::Error;
+use std::fs;
 use std::path::PathBuf;
 
 pub fn install(destination: PathBuf) -> Result<(), Box<dyn Error>> {
+    fs::create_dir_all(&destination)?;
+
     let assets = github::get_release_assets()?;
 
     let asset_marker: &str;
@@ -15,8 +18,8 @@ pub fn install(destination: PathBuf) -> Result<(), Box<dyn Error>> {
     }
     for asset in assets {
         if asset.name.contains(asset_marker) {
-            github::download(&asset)?;
-            archive::unpack(&PathBuf::from(&asset.name), &destination);
+            let archive_file = github::download(&asset, destination.clone())?;
+            archive::unpack(&archive_file, &destination);
         }
     }
     info!("Done!");

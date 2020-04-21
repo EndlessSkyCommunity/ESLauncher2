@@ -4,7 +4,7 @@ use serde_json;
 use std::fs::File;
 use std::io::copy;
 use std::io::Error;
-use std::path::Path;
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct GithubRelease {
@@ -42,14 +42,16 @@ pub fn get_release_assets() -> Result<Vec<GithubReleaseAsset>, Error> {
     Ok(assets.0)
 }
 
-pub fn download(asset: &GithubReleaseAsset) -> Result<u64, Error> {
-    let output_path = Path::new(&asset.name);
+pub fn download(asset: &GithubReleaseAsset, folder: PathBuf) -> Result<PathBuf, Error> {
+    let mut output_path = folder;
+    output_path.push(&asset.name);
 
     info!(
         "Downloading {} to {}",
         asset.browser_download_url, asset.name
     );
-    let mut output_file = File::create(output_path)?;
+    let mut output_file = File::create(&output_path)?;
     let res = ureq::get(&asset.browser_download_url).call();
-    copy(&mut res.into_reader(), &mut output_file)
+    copy(&mut res.into_reader(), &mut output_file)?;
+    Ok(output_path)
 }
