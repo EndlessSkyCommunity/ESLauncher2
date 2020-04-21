@@ -1,7 +1,5 @@
 use crate::install;
-use serde::de::Unexpected::Bool;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::thread::JoinHandle;
 

@@ -5,17 +5,17 @@ extern crate log;
 mod archive;
 mod github;
 mod install;
+mod installation_frame;
 mod logger;
 mod music;
 mod worker;
 
 use crate::worker::{Work, Worker};
 use iced::{
-    button, scrollable, Align, Button, Column, Container, Element, Font, HorizontalAlignment,
-    Length, Row, Sandbox, Scrollable, Settings, Text,
+    scrollable, Align, Column, Container, Element, Font, HorizontalAlignment, Length, Sandbox,
+    Scrollable, Settings, Text,
 };
 use nfd2::Response;
-use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 
 static LOG_FONT: Font = Font::External {
@@ -30,9 +30,7 @@ pub fn main() {
 
 #[derive(Debug)]
 struct ESLauncher {
-    destination: PathBuf,
-    destination_chooser: button::State,
-    install_button: button::State,
+    installation_frame: installation_frame::InstallationFrameState,
     log_scrollable: scrollable::State,
     worker: Option<worker::Worker>,
     log_reader: Receiver<String>,
@@ -40,7 +38,7 @@ struct ESLauncher {
 }
 
 #[derive(Debug, Clone)]
-enum Message {
+pub enum Message {
     SelectDestination,
     StartInstallation,
 }
@@ -51,9 +49,7 @@ impl Sandbox for ESLauncher {
     fn new() -> ESLauncher {
         let log_reader = logger::init();
         ESLauncher {
-            destination: PathBuf::default(),
-            destination_chooser: button::State::default(),
-            install_button: button::State::default(),
+            installation_frame: installation_frame::InstallationFrameState::default(),
             log_scrollable: scrollable::State::default(),
             worker: None,
             log_reader,
@@ -69,13 +65,13 @@ impl Sandbox for ESLauncher {
         match message {
             Message::SelectDestination => {
                 if let Response::Okay(path) = nfd2::open_pick_folder(None).unwrap() {
-                    self.destination = path;
+                    self.installation_frame.destination = path;
                 }
             }
             Message::StartInstallation => {
                 if self.worker.is_none() {
                     self.worker = Some(Worker::new(Work::Install {
-                        destination: self.destination.clone(),
+                        destination: self.installation_frame.destination.clone(),
                     }));
                 }
             }
@@ -100,25 +96,10 @@ impl Sandbox for ESLauncher {
             },
         );
 
-        let mut install_button = Button::new(&mut self.install_button, Text::new("Install"));
-        if !self.destination.eq(&PathBuf::default()) {
-            install_button = install_button.on_press(Message::StartInstallation)
-        }
-
         let content = Column::new()
             .padding(20)
             .align_items(Align::Center)
-            .push(
-                Row::new()
-                    .padding(20)
-                    .align_items(Align::Center)
-                    .push(Text::new(self.destination.to_string_lossy()))
-                    .push(
-                        Button::new(&mut self.destination_chooser, Text::new("Pick Folder"))
-                            .on_press(Message::SelectDestination),
-                    ),
-            )
-            .push(install_button)
+            .push(installation_frame::view(&mut self.installation_frame))
             .push(Scrollable::new(&mut self.log_scrollable).push(logbox)); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         Container::new(content)
