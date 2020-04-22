@@ -16,6 +16,7 @@ platform-dirs = "0.2.0"
 rodio = { version="0.11", features=["vorbis"], default_features=false }
 iced = "0.1.1"
 log = { version="0.4.8", features=["std"] }
+progress-streams = "1.1.0"
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.

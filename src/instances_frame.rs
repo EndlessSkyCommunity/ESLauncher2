@@ -9,14 +9,16 @@ pub struct InstancesFrameState {
 
 impl Default for InstancesFrameState {
     fn default() -> Self {
-        InstancesFrameState {
-            instances: get_instances().unwrap_or_else(|| vec![]),
-        }
+        let instances = get_instances().unwrap_or_else(|| vec![]);
+        InstancesFrameState { instances }
     }
 }
 
 pub fn view(state: &mut InstancesFrameState) -> Element<Message> {
-    let instances_column = Column::new().padding(20).align_items(Align::Center);
+    let instances_column = Column::new()
+        .padding(20)
+        .spacing(20)
+        .align_items(Align::Center);
     let instances_list = if state.instances.is_empty() {
         instances_column.push(Text::new("No Instances yet").color(Color::from_rgb8(150, 150, 150)))
     } else {
@@ -30,7 +32,7 @@ pub fn view(state: &mut InstancesFrameState) -> Element<Message> {
 
     Container::new(
         Column::new()
-            .push(Text::new("Instances:"))
+            .push(Text::new("Instances").size(26))
             .push(instances_list)
             .spacing(20),
     )

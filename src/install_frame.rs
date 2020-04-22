@@ -32,7 +32,8 @@ pub fn view(state: &mut InstallFrameState) -> Element<Message> {
             .push(
                 Text::new("Install")
                     .horizontal_alignment(HorizontalAlignment::Center)
-                    .width(Length::Fill),
+                    .width(Length::Fill)
+                    .size(26),
             )
             .push(
                 TextInput::new(

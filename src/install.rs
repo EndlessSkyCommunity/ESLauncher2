@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 
 pub fn install(destination: PathBuf) -> Result<(), Box<dyn Error>> {
+    info!("Installing to {}", destination.to_string_lossy());
     fs::create_dir_all(&destination)?;
 
     let assets = github::get_release_assets()?;
@@ -18,6 +19,7 @@ pub fn install(destination: PathBuf) -> Result<(), Box<dyn Error>> {
     }
     for asset in assets {
         if asset.name.contains(asset_marker) {
+            info!("Choosing asset with name {}", asset.name);
             let archive_file = github::download(&asset, destination.clone())?;
             archive::unpack(&archive_file, &destination);
         }

@@ -108,7 +108,8 @@ impl Sandbox for ESLauncher {
             .push(
                 Scrollable::new(&mut self.log_scrollable)
                     .push(logbox)
-                    .padding(20),
+                    .padding(20)
+                    .align_items(Align::Start),
             ); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         Container::new(content)

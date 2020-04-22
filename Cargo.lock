@@ -609,6 +609,7 @@ dependencies = [
  "iced",
  "log",
  "platform-dirs",
+ "progress-streams",
  "rodio",
  "serde",
  "serde_json",
@@ -1660,6 +1661,12 @@ checksum = "df246d292ff63439fea9bc8c0a270bed0e390d5ebd4db4ba15aba81111b5abe3"
 dependencies = [
  "unicode-xid 0.2.0",
 ]
+
+[[package]]
+name = "progress-streams"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e965d96c8162c607b0cd8d66047ad3c9fd35273c134d994327882c6e47f986a7"
 
 [[package]]
 name = "qstring"
