@@ -71,7 +71,10 @@ pub fn download(asset: &GithubReleaseAsset, folder: PathBuf) -> Result<PathBuf, 
         if thread_done.load(Ordering::SeqCst) {
             break;
         }
-        info!("Read {} KiB", thread_total.load(Ordering::SeqCst) / 1024);
+        info!(
+            "Downloaded {} KiB",
+            thread_total.load(Ordering::SeqCst) / 1024
+        );
         thread::sleep(Duration::from_secs(2));
     });
 

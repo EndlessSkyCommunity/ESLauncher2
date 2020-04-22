@@ -1,6 +1,6 @@
 use crate::instances::{get_instances, Instance};
 use crate::Message;
-use iced::{Align, Color, Column, Container, Element, Row, Text};
+use iced::{Align, Color, Column, Container, Element, Text};
 
 #[derive(Debug, Clone)]
 pub struct InstancesFrameState {
@@ -19,15 +19,23 @@ pub fn view(state: &mut InstancesFrameState) -> Element<Message> {
         .padding(20)
         .spacing(20)
         .align_items(Align::Center);
-    let instances_list = if state.instances.is_empty() {
-        instances_column.push(Text::new("No Instances yet").color(Color::from_rgb8(150, 150, 150)))
+    let instances_list: Element<_> = if state.instances.is_empty() {
+        Text::new("No Instances yet")
+            .color(Color::from_rgb8(150, 150, 150))
+            .into()
     } else {
         state
             .instances
-            .iter()
-            .fold(instances_column, |column, instance| {
-                column.push(Row::new().push(Text::new(&instance.name)))
+            .iter_mut()
+            .enumerate()
+            .fold(instances_column, |column, (i, instance)| {
+                column.push(
+                    instance
+                        .view()
+                        .map(move |message| Message::InstanceMessage(i, message)),
+                )
             })
+            .into()
     };
 
     Container::new(

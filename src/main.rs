@@ -10,9 +10,10 @@ mod instances;
 mod instances_frame;
 mod logger;
 mod music;
+mod style;
 mod worker;
 
-use crate::instances::get_instances_dir;
+use crate::instances::{get_instances_dir, InstanceMessage};
 use crate::worker::{Work, Worker};
 use iced::{
     scrollable, Align, Column, Container, Element, Font, HorizontalAlignment, Length, Row, Sandbox,
@@ -21,7 +22,7 @@ use iced::{
 use std::sync::mpsc::Receiver;
 
 static LOG_FONT: Font = Font::External {
-    name: "DejaVuSansMono",
+    name: "DejaVuSansMono-Bold",
     bytes: include_bytes!("../assets/DejaVuSansMono-Bold.ttf"),
 };
 
@@ -44,6 +45,7 @@ struct ESLauncher {
 pub enum Message {
     NameChanged(String),
     StartInstallation,
+    InstanceMessage(usize, InstanceMessage),
 }
 
 impl Sandbox for ESLauncher {
@@ -75,6 +77,11 @@ impl Sandbox for ESLauncher {
                 }
                 None => error!("Could not get instances directory from AppDirs"),
             },
+            Message::InstanceMessage(i, msg) => {
+                if let Some(instance) = self.instances_frame.instances.get_mut(i) {
+                    instance.update(msg);
+                }
+            }
         }
     }
 
