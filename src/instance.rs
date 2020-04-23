@@ -1,18 +1,25 @@
-use crate::{install, style, Message};
+use crate::{install, style, update, Message};
 use chrono::{DateTime, Local};
 use iced::{button, Align, Button, Element, Row, Text};
 use platform_dirs::{AppDirs, AppUI};
-use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::SystemTime;
+use std::{fs, thread};
 
 const EXECUTABLE_NAMES: [&str; 3] = [
     "EndlessSky.exe",
     "endless-sky",
     "endless-sky-x86_64-continuous.AppImage",
+];
+
+const ARCHIVE_NAMES: [&str; 4] = [
+    "endless-sky-x86_64-continuous.tar.gz",
+    "endless-sky-x86_64-continuous.AppImage",
+    "EndlessSky-win64-continuous.zip",
+    "EndlessSky-macOS-continuous.zip",
 ];
 
 #[derive(Debug, Clone)]
@@ -59,22 +66,21 @@ impl Instance {
 
     pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
         match message {
-            InstanceMessage::Play => {
-                return iced::Command::perform(
-                    play(
-                        self.path.clone(),
-                        self.executable.clone(),
-                        self.name.clone(),
-                    ),
-                    Message::Dummy,
-                )
+            InstanceMessage::Play => iced::Command::perform(
+                play(
+                    self.path.clone(),
+                    self.executable.clone(),
+                    self.name.clone(),
+                ),
+                Message::Dummy,
+            ),
+            InstanceMessage::Update => {
+                iced::Command::perform(perform_update(self.path.clone()), Message::Dummy)
             }
-            InstanceMessage::Update => info!("STUB: update"),
             InstanceMessage::Delete => {
-                return iced::Command::perform(delete(self.path.clone()), Message::Deleted)
+                iced::Command::perform(delete(self.path.clone()), Message::Deleted)
             }
-        };
-        iced::Command::none()
+        }
     }
 
     pub fn view(&mut self) -> Element<InstanceMessage> {
@@ -126,6 +132,35 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
             error!("Failed to remove {}", path.to_string_lossy());
             None
         }
+    }
+}
+
+pub async fn perform_update(path: PathBuf) {
+    for archive in ARCHIVE_NAMES.iter() {
+        let mut archive_path = path.clone();
+        archive_path.push(archive);
+        if archive_path.exists() {
+            // Yes, this is terrible. Sue me. Bitar's objects don't implement Send, and i cannot figure out
+            // how to use them in the default executor (which is multithreaded, presumably). Since we don't
+            // need any sort of feedback other than logs, we can just update in new, single-threaded runtime.
+            thread::spawn(move || {
+                match tokio::runtime::Runtime::new() {
+                    Ok(mut runtime) => {
+                        if let Err(e) = runtime.block_on(update::update(
+                            &archive_path,
+                            String::from(
+                                "http://localhost:80/endless-sky-x86_64-continuous.AppImage.cba", // TODO
+                            ),
+                        )) {
+                            error!("Failed to update instance: {}", e)
+                        }
+                    }
+                    Err(e) => error!("Failed to spawn tokio runtime: {}", e),
+                };
+            });
+            return;
+        }
+        error!("Failed to find archive in {}", path.to_string_lossy());
     }
 }
 

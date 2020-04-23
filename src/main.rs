@@ -11,6 +11,7 @@ mod instances_frame;
 mod logger;
 mod music;
 mod style;
+mod update;
 
 use crate::instance::{get_instances_dir, Instance, InstanceMessage};
 use iced::{
