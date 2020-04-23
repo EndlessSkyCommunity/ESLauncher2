@@ -16,8 +16,8 @@ mod worker;
 use crate::instance::{get_instances_dir, InstanceMessage};
 use crate::worker::{Work, Worker};
 use iced::{
-    scrollable, Align, Column, Container, Element, Font, HorizontalAlignment, Length, Row, Sandbox,
-    Scrollable, Settings, Text,
+    scrollable, Align, Application, Column, Command, Container, Element, Font, HorizontalAlignment,
+    Length, Row, Scrollable, Settings, Text,
 };
 use std::sync::mpsc::Receiver;
 
@@ -48,26 +48,31 @@ pub enum Message {
     InstanceMessage(usize, InstanceMessage),
 }
 
-impl Sandbox for ESLauncher {
+impl Application for ESLauncher {
+    type Executor = iced::executor::Default;
     type Message = Message;
+    type Flags = ();
 
-    fn new() -> ESLauncher {
+    fn new(_flag: ()) -> (ESLauncher, Command<Message>) {
         let log_reader = logger::init();
-        ESLauncher {
-            installation_frame: install_frame::InstallFrameState::default(),
-            instances_frame: instances_frame::InstancesFrameState::default(),
-            log_scrollable: scrollable::State::default(),
-            worker: None,
-            log_reader,
-            log_buffer: vec![],
-        }
+        (
+            ESLauncher {
+                installation_frame: install_frame::InstallFrameState::default(),
+                instances_frame: instances_frame::InstancesFrameState::default(),
+                log_scrollable: scrollable::State::default(),
+                worker: None,
+                log_reader,
+                log_buffer: vec![],
+            },
+            Command::none(),
+        )
     }
 
     fn title(&self) -> String {
         String::from("ESLauncher2")
     }
 
-    fn update(&mut self, message: Self::Message) {
+    fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::NameChanged(name) => self.installation_frame.name = name,
             Message::StartInstallation => match get_instances_dir() {
@@ -89,10 +94,11 @@ impl Sandbox for ESLauncher {
             },
             Message::InstanceMessage(i, msg) => {
                 if let Some(instance) = self.instances_frame.instances.get_mut(i) {
-                    instance.update(msg);
+                    return instance.update(msg);
                 }
             }
         }
+        Command::none()
     }
 
     fn view(&mut self) -> Element<'_, Self::Message> {

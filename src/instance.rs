@@ -1,4 +1,4 @@
-use crate::style;
+use crate::{style, Message};
 use chrono::{DateTime, Local};
 use iced::{button, Align, Button, Element, Length, Row, Space, Text};
 use platform_dirs::{AppDirs, AppUI};
@@ -57,12 +57,13 @@ impl Instance {
         }
     }
 
-    pub fn update(&mut self, message: InstanceMessage) {
+    pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
         match message {
             InstanceMessage::Play => self.play(),
             InstanceMessage::Update => info!("STUB: update {}", self.name),
             InstanceMessage::Delete => info!("STUB: delete {}", self.name),
         }
+        iced::Command::none()
     }
 
     pub fn view(&mut self) -> Element<InstanceMessage> {
