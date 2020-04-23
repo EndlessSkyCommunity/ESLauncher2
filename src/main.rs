@@ -17,6 +17,7 @@ use iced::{
     scrollable, Align, Application, Column, Command, Container, Element, Font, HorizontalAlignment,
     Length, Row, Scrollable, Settings, Text,
 };
+use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 
 static LOG_FONT: Font = Font::External {
@@ -44,6 +45,7 @@ pub enum Message {
     StartInstallation,
     InstanceMessage(usize, InstanceMessage),
     Installed(Option<Instance>),
+    Deleted(Option<PathBuf>),
     Dummy(()),
 }
 
@@ -92,6 +94,11 @@ impl Application for ESLauncher {
             Message::Installed(option) => {
                 if let Some(instance) = option {
                     self.instances_frame.instances.push(instance);
+                }
+            }
+            Message::Deleted(option) => {
+                if let Some(path) = option {
+                    self.instances_frame.instances.retain(|i| !i.path.eq(&path))
                 }
             }
             Message::Dummy(_) => (),

@@ -20,9 +20,9 @@ pub struct Instance {
     play_button: button::State,
     update_button: button::State,
     delete_button: button::State,
-    path: PathBuf,
-    executable: PathBuf,
-    name: String,
+    pub path: PathBuf,
+    pub executable: PathBuf,
+    pub name: String,
 }
 
 impl Default for Instance {
@@ -70,7 +70,9 @@ impl Instance {
                 )
             }
             InstanceMessage::Update => info!("STUB: update"),
-            InstanceMessage::Delete => info!("STUB: delete"),
+            InstanceMessage::Delete => {
+                return iced::Command::perform(delete(self.path.clone()), Message::Deleted)
+            }
         };
         iced::Command::none()
     }
@@ -114,8 +116,21 @@ pub async fn perform_install(path: PathBuf, name: String, appimage: bool) -> Opt
     }
 }
 
+pub async fn delete(path: PathBuf) -> Option<PathBuf> {
+    match std::fs::remove_dir_all(&path) {
+        Ok(_) => {
+            info!("Removed {}", path.to_string_lossy());
+            Some(path)
+        }
+        Err(_) => {
+            error!("Failed to remove {}", path.to_string_lossy());
+            None
+        }
+    }
+}
+
 pub async fn play(path: PathBuf, executable: PathBuf, name: String) {
-    let mut log_path = path.clone();
+    let mut log_path = path;
     log_path.push("logs");
     fs::create_dir_all(&log_path).unwrap();
 
