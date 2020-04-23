@@ -2,10 +2,13 @@ use iced::{
     button, Background, Color, Font, HorizontalAlignment, Length, Text, Vector, VerticalAlignment,
 };
 
-// Fonts
-const ICONS: Font = Font::External {
+pub const ICONS: Font = Font::External {
     name: "Icons",
     bytes: include_bytes!("../assets/IcoMoon-Free.ttf"),
+};
+pub const LOG_FONT: Font = Font::External {
+    name: "DejaVuSansMono",
+    bytes: include_bytes!("../assets/DejaVuSansMono.ttf"),
 };
 
 fn icon(unicode: char) -> Text {

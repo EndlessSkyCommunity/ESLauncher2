@@ -15,16 +15,11 @@ mod update;
 
 use crate::instance::{get_instances_dir, Instance, InstanceMessage};
 use iced::{
-    scrollable, Align, Application, Column, Command, Container, Element, Font, HorizontalAlignment,
+    scrollable, Align, Application, Column, Command, Container, Element, HorizontalAlignment,
     Length, Row, Scrollable, Settings, Text,
 };
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
-
-static LOG_FONT: Font = Font::External {
-    name: "DejaVuSansMono-Bold",
-    bytes: include_bytes!("../assets/DejaVuSansMono-Bold.ttf"),
-};
 
 pub fn main() {
     music::play();
@@ -119,7 +114,7 @@ impl Application for ESLauncher {
                 column.push(
                     Text::new(log)
                         .size(14)
-                        .font(LOG_FONT)
+                        .font(style::LOG_FONT)
                         .horizontal_alignment(HorizontalAlignment::Left),
                 )
             },

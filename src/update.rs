@@ -41,6 +41,6 @@ pub async fn update(target_path: &PathBuf, url: String) -> Result<(), Box<dyn Er
         &mut target,
     )
     .await?;
-    info!("Used {}b from remote", total_read_from_remote,);
+    info!("Done! Used {}b from remote", total_read_from_remote,);
     Ok(())
 }
