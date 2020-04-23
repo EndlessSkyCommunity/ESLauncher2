@@ -49,7 +49,7 @@ pub fn install(
                 chmod_x(&executable);
             }
             info!("Done!");
-            return Ok(Instance::new(destination.clone(), executable, name.clone()));
+            return Ok(Instance::new(destination, executable, name));
         }
     }
     Err(Box::new(std::io::Error::new(

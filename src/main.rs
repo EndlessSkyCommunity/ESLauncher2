@@ -11,10 +11,8 @@ mod instances_frame;
 mod logger;
 mod music;
 mod style;
-mod worker;
 
-use crate::instance::{get_instances_dir, InstanceMessage};
-use crate::worker::{Work, Worker};
+use crate::instance::{get_instances_dir, Instance, InstanceMessage};
 use iced::{
     scrollable, Align, Application, Column, Command, Container, Element, Font, HorizontalAlignment,
     Length, Row, Scrollable, Settings, Text,
@@ -36,7 +34,6 @@ struct ESLauncher {
     installation_frame: install_frame::InstallFrameState,
     instances_frame: instances_frame::InstancesFrameState,
     log_scrollable: scrollable::State,
-    worker: Option<worker::Worker>,
     log_reader: Receiver<String>,
     log_buffer: Vec<String>,
 }
@@ -46,6 +43,7 @@ pub enum Message {
     NameChanged(String),
     StartInstallation,
     InstanceMessage(usize, InstanceMessage),
+    Installed(Option<Instance>),
 }
 
 impl Application for ESLauncher {
@@ -60,7 +58,6 @@ impl Application for ESLauncher {
                 installation_frame: install_frame::InstallFrameState::default(),
                 instances_frame: instances_frame::InstancesFrameState::default(),
                 log_scrollable: scrollable::State::default(),
-                worker: None,
                 log_reader,
                 log_buffer: vec![],
             },
@@ -78,23 +75,22 @@ impl Application for ESLauncher {
             Message::StartInstallation => match get_instances_dir() {
                 Some(mut destination) => {
                     destination.push(&self.installation_frame.name);
-                    let name = destination
-                        .file_name()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_owned();
-                    self.worker = Some(Worker::new(Work::Install {
-                        destination,
-                        name,
-                        appimage: true,
-                    }));
+                    let name = String::from(destination.file_name().unwrap().to_string_lossy());
+                    return Command::perform(
+                        instance::perform_install(destination, name, true),
+                        Message::Installed,
+                    );
                 }
                 None => error!("Could not get instances directory from AppDirs"),
             },
             Message::InstanceMessage(i, msg) => {
                 if let Some(instance) = self.instances_frame.instances.get_mut(i) {
                     return instance.update(msg);
+                }
+            }
+            Message::Installed(option) => {
+                if let Some(instance) = option {
+                    self.instances_frame.instances.push(instance);
                 }
             }
         }
