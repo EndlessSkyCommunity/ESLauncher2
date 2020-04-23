@@ -5,6 +5,7 @@ use tokio::fs::OpenOptions;
 use url::Url;
 
 pub async fn update(target_path: &PathBuf, url: String) -> Result<(), Box<dyn Error>> {
+    info!("Updating {} from {}", target_path.to_string_lossy(), url);
     let mut target = OpenOptions::new()
         .read(true)
         .create(true)
