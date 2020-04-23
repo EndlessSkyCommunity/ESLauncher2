@@ -50,5 +50,6 @@ pub fn init() -> mpsc::Receiver<String> {
         channel: log_writer,
     };
     set_logger(logger).unwrap();
+    info!("Initialized logger");
     log_reader
 }

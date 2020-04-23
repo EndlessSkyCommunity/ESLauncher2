@@ -1,4 +1,4 @@
-use crate::instances::{get_instances, Instance};
+use crate::instance::{scan_instances, Instance};
 use crate::Message;
 use iced::{Align, Color, Column, Container, Element, Text};
 
@@ -9,8 +9,9 @@ pub struct InstancesFrameState {
 
 impl Default for InstancesFrameState {
     fn default() -> Self {
-        let instances = get_instances().unwrap_or_else(|| vec![]);
-        InstancesFrameState { instances }
+        InstancesFrameState {
+            instances: scan_instances().unwrap_or_else(|| vec![]),
+        }
     }
 }
 

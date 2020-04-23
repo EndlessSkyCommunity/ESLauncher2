@@ -1,12 +1,24 @@
 use crate::style;
+use chrono::{DateTime, Local};
 use iced::{button, Align, Button, Element, Length, Row, Space, Text};
 use platform_dirs::{AppDirs, AppUI};
 use std::fs;
+use std::fs::File;
+use std::io::Write;
 use std::path::PathBuf;
+use std::process::Command;
+use std::time::SystemTime;
+
+const EXECUTABLE_NAMES: [&str; 3] = [
+    "EndlessSky.exe",
+    "endless-sky",
+    "endless-sky-x86_64-continuous.AppImage",
+];
 
 #[derive(Debug, Clone)]
 pub struct Instance {
     pub path: PathBuf,
+    pub executable: PathBuf,
     pub name: String,
     pub state: InstanceState,
 }
@@ -36,9 +48,10 @@ pub enum InstanceMessage {
 }
 
 impl Instance {
-    pub fn new(path: PathBuf, name: String) -> Self {
+    pub fn new(path: PathBuf, executable: PathBuf, name: String) -> Self {
         Instance {
             path,
+            executable,
             name,
             state: InstanceState::default(),
         }
@@ -46,7 +59,7 @@ impl Instance {
 
     pub fn update(&mut self, message: InstanceMessage) {
         match message {
-            InstanceMessage::Play => info!("STUB: play {}", self.name),
+            InstanceMessage::Play => self.play(),
             InstanceMessage::Update => info!("STUB: update {}", self.name),
             InstanceMessage::Delete => info!("STUB: delete {}", self.name),
         }
@@ -80,6 +93,41 @@ impl Instance {
             )
             .into()
     }
+
+    pub fn play(&self) {
+        let mut log_path = self.path.clone();
+        log_path.push("logs");
+        fs::create_dir_all(&log_path).unwrap();
+
+        let time = DateTime::<Local>::from(SystemTime::now()).to_rfc3339();
+        let mut out_path = log_path.clone();
+        out_path.push(format!("{}.out", time));
+        let mut out = File::create(out_path).unwrap();
+
+        let mut err_path = log_path.clone();
+        err_path.push(format!("{}.err", time));
+        let mut err = File::create(err_path).unwrap();
+
+        info!("Launching {}", self.executable.to_string_lossy());
+        match Command::new(&self.executable).output() {
+            Ok(output) => {
+                info!("Process exited with {}", output.status);
+                out.write_all(&output.stdout).unwrap();
+                err.write_all(&output.stderr).unwrap();
+                info!(
+                    "Logfiles have been written to {}",
+                    log_path.to_string_lossy()
+                );
+                if !output.status.success() {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    error!("Stdout was: {}", stdout);
+                    error!("Stderr was: {}", stderr);
+                }
+            }
+            Err(e) => error!("Error starting process: {}", e),
+        };
+    }
 }
 
 pub fn get_instances_dir() -> Option<PathBuf> {
@@ -88,10 +136,12 @@ pub fn get_instances_dir() -> Option<PathBuf> {
     Some(dir)
 }
 
-pub fn get_instances() -> Option<Vec<Instance>> {
+pub fn scan_instances() -> Option<Vec<Instance>> {
+    info!("Scanning Instances folder");
     let buf = get_instances_dir()?;
     let dir = buf.as_path();
     let mut vec = vec![];
+
     if dir.exists() {
         match dir.read_dir() {
             Ok(readdir) => {
@@ -101,7 +151,28 @@ pub fn get_instances() -> Option<Vec<Instance>> {
                             Ok(file_type) => {
                                 if file_type.is_dir() {
                                     match entry.file_name().into_string() {
-                                        Ok(name) => vec.push(Instance::new(entry.path(), name)),
+                                        Ok(name) => {
+                                            let mut found = false;
+                                            for exec_name in EXECUTABLE_NAMES.iter() {
+                                                let mut executable = entry.path().clone();
+                                                executable.push(exec_name);
+                                                if executable.exists() {
+                                                    vec.push(Instance::new(
+                                                        entry.path(),
+                                                        executable,
+                                                        name.to_string(),
+                                                    ));
+                                                    found = true;
+                                                    break;
+                                                }
+                                            }
+                                            if !found {
+                                                error!(
+                                                    "Failed to find executable at {}",
+                                                    entry.path().to_string_lossy()
+                                                );
+                                            }
+                                        }
                                         Err(_) => error!(
                                             "Failed to convert filename of {} to String",
                                             entry.path().to_string_lossy(),
@@ -124,5 +195,6 @@ pub fn get_instances() -> Option<Vec<Instance>> {
     } else if let Err(e) = fs::create_dir_all(dir) {
         error!("Failed to create instances dir: {}", e);
     }
+    info!("Found {} Instances", vec.len());
     Some(vec)
 }

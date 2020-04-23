@@ -5,7 +5,11 @@ use std::thread::JoinHandle;
 
 #[derive(Debug, Clone)]
 pub enum Work {
-    Install { destination: PathBuf },
+    Install {
+        destination: PathBuf,
+        name: String,
+        appimage: bool,
+    },
 }
 
 #[derive(Debug)]
@@ -18,10 +22,16 @@ pub struct Worker {
 impl Worker {
     pub fn new(work: Work) -> Worker {
         let func = match &work {
-            Work::Install { destination } => {
+            Work::Install {
+                destination,
+                name,
+                appimage,
+            } => {
                 let destination = destination.clone();
+                let name = name.clone();
+                let appimage = *appimage;
                 move || {
-                    if let Err(e) = install::install(destination) {
+                    if let Err(e) = install::install(destination, name, appimage) {
                         error!("Install panicked with error: {}", e);
                     }
                 }

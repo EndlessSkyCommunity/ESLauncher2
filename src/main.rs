@@ -6,14 +6,14 @@ mod archive;
 mod github;
 mod install;
 mod install_frame;
-mod instances;
+mod instance;
 mod instances_frame;
 mod logger;
 mod music;
 mod style;
 mod worker;
 
-use crate::instances::{get_instances_dir, InstanceMessage};
+use crate::instance::{get_instances_dir, InstanceMessage};
 use crate::worker::{Work, Worker};
 use iced::{
     scrollable, Align, Column, Container, Element, Font, HorizontalAlignment, Length, Row, Sandbox,
@@ -73,7 +73,17 @@ impl Sandbox for ESLauncher {
             Message::StartInstallation => match get_instances_dir() {
                 Some(mut destination) => {
                     destination.push(&self.installation_frame.name);
-                    self.worker = Some(Worker::new(Work::Install { destination }));
+                    let name = destination
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_owned();
+                    self.worker = Some(Worker::new(Work::Install {
+                        destination,
+                        name,
+                        appimage: true,
+                    }));
                 }
                 None => error!("Could not get instances directory from AppDirs"),
             },
