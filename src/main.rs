@@ -44,6 +44,7 @@ pub enum Message {
     StartInstallation,
     InstanceMessage(usize, InstanceMessage),
     Installed(Option<Instance>),
+    Dummy(()),
 }
 
 impl Application for ESLauncher {
@@ -93,6 +94,7 @@ impl Application for ESLauncher {
                     self.instances_frame.instances.push(instance);
                 }
             }
+            Message::Dummy(_) => (),
         }
         Command::none()
     }

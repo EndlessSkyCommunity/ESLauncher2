@@ -59,7 +59,16 @@ impl Instance {
 
     pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
         match message {
-            InstanceMessage::Play => info!("STUB: play"),
+            InstanceMessage::Play => {
+                return iced::Command::perform(
+                    play(
+                        self.path.clone(),
+                        self.executable.clone(),
+                        self.name.clone(),
+                    ),
+                    Message::Dummy,
+                )
+            }
             InstanceMessage::Update => info!("STUB: update"),
             InstanceMessage::Delete => info!("STUB: delete"),
         };
@@ -93,41 +102,8 @@ impl Instance {
             )
             .into()
     }
-    pub async fn play(&self) {
-        let mut log_path = self.path.clone();
-        log_path.push("logs");
-        fs::create_dir_all(&log_path).unwrap();
-
-        let time = DateTime::<Local>::from(SystemTime::now()).to_rfc3339();
-        let mut out_path = log_path.clone();
-        out_path.push(format!("{}.out", time));
-        let mut out = File::create(out_path).unwrap();
-
-        let mut err_path = log_path.clone();
-        err_path.push(format!("{}.err", time));
-        let mut err = File::create(err_path).unwrap();
-
-        info!("Launching {}", self.name);
-        match Command::new(&self.executable).output() {
-            Ok(output) => {
-                info!("Process exited with {}", output.status);
-                out.write_all(&output.stdout).unwrap();
-                err.write_all(&output.stderr).unwrap();
-                info!(
-                    "Logfiles have been written to {}",
-                    log_path.to_string_lossy()
-                );
-                if !output.status.success() {
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    error!("Stdout was: {}", stdout);
-                    error!("Stderr was: {}", stderr);
-                }
-            }
-            Err(e) => error!("Error starting process: {}", e),
-        };
-    }
 }
+
 pub async fn perform_install(path: PathBuf, name: String, appimage: bool) -> Option<Instance> {
     match install::install(path, name, appimage) {
         Ok(instance) => Some(instance),
@@ -136,6 +112,41 @@ pub async fn perform_install(path: PathBuf, name: String, appimage: bool) -> Opt
             None
         }
     }
+}
+
+pub async fn play(path: PathBuf, executable: PathBuf, name: String) {
+    let mut log_path = path.clone();
+    log_path.push("logs");
+    fs::create_dir_all(&log_path).unwrap();
+
+    let time = DateTime::<Local>::from(SystemTime::now()).to_rfc3339();
+    let mut out_path = log_path.clone();
+    out_path.push(format!("{}.out", time));
+    let mut out = File::create(out_path).unwrap();
+
+    let mut err_path = log_path.clone();
+    err_path.push(format!("{}.err", time));
+    let mut err = File::create(err_path).unwrap();
+
+    info!("Launching {}", name);
+    match Command::new(&executable).output() {
+        Ok(output) => {
+            info!("{} exited with {}", name, output.status);
+            out.write_all(&output.stdout).unwrap();
+            err.write_all(&output.stderr).unwrap();
+            info!(
+                "Logfiles have been written to {}",
+                log_path.to_string_lossy()
+            );
+            if !output.status.success() {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                error!("Stdout was: {}", stdout);
+                error!("Stderr was: {}", stderr);
+            }
+        }
+        Err(e) => error!("Error starting process: {}", e),
+    };
 }
 
 pub fn get_instances_dir() -> Option<PathBuf> {
