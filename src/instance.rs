@@ -9,13 +9,13 @@ use std::process::Command;
 use std::time::SystemTime;
 use std::{fs, thread};
 
-const EXECUTABLE_NAMES: [&str; 3] = [
+pub const EXECUTABLE_NAMES: [&str; 3] = [
     "EndlessSky.exe",
     "endless-sky",
     "endless-sky-x86_64-continuous.AppImage",
 ];
 
-const ARCHIVE_NAMES: [&str; 4] = [
+pub const ARCHIVE_NAMES: [&str; 4] = [
     "endless-sky-x86_64-continuous.tar.gz",
     "endless-sky-x86_64-continuous.AppImage",
     "EndlessSky-win64-continuous.zip",
@@ -136,31 +136,19 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
 }
 
 pub async fn perform_update(path: PathBuf) {
-    for archive in ARCHIVE_NAMES.iter() {
-        let mut archive_path = path.clone();
-        archive_path.push(archive);
-        if archive_path.exists() {
-            let url = format!(
-                "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
-                archive
-            );
-            // Yes, this is terrible. Sue me. Bitar's objects don't implement Send, and i cannot figure out
-            // how to use them in the default executor (which is multithreaded, presumably). Since we don't
-            // need any sort of feedback other than logs, we can just update in new, single-threaded runtime.
-            thread::spawn(move || {
-                match tokio::runtime::Runtime::new() {
-                    Ok(mut runtime) => {
-                        if let Err(e) = runtime.block_on(update::update(&archive_path, url)) {
-                            error!("Failed to update instance: {}", e)
-                        }
-                    }
-                    Err(e) => error!("Failed to spawn tokio runtime: {}", e),
-                };
-            });
-            return;
-        }
-    }
-    error!("Failed to find archive in {}", path.to_string_lossy());
+    // Yes, this is terrible. Sue me. Bitar's objects don't implement Send, and i cannot figure out
+    // how to use them in the default executor (which is multithreaded, presumably). Since we don't
+    // need any sort of feedback other than logs, we can just update in new, single-threaded runtime.
+    thread::spawn(move || {
+        match tokio::runtime::Runtime::new() {
+            Ok(mut runtime) => {
+                if let Err(e) = runtime.block_on(update::update_instance(path)) {
+                    error!("Failed to update instance: {}", e)
+                }
+            }
+            Err(e) => error!("Failed to spawn tokio runtime: {}", e),
+        };
+    });
 }
 
 pub async fn play(path: PathBuf, executable: PathBuf, name: String) {
