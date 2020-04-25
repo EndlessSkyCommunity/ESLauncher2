@@ -22,6 +22,37 @@ pub const ARCHIVE_NAMES: [&str; 4] = [
     "EndlessSky-macOS-continuous.zip",
 ];
 
+#[derive(Debug, Clone, Copy)]
+pub enum InstanceType {
+    MacOS,
+    Windows,
+    Linux,
+    AppImage,
+    Unknown,
+}
+
+impl InstanceType {
+    pub fn archive(&self) -> Option<&str> {
+        match self {
+            InstanceType::MacOS => Some("EndlessSky-macOS-continuous.zip"),
+            InstanceType::Windows => Some("EndlessSky-win64-continuous.zip"),
+            InstanceType::Linux => Some("endless-sky-x86_64-continuous.tar.gz"),
+            InstanceType::AppImage => Some("endless-sky-x86_64-continuous.AppImage"),
+            InstanceType::Unknown => None,
+        }
+    }
+
+    pub fn executable(&self) -> Option<&str> {
+        match self {
+            InstanceType::MacOS => Some("Endless Sky.app/Content/MacOS/Endless Sky"),
+            InstanceType::Windows => Some("EndlessSky.exe"),
+            InstanceType::Linux => Some("endless-sky"),
+            InstanceType::AppImage => Some("endless-sky-x86_64-continuous.AppImage"),
+            InstanceType::Unknown => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Instance {
     play_button: button::State,
@@ -30,6 +61,7 @@ pub struct Instance {
     pub path: PathBuf,
     pub executable: PathBuf,
     pub name: String,
+    pub instance_type: InstanceType,
 }
 
 impl Default for Instance {
@@ -41,6 +73,7 @@ impl Default for Instance {
             path: Default::default(),
             executable: Default::default(),
             name: Default::default(),
+            instance_type: InstanceType::Unknown,
         }
     }
 }
@@ -53,7 +86,12 @@ pub enum InstanceMessage {
 }
 
 impl Instance {
-    pub fn new(path: PathBuf, executable: PathBuf, name: String) -> Self {
+    pub fn new(
+        path: PathBuf,
+        executable: PathBuf,
+        name: String,
+        instance_type: InstanceType,
+    ) -> Self {
         Instance {
             play_button: button::State::default(),
             update_button: button::State::default(),
@@ -61,6 +99,7 @@ impl Instance {
             path,
             executable,
             name,
+            instance_type,
         }
     }
 
@@ -112,8 +151,12 @@ impl Instance {
     }
 }
 
-pub async fn perform_install(path: PathBuf, name: String, appimage: bool) -> Option<Instance> {
-    match install::install(path, name, appimage) {
+pub async fn perform_install(
+    path: PathBuf,
+    name: String,
+    instance_type: InstanceType,
+) -> Option<Instance> {
+    match install::install(path, name, instance_type) {
         Ok(instance) => Some(instance),
         Err(e) => {
             error!("Install failed: {}", e);
@@ -213,10 +256,22 @@ pub fn scan_instances() -> Option<Vec<Instance>> {
                                                 let mut executable = entry.path().clone();
                                                 executable.push(exec_name);
                                                 if executable.exists() {
+                                                    let instance_type = if cfg!(windows) {
+                                                        InstanceType::Windows
+                                                    } else if cfg!(unix) {
+                                                        if executable.ends_with("AppImage") {
+                                                            InstanceType::AppImage
+                                                        } else {
+                                                            InstanceType::Linux
+                                                        }
+                                                    } else {
+                                                        InstanceType::MacOS
+                                                    };
                                                     vec.push(Instance::new(
                                                         entry.path(),
                                                         executable,
                                                         name.to_string(),
+                                                        instance_type,
                                                     ));
                                                     found = true;
                                                     break;

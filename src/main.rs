@@ -13,7 +13,7 @@ mod music;
 mod style;
 mod update;
 
-use crate::instance::{get_instances_dir, Instance, InstanceMessage};
+use crate::instance::{get_instances_dir, Instance, InstanceMessage, InstanceType};
 use iced::{
     scrollable, Align, Application, Column, Command, Container, Element, HorizontalAlignment,
     Length, Row, Scrollable, Settings, Text,
@@ -38,7 +38,7 @@ struct ESLauncher {
 #[derive(Debug, Clone)]
 pub enum Message {
     NameChanged(String),
-    StartInstallation,
+    StartInstallation(InstanceType),
     InstanceMessage(usize, InstanceMessage),
     Installed(Option<Instance>),
     Deleted(Option<PathBuf>),
@@ -71,12 +71,12 @@ impl Application for ESLauncher {
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::NameChanged(name) => self.installation_frame.name = name,
-            Message::StartInstallation => match get_instances_dir() {
+            Message::StartInstallation(instance_type) => match get_instances_dir() {
                 Some(mut destination) => {
                     destination.push(&self.installation_frame.name);
                     let name = String::from(destination.file_name().unwrap().to_string_lossy());
                     return Command::perform(
-                        instance::perform_install(destination, name, true),
+                        instance::perform_install(destination, name, instance_type),
                         Message::Installed,
                     );
                 }
@@ -113,7 +113,7 @@ impl Application for ESLauncher {
             |column, log| {
                 column.push(
                     Text::new(log)
-                        .size(14)
+                        .size(15)
                         .font(style::LOG_FONT)
                         .horizontal_alignment(HorizontalAlignment::Left),
                 )

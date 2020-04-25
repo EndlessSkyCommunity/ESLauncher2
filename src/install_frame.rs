@@ -1,3 +1,4 @@
+use crate::instance::InstanceType;
 use crate::Message;
 use iced::{
     button, text_input, Align, Button, Column, Container, Element, HorizontalAlignment, Length,
@@ -24,7 +25,13 @@ impl Default for InstallFrameState {
 pub fn view(state: &mut InstallFrameState) -> Element<Message> {
     let mut install_button = Button::new(&mut state.install_button, Text::new("Install"));
     if !state.name.is_empty() {
-        install_button = install_button.on_press(Message::StartInstallation)
+        install_button = install_button.on_press(Message::StartInstallation(if cfg!(windows) {
+            InstanceType::Windows
+        } else if cfg!(unix) {
+            InstanceType::AppImage
+        } else {
+            InstanceType::MacOS
+        }))
     }
 
     Container::new(
