@@ -32,7 +32,7 @@ pub enum InstanceType {
 }
 
 impl InstanceType {
-    pub fn archive(&self) -> Option<&str> {
+    pub fn archive(self) -> Option<&'static str> {
         match self {
             InstanceType::MacOS => Some("EndlessSky-macOS-continuous.zip"),
             InstanceType::Windows => Some("EndlessSky-win64-continuous.zip"),
@@ -42,7 +42,7 @@ impl InstanceType {
         }
     }
 
-    pub fn executable(&self) -> Option<&str> {
+    pub fn executable(self) -> Option<&'static str> {
         match self {
             InstanceType::MacOS => Some("Endless Sky.app/Content/MacOS/Endless Sky"),
             InstanceType::Windows => Some("EndlessSky.exe"),
