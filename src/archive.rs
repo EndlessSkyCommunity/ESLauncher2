@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use tar::Archive;
 use zip_extensions::zip_extract;
 
+// TODO: Proper error handling
 pub fn unpack(archive_file: &PathBuf, destination: &PathBuf) {
     info!(
         "Extracting {} to {}",
@@ -19,7 +20,9 @@ pub fn unpack(archive_file: &PathBuf, destination: &PathBuf) {
             a.unpack(destination).unwrap();
         }
         Some("zip") => {
-            create_dir(destination).unwrap();
+            if !destination.exists() {
+                create_dir(destination).unwrap();
+            }
             zip_extract(archive_file, destination).unwrap();
         }
         _ => panic!("Unsupported archive!"),

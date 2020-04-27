@@ -74,7 +74,16 @@ fn download_pr_asset(
     let artifacts = get_workflow_run_artifacts(run.id)?;
     let artifact = choose_artifact(artifacts, instance_type)?;
     let unblocked = github::unblock_artifact_download(artifact.id)?;
-    let result_path = github::download(&unblocked.url, artifact.name(), destination)?;
+
+    let archive_path = github::download(
+        &unblocked.url,
+        &format!("{}.zip", artifact.name()),
+        destination,
+    )?;
+    archive::unpack(&archive_path, destination);
+    fs::remove_file(archive_path)?;
+    let mut result_path = destination.clone();
+    result_path.push(artifact.name());
     Ok(result_path)
 }
 
