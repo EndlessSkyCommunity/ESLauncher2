@@ -155,10 +155,11 @@ impl Instance {
 pub async fn perform_install(
     path: PathBuf,
     name: String,
+    pr_id: String,
     instance_type: InstanceType,
     instance_source: InstanceSource,
 ) -> Option<Instance> {
-    match install::install(path, name, instance_type, instance_source) {
+    match install::install(path, name, pr_id, instance_type, instance_source) {
         Ok(instance) => Some(instance),
         Err(e) => {
             error!("Install failed: {}", e);

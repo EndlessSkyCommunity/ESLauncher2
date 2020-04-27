@@ -53,7 +53,13 @@ impl InstallFrame {
                     destination.push(&self.name);
                     let name = String::from(destination.file_name().unwrap().to_string_lossy());
                     return Command::perform(
-                        instance::perform_install(destination, name, instance_type, self.source),
+                        instance::perform_install(
+                            destination,
+                            name,
+                            self.pr_id.clone(),
+                            instance_type,
+                            self.source,
+                        ),
                         Message::Installed,
                     );
                 }
