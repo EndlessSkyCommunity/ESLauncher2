@@ -1,7 +1,7 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use progress_streams::ProgressReader;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json;
 use std::fs::File;
 use std::io::{copy, BufReader};
@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct Release {
     id: i64,
     assets_url: String,
@@ -28,56 +28,56 @@ pub struct ReleaseAsset {
     pub browser_download_url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct WorkflowRunArtifact {
     pub id: u32,
     name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct WorkflowRunArtifacts {
     artifacts: Vec<WorkflowRunArtifact>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct PR {
     pub head: PRHead,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct PRHead {
     #[serde(alias = "ref")]
     pub branch: String,
     pub repo: Repo,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct Repo {
     pub(crate) id: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct UnblockedArtifact {
     pub url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct Workflows {
     workflows: Vec<Workflow>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct Workflow {
     name: String,
     pub(crate) id: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct WorkflowRuns {
     workflow_runs: Vec<WorkflowRun>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct WorkflowRun {
     pub(crate) id: u32,
     run_number: u32,
@@ -101,33 +101,27 @@ impl Artifact for WorkflowRunArtifact {
 }
 
 pub fn get_pr(id: u16) -> Result<PR> {
-    let res = ureq::get(&format!(
+    let pr: PR = serde_json::from_value(make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/pulls/{}",
         id
-    ))
-    .set("User-Agent", "ESLauncher2")
-    .call();
-    let pr: PR = serde_json::from_value(res.into_json()?)?;
+    ))?)?;
     info!("Got PR: {:#?}", pr);
     Ok(pr)
 }
 
 pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact> {
-    let res = ureq::get(&format!(
+    let value = make_json_request(&format!(
         "https://endlesssky.mcofficer.me/actions-artifacts/artifact/{}",
         artifact_id
-    ))
-    .set("User-Agent", "ESLauncher2")
-    .call();
-    let artifact: UnblockedArtifact = serde_json::from_value(res.into_json()?)?;
+    ))?;
+    let artifact: UnblockedArtifact = serde_json::from_value(value)?;
     info!("Got unblocked artifact URL");
     Ok(artifact)
 }
 pub fn get_cd_workflow() -> Result<Workflow> {
-    let res = ureq::get("https://api.github.com/repos/endless-sky/endless-sky/actons/workflows")
-        .set("User-Agent", "ESLauncher2")
-        .call();
-    let workflows: Workflows = serde_json::from_value(res.into_json()?)?;
+    let value =
+        make_json_request("https://api.github.com/repos/endless-sky/endless-sky/actons/workflows")?;
+    let workflows: Workflows = serde_json::from_value(value)?;
     for workflow in workflows.workflows {
         if workflow.name.eq("CD") {
             info!("Found workflow with name 'CD', id {}", workflow.id);
@@ -142,14 +136,11 @@ pub fn get_latest_workflow_run(
     branch: String,
     head_repo_id: u32,
 ) -> Result<WorkflowRun> {
-    let res = ureq::get(&format!(
+    let value = make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/workflows/{}/runs?branch={}",
         workflow_id, branch
-    ))
-    .set("User-Agent", "ESLauncher2")
-    .call();
-    info!("Response: {:#?}", res);
-    let runs: WorkflowRuns = serde_json::from_value(res.into_json()?)?;
+    ))?;
+    let runs: WorkflowRuns = serde_json::from_value(value)?;
     info!(
         "Got {} runs for workflow {}",
         runs.workflow_runs.len(),
@@ -163,13 +154,11 @@ pub fn get_latest_workflow_run(
 }
 
 pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact>> {
-    let res = ureq::get(&format!(
+    let value = make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/runs/{}/artifacts",
         run_id
-    ))
-    .set("User-Agent", "ESLauncher2")
-    .call();
-    let artifacts: WorkflowRunArtifacts = serde_json::from_value(res.into_json()?)?;
+    ))?;
+    let artifacts: WorkflowRunArtifacts = serde_json::from_value(value)?;
     info!(
         "Got {} artifacts for workflow run {}",
         artifacts.artifacts.len(),
@@ -179,22 +168,24 @@ pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact
 }
 
 pub fn get_release_assets() -> Result<Vec<ReleaseAsset>> {
-    let res =
-        ureq::get("https://api.github.com/repos/endless-sky/endless-sky/releases/tags/continuous")
-            .set("User-Agent", "ESLauncher2")
-            .call();
-    let release: Release = serde_json::from_value(res.into_json()?)?;
+    let value = make_json_request(
+        "https://api.github.com/repos/endless-sky/endless-sky/releases/tags/continuous",
+    )?;
+    let release: Release = serde_json::from_value(value)?;
     info!("Got release: {:#?}", release);
 
-    let res = ureq::get(&format!(
+    let value = make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/releases/{}/assets",
         release.id
-    ))
-    .call();
-
-    let assets: ReleaseAssets = serde_json::from_value(res.into_json()?)?;
+    ))?;
+    let assets: ReleaseAssets = serde_json::from_value(value)?;
     info!("Got {} assets for release {}", assets.0.len(), release.id);
     Ok(assets.0)
+}
+
+fn make_json_request(url: &str) -> Result<serde_json::Value> {
+    let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
+    Ok(res.into_json()?)
 }
 
 pub fn download(url: &str, name: &str, folder: &PathBuf) -> Result<PathBuf> {
