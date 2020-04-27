@@ -21,6 +21,7 @@ bitar = { version="0.6.2", features=["rustls-tls"]}
 url = "2.1"
 tokio = { version="0.2", features=["fs"] }
 futures = "0.3"
+anyhow = "1.0"
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.

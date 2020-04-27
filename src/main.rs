@@ -1,6 +1,8 @@
 #![forbid(unsafe_code)]
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate anyhow;
 
 mod archive;
 mod github;

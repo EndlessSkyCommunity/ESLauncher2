@@ -1,12 +1,12 @@
 use crate::archive;
 use crate::instance;
+use anyhow::Result;
 use bitar::{clone_from_archive, clone_in_place, Archive, CloneOptions, ReaderRemote};
-use std::error::Error;
 use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 use url::Url;
 
-pub async fn update_instance(path: PathBuf) -> Result<(), Box<dyn Error>> {
+pub async fn update_instance(path: PathBuf) -> Result<()> {
     for archive in instance::ARCHIVE_NAMES.iter() {
         let mut archive_path = path.clone();
         archive_path.push(archive);
@@ -18,7 +18,7 @@ pub async fn update_instance(path: PathBuf) -> Result<(), Box<dyn Error>> {
             update_archive(&archive_path, url).await?;
 
             if !archive_path.ends_with("AppImage") {
-                archive::unpack(&archive_path, &path);
+                archive::unpack(&archive_path, &path)?;
             }
             info!("Done!");
             return Ok(());
@@ -28,7 +28,7 @@ pub async fn update_instance(path: PathBuf) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn update_archive(target_path: &PathBuf, url: String) -> Result<(), Box<dyn Error>> {
+async fn update_archive(target_path: &PathBuf, url: String) -> Result<()> {
     info!("Updating {} from {}", target_path.to_string_lossy(), url);
     let mut target = OpenOptions::new()
         .read(true)

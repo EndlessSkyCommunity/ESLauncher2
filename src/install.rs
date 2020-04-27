@@ -2,7 +2,7 @@ use crate::github::{get_workflow_run_artifacts, Artifact};
 use crate::install_frame::InstanceSource;
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
-use std::error::Error;
+use anyhow::Result;
 use std::path::PathBuf;
 use std::process::Command;
 use std::{fs, io};
@@ -13,13 +13,10 @@ pub fn install(
     pr_id: String,
     instance_type: InstanceType,
     instance_source: InstanceSource,
-) -> Result<Instance, Box<dyn Error>> {
+) -> Result<Instance> {
     info!("Installing to {}", destination.to_string_lossy());
     if let InstanceType::Unknown = instance_type {
-        return Err(Box::new(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Cannot install InstanceType::Unknown",
-        )));
+        return Err(anyhow!("Cannot install InstanceType::Unknown",));
     }
 
     fs::create_dir_all(&destination)?;
@@ -32,7 +29,7 @@ pub fn install(
     if let InstanceType::AppImage = instance_type {
         // Awkward way to invert an if let...https://github.com/rust-lang/rfcs/issues/2616
     } else {
-        archive::unpack(&archive_file, &destination);
+        archive::unpack(&archive_file, &destination)?;
     }
 
     let mut executable_path = destination.clone();
@@ -53,7 +50,7 @@ pub fn install(
 fn download_continuous_asset(
     destination: &PathBuf,
     instance_type: InstanceType,
-) -> Result<PathBuf, io::Error> {
+) -> Result<PathBuf> {
     let assets = github::get_release_assets()?;
     let asset = choose_artifact(assets, instance_type)?;
     github::download(
@@ -67,7 +64,7 @@ fn download_pr_asset(
     destination: &PathBuf,
     instance_type: InstanceType,
     pr_id: String,
-) -> Result<PathBuf, Box<dyn Error>> {
+) -> Result<PathBuf> {
     let pr = github::get_pr(pr_id.parse::<u16>()?)?;
     let workflow = github::get_cd_workflow()?;
     let run = github::get_latest_workflow_run(workflow.id, pr.head.branch, pr.head.repo.id)?;
@@ -80,17 +77,14 @@ fn download_pr_asset(
         &format!("{}.zip", artifact.name()),
         destination,
     )?;
-    archive::unpack(&archive_path, destination);
+    archive::unpack(&archive_path, destination)?;
     fs::remove_file(archive_path)?;
     let mut result_path = destination.clone();
     result_path.push(artifact.name());
     Ok(result_path)
 }
 
-fn choose_artifact<A: Artifact>(
-    artifacts: Vec<A>,
-    instance_type: InstanceType,
-) -> Result<A, io::Error> {
+fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceType) -> Result<A> {
     for artifact in artifacts {
         let matches = artifact
             .name()
@@ -105,12 +99,9 @@ fn choose_artifact<A: Artifact>(
             return Ok(artifact);
         }
     }
-    Err(io::Error::new(
-        io::ErrorKind::NotFound,
-        format!(
-            "Couldn't match any asset against {}",
-            instance_type.archive().unwrap()
-        ),
+    Err(anyhow!(
+        "Couldn't match any asset against {}",
+        instance_type.archive().unwrap()
     ))
 }
 

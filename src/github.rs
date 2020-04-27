@@ -1,10 +1,10 @@
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use progress_streams::ProgressReader;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs::File;
 use std::io::{copy, BufReader};
-use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -100,7 +100,7 @@ impl Artifact for WorkflowRunArtifact {
     }
 }
 
-pub fn get_pr(id: u16) -> Result<PR, Error> {
+pub fn get_pr(id: u16) -> Result<PR> {
     let res = ureq::get(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/pulls/{}",
         id
@@ -112,7 +112,7 @@ pub fn get_pr(id: u16) -> Result<PR, Error> {
     Ok(pr)
 }
 
-pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact, Error> {
+pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact> {
     let res = ureq::get(&format!(
         "https://endlesssky.mcofficer.me/actions-artifacts/artifact/{}",
         artifact_id
@@ -123,8 +123,8 @@ pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact, 
     info!("Got unblocked artifact URL");
     Ok(artifact)
 }
-pub fn get_cd_workflow() -> Result<Workflow, Error> {
-    let res = ureq::get("https://api.github.com/repos/endless-sky/endless-sky/actions/workflows")
+pub fn get_cd_workflow() -> Result<Workflow> {
+    let res = ureq::get("https://api.github.com/repos/endless-sky/endless-sky/actons/workflows")
         .set("User-Agent", "ESLauncher2")
         .call();
     let workflows: Workflows = serde_json::from_value(res.into_json()?)?;
@@ -134,17 +134,14 @@ pub fn get_cd_workflow() -> Result<Workflow, Error> {
             return Ok(workflow);
         }
     }
-    Err(Error::new(
-        ErrorKind::NotFound,
-        "Failed to find artifact with name \"CD\"",
-    ))
+    Err(anyhow!("Failed to find artifact with name 'CD'",))
 }
 
 pub fn get_latest_workflow_run(
     workflow_id: u32,
     branch: String,
     head_repo_id: u32,
-) -> Result<WorkflowRun, Error> {
+) -> Result<WorkflowRun> {
     let res = ureq::get(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/workflows/{}/runs?branch={}",
         workflow_id, branch
@@ -162,10 +159,10 @@ pub fn get_latest_workflow_run(
         .into_iter()
         .filter(|run| run.head_repository.id.eq(&head_repo_id))
         .max_by_key(|run| run.run_number)
-        .ok_or_else(|| Error::new(ErrorKind::Other, "Got no runs for workflow!"))
+        .ok_or_else(|| anyhow!("Got no runs for workflow!"))
 }
 
-pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact>, Error> {
+pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact>> {
     let res = ureq::get(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/runs/{}/artifacts",
         run_id
@@ -181,7 +178,7 @@ pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact
     Ok(artifacts.artifacts)
 }
 
-pub fn get_release_assets() -> Result<Vec<ReleaseAsset>, Error> {
+pub fn get_release_assets() -> Result<Vec<ReleaseAsset>> {
     let res =
         ureq::get("https://api.github.com/repos/endless-sky/endless-sky/releases/tags/continuous")
             .set("User-Agent", "ESLauncher2")
@@ -200,7 +197,7 @@ pub fn get_release_assets() -> Result<Vec<ReleaseAsset>, Error> {
     Ok(assets.0)
 }
 
-pub fn download(url: &str, name: &str, folder: &PathBuf) -> Result<PathBuf, Error> {
+pub fn download(url: &str, name: &str, folder: &PathBuf) -> Result<PathBuf> {
     let mut output_path = folder.clone();
     output_path.push(name);
 

@@ -162,7 +162,7 @@ pub async fn perform_install(
     match install::install(path, name, pr_id, instance_type, instance_source) {
         Ok(instance) => Some(instance),
         Err(e) => {
-            error!("Install failed: {}", e);
+            error!("Install failed: {:#}", e);
             None
         }
     }
@@ -175,7 +175,7 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
             Some(path)
         }
         Err(_) => {
-            error!("Failed to remove {}", path.to_string_lossy());
+            error!("Failed to remove {:#}", path.to_string_lossy());
             None
         }
     }
@@ -189,7 +189,7 @@ pub async fn perform_update(path: PathBuf) {
         match tokio::runtime::Runtime::new() {
             Ok(mut runtime) => {
                 if let Err(e) = runtime.block_on(update::update_instance(path)) {
-                    error!("Failed to update instance: {}", e)
+                    error!("Failed to update instance: {:#}", e)
                 }
             }
             Err(e) => error!("Failed to spawn tokio runtime: {}", e),
