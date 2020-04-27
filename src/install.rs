@@ -1,3 +1,4 @@
+use crate::install_frame::InstanceSource;
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
 use std::error::Error;
@@ -9,7 +10,16 @@ pub fn install(
     destination: PathBuf,
     name: String,
     instance_type: InstanceType,
+    instance_source: InstanceSource,
 ) -> Result<Instance, Box<dyn Error>> {
+    if let InstanceSource::PR = instance_source {
+        info!("STUB: Install via PR");
+        return Err(Box::new(io::Error::new(
+            io::ErrorKind::Other,
+            "Not yet implemented",
+        )));
+    }
+
     info!("Installing to {}", destination.to_string_lossy());
     if let InstanceType::Unknown = instance_type {
         return Err(Box::new(io::Error::new(

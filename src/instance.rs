@@ -1,3 +1,4 @@
+use crate::install_frame::InstanceSource;
 use crate::{install, style, update, Message};
 use chrono::{DateTime, Local};
 use iced::{button, Align, Button, Element, Row, Text};
@@ -155,8 +156,9 @@ pub async fn perform_install(
     path: PathBuf,
     name: String,
     instance_type: InstanceType,
+    instance_source: InstanceSource,
 ) -> Option<Instance> {
-    match install::install(path, name, instance_type) {
+    match install::install(path, name, instance_type, instance_source) {
         Ok(instance) => Some(instance),
         Err(e) => {
             error!("Install failed: {}", e);

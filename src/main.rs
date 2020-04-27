@@ -13,7 +13,8 @@ mod music;
 mod style;
 mod update;
 
-use crate::instance::{get_instances_dir, Instance, InstanceMessage, InstanceType};
+use crate::install_frame::InstallFrameMessage;
+use crate::instance::{Instance, InstanceMessage};
 use iced::{
     scrollable, Align, Application, Column, Command, Container, Element, HorizontalAlignment,
     Length, Row, Scrollable, Settings, Text,
@@ -28,7 +29,7 @@ pub fn main() {
 
 #[derive(Debug)]
 struct ESLauncher {
-    installation_frame: install_frame::InstallFrameState,
+    install_frame: install_frame::InstallFrame,
     instances_frame: instances_frame::InstancesFrameState,
     log_scrollable: scrollable::State,
     log_reader: Receiver<String>,
@@ -37,8 +38,7 @@ struct ESLauncher {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    NameChanged(String),
-    StartInstallation(InstanceType),
+    InstallFrameMessage(InstallFrameMessage),
     InstanceMessage(usize, InstanceMessage),
     Installed(Option<Instance>),
     Deleted(Option<PathBuf>),
@@ -54,7 +54,7 @@ impl Application for ESLauncher {
         let log_reader = logger::init();
         (
             ESLauncher {
-                installation_frame: install_frame::InstallFrameState::default(),
+                install_frame: install_frame::InstallFrame::default(),
                 instances_frame: instances_frame::InstancesFrameState::default(),
                 log_scrollable: scrollable::State::default(),
                 log_reader,
@@ -70,18 +70,7 @@ impl Application for ESLauncher {
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
-            Message::NameChanged(name) => self.installation_frame.name = name,
-            Message::StartInstallation(instance_type) => match get_instances_dir() {
-                Some(mut destination) => {
-                    destination.push(&self.installation_frame.name);
-                    let name = String::from(destination.file_name().unwrap().to_string_lossy());
-                    return Command::perform(
-                        instance::perform_install(destination, name, instance_type),
-                        Message::Installed,
-                    );
-                }
-                None => error!("Could not get instances directory from AppDirs"),
-            },
+            Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
             Message::InstanceMessage(i, msg) => {
                 if let Some(instance) = self.instances_frame.instances.get_mut(i) {
                     return instance.update(msg);
@@ -126,7 +115,7 @@ impl Application for ESLauncher {
             .push(
                 Row::new()
                     .push(instances_frame::view(&mut self.instances_frame))
-                    .push(install_frame::view(&mut self.installation_frame))
+                    .push(self.install_frame.view().map(Message::InstallFrameMessage))
                     .spacing(100),
             )
             .push(
