@@ -3,6 +3,8 @@
 extern crate log;
 #[macro_use]
 extern crate anyhow;
+#[macro_use]
+extern crate git_version;
 
 mod archive;
 mod github;
@@ -67,7 +69,15 @@ impl Application for ESLauncher {
     }
 
     fn title(&self) -> String {
-        String::from("ESLauncher2")
+        format!(
+            "ESLauncher2 {}",
+            git_version!(
+                args = ["--always", "--dirty=-modified", "--tags"],
+                prefix = "git:",
+                cargo_prefix = "cargo:",
+                fallback = "unknown"
+            )
+        )
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {

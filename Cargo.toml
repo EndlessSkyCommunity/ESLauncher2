@@ -22,6 +22,7 @@ url = "2.1"
 tokio = { version="0.2", features=["fs"] }
 futures = "0.3"
 anyhow = "1.0"
+git-version = "0.3"
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.
