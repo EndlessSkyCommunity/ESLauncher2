@@ -117,8 +117,9 @@ pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact> 
     Ok(artifact)
 }
 pub fn get_cd_workflow() -> Result<Workflow> {
-    let value =
-        make_json_request("https://api.github.com/repos/endless-sky/endless-sky/actons/workflows")?;
+    let value = make_json_request(
+        "https://api.github.com/repos/endless-sky/endless-sky/actions/workflows",
+    )?;
     let workflows: Workflows = serde_json::from_value(value)?;
     for workflow in workflows.workflows {
         if workflow.name.eq("CD") {
