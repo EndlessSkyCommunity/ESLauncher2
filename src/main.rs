@@ -13,7 +13,6 @@ mod install_frame;
 mod instance;
 mod instances_frame;
 mod logger;
-mod music;
 mod style;
 mod update;
 
@@ -27,7 +26,6 @@ use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 
 pub fn main() {
-    music::play();
     ESLauncher::run(Settings::default())
 }
 
