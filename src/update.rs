@@ -1,5 +1,6 @@
 use crate::archive;
 use crate::instance;
+use crate::instance::InstanceType;
 use anyhow::Result;
 use bitar::{clone_from_archive, clone_in_place, Archive, CloneOptions, ReaderRemote};
 use std::path::PathBuf;
@@ -17,7 +18,7 @@ pub async fn update_instance(path: PathBuf) -> Result<()> {
             );
             update_archive(&archive_path, url).await?;
 
-            if !archive_path.ends_with("AppImage") {
+            if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
                 archive::unpack(&archive_path, &path)?;
             }
             info!("Done!");
