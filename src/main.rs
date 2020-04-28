@@ -73,7 +73,6 @@ impl Application for ESLauncher {
             "ESLauncher2 {}",
             git_version!(
                 args = ["--always", "--dirty=-modified", "--tags"],
-                prefix = "git:",
                 cargo_prefix = "cargo:",
                 fallback = "unknown"
             )
