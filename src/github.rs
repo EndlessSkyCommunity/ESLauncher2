@@ -1,5 +1,4 @@
 use anyhow::Result;
-use chrono::{DateTime, Utc};
 use progress_streams::ProgressReader;
 use serde::Deserialize;
 use serde_json;
@@ -24,7 +23,6 @@ struct ReleaseAssets(Vec<ReleaseAsset>);
 pub struct ReleaseAsset {
     pub id: i64,
     name: String,
-    pub updated_at: DateTime<Utc>,
     pub browser_download_url: String,
 }
 
