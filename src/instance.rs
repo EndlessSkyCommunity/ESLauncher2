@@ -16,13 +16,6 @@ pub const EXECUTABLE_NAMES: [&str; 3] = [
     "endless-sky-x86_64-continuous.AppImage",
 ];
 
-pub const ARCHIVE_NAMES: [&str; 4] = [
-    "endless-sky-x86_64-continuous.tar.gz",
-    "endless-sky-x86_64-continuous.AppImage",
-    "EndlessSky-win64-continuous.zip",
-    "EndlessSky-macOS-continuous.zip",
-];
-
 #[derive(Debug, Clone, Copy)]
 pub enum InstanceType {
     MacOS,
@@ -63,6 +56,7 @@ pub struct Instance {
     pub executable: PathBuf,
     pub name: String,
     pub instance_type: InstanceType,
+    pub source: InstanceSource,
 }
 
 impl Default for Instance {
@@ -75,6 +69,7 @@ impl Default for Instance {
             executable: Default::default(),
             name: Default::default(),
             instance_type: InstanceType::Unknown,
+            source: InstanceSource::Continuous,
         }
     }
 }
@@ -92,6 +87,7 @@ impl Instance {
         executable: PathBuf,
         name: String,
         instance_type: InstanceType,
+        source: InstanceSource,
     ) -> Self {
         Instance {
             play_button: button::State::default(),
@@ -101,6 +97,7 @@ impl Instance {
             executable,
             name,
             instance_type,
+            source,
         }
     }
 
@@ -114,9 +111,10 @@ impl Instance {
                 ),
                 Message::Dummy,
             ),
-            InstanceMessage::Update => {
-                iced::Command::perform(perform_update(self.path.clone()), Message::Dummy)
-            }
+            InstanceMessage::Update => iced::Command::perform(
+                perform_update(self.path.clone(), self.instance_type, self.source),
+                Message::Dummy,
+            ),
             InstanceMessage::Delete => {
                 iced::Command::perform(delete(self.path.clone()), Message::Deleted)
             }
@@ -181,14 +179,16 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
     }
 }
 
-pub async fn perform_update(path: PathBuf) {
+pub async fn perform_update(path: PathBuf, instance_type: InstanceType, source: InstanceSource) {
     // Yes, this is terrible. Sue me. Bitar's objects don't implement Send, and i cannot figure out
     // how to use them in the default executor (which is multithreaded, presumably). Since we don't
     // need any sort of feedback other than logs, we can just update in new, single-threaded runtime.
     thread::spawn(move || {
         match tokio::runtime::Runtime::new() {
             Ok(mut runtime) => {
-                if let Err(e) = runtime.block_on(update::update_instance(path)) {
+                if let Err(e) =
+                    runtime.block_on(update::update_instance(path, instance_type, source))
+                {
                     error!("Failed to update instance: {:#}", e)
                 }
             }
@@ -275,6 +275,7 @@ pub fn scan_instances() -> Option<Vec<Instance>> {
                                                         executable,
                                                         name.to_string(),
                                                         instance_type,
+                                                        InstanceSource::Continuous, // TODO
                                                     ));
                                                     found = true;
                                                     break;

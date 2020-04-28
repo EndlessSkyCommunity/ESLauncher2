@@ -1,5 +1,5 @@
 use crate::archive;
-use crate::instance;
+use crate::install_frame::InstanceSource;
 use crate::instance::InstanceType;
 use anyhow::Result;
 use bitar::{clone_from_archive, clone_in_place, Archive, CloneOptions, ReaderRemote};
@@ -7,29 +7,38 @@ use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 use url::Url;
 
-pub async fn update_instance(path: PathBuf) -> Result<()> {
-    for archive in instance::ARCHIVE_NAMES.iter() {
-        let mut archive_path = path.clone();
-        archive_path.push(archive);
-        if archive_path.exists() {
-            let url = format!(
-                "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
-                archive
-            );
-            update_archive(&archive_path, url).await?;
-
-            if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
-                archive::unpack(&archive_path, &path)?;
-            }
-            info!("Done!");
-            return Ok(());
-        }
+pub async fn update_instance(
+    path: PathBuf,
+    instance_type: InstanceType,
+    source: InstanceSource,
+) -> Result<()> {
+    if let InstanceType::Unknown = instance_type {
+        return Err(anyhow!("Cannot install InstanceType::Unknown",));
     }
-    error!("Failed to find archive in {}", path.to_string_lossy());
+    if let InstanceSource::PR = source {
+        return Err(anyhow!("Updates are not yet supported for PRs!"));
+    }
+
+    let mut archive_path = path.clone();
+    archive_path.push(instance_type.archive().unwrap());
+    if archive_path.exists() {
+        let url = format!(
+            "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
+            instance_type.archive().unwrap()
+        );
+        bitar_update_archive(&archive_path, url).await?;
+
+        if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
+            archive::unpack(&archive_path, &path)?;
+        }
+        info!("Done!");
+        return Ok(());
+    }
+    error!("{} doesn't exist", archive_path.to_string_lossy());
     Ok(())
 }
 
-async fn update_archive(target_path: &PathBuf, url: String) -> Result<()> {
+async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> {
     info!("Updating {} from {}", target_path.to_string_lossy(), url);
     let mut target = OpenOptions::new()
         .read(true)

@@ -44,6 +44,7 @@ pub fn install(
         executable_path,
         name,
         instance_type,
+        instance_source,
     ))
 }
 

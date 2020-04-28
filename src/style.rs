@@ -25,7 +25,7 @@ pub fn play_icon() -> Text {
 }
 
 pub fn update_icon() -> Text {
-    icon('\u{E984}')
+    icon('\u{E9C7}')
 }
 
 pub fn delete_icon() -> Text {
