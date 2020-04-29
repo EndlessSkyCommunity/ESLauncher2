@@ -266,7 +266,7 @@ fn save_instances(instances: Vec<Instance>) -> Result<()> {
 
     let file = fs::File::create(instances_file)?;
 
-    serde_json::to_writer(file, &InstancesContainer(instances))?;
+    serde_json::to_writer_pretty(file, &InstancesContainer(instances))?;
     Ok(())
 }
 
