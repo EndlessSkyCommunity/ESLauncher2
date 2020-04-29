@@ -271,7 +271,7 @@ pub fn load_instances() -> Result<Vec<Instance>> {
         get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
     instances_file.push("instances.json");
 
-    let file = fs::File::create(instances_file)?;
+    let file = fs::File::open(instances_file)?;
 
     let container: InstancesContainer = serde_json::from_reader(file)?;
     Ok(container.0)
