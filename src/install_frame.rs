@@ -1,5 +1,6 @@
 use crate::instance::{get_instances_dir, InstanceType};
 use crate::{instance, Message};
+use core::fmt;
 use iced::{
     button, text_input, Align, Button, Column, Command, Container, Element, HorizontalAlignment,
     Length, Radio, Text, TextInput,
@@ -29,8 +30,15 @@ pub enum InstanceSource {
     Continuous,
     PR,
 }
+
 impl InstanceSource {
     pub const ALL: [InstanceSource; 2] = [InstanceSource::Continuous, InstanceSource::PR];
+}
+
+impl fmt::Display for InstanceSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl Default for InstallFrame {
