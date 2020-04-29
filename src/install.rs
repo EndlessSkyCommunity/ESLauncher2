@@ -10,7 +10,6 @@ use std::{fs, io};
 pub fn install(
     destination: PathBuf,
     name: String,
-    pr_id: String,
     instance_type: InstanceType,
     instance_source: InstanceSource,
 ) -> Result<Instance> {
@@ -23,7 +22,7 @@ pub fn install(
 
     let archive_file = match instance_source {
         InstanceSource::Continuous => download_continuous_asset(&destination, instance_type)?,
-        InstanceSource::PR => download_pr_asset(&destination, instance_type, pr_id)?,
+        InstanceSource::PR { id } => download_pr_asset(&destination, instance_type, id)?,
     };
 
     if let InstanceType::AppImage = instance_type {
@@ -64,9 +63,9 @@ fn download_continuous_asset(
 fn download_pr_asset(
     destination: &PathBuf,
     instance_type: InstanceType,
-    pr_id: String,
+    pr_id: u16,
 ) -> Result<PathBuf> {
-    let pr = github::get_pr(pr_id.parse::<u16>()?)?;
+    let pr = github::get_pr(pr_id)?;
     let workflow = github::get_cd_workflow()?;
     let run = github::get_latest_workflow_run(workflow.id, pr.head.branch, pr.head.repo.id)?;
     let artifacts = get_workflow_run_artifacts(run.id)?;

@@ -15,7 +15,7 @@ pub async fn update_instance(
     if let InstanceType::Unknown = instance_type {
         return Err(anyhow!("Cannot install InstanceType::Unknown",));
     }
-    if let InstanceSource::PR = source {
+    if let InstanceSource::PR { .. } = source {
         return Err(anyhow!("Updates are not yet supported for PRs!"));
     }
 

@@ -160,7 +160,17 @@ pub async fn perform_install(
     instance_type: InstanceType,
     instance_source: InstanceSource,
 ) -> Option<Instance> {
-    match install::install(path, name, pr_id, instance_type, instance_source) {
+    let source = match instance_source {
+        InstanceSource::PR { .. } => {
+            let id = pr_id.parse::<u16>();
+            if id.is_err() {
+                error!("Failed to parse PR ID")
+            }
+            InstanceSource::PR { id: id.ok()? }
+        }
+        _ => instance_source,
+    };
+    match install::install(path, name, instance_type, source) {
         Ok(instance) => Some(instance),
         Err(e) => {
             error!("Install failed: {:#}", e);

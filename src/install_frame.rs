@@ -28,11 +28,11 @@ pub enum InstallFrameMessage {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InstanceSource {
     Continuous,
-    PR,
+    PR { id: u16 },
 }
 
 impl InstanceSource {
-    pub const ALL: [InstanceSource; 2] = [InstanceSource::Continuous, InstanceSource::PR];
+    pub const ALL: [InstanceSource; 2] = [InstanceSource::Continuous, InstanceSource::PR { id: 1 }];
 }
 
 impl fmt::Display for InstanceSource {
@@ -76,7 +76,11 @@ impl InstallFrame {
             },
             InstallFrameMessage::SourceChanged(source) => self.source = source,
             InstallFrameMessage::NameChanged(name) => self.name = name,
-            InstallFrameMessage::PrIdChanged(pr_id) => self.pr_id = pr_id,
+            InstallFrameMessage::PrIdChanged(pr_id) => {
+                if pr_id.parse::<u16>().is_ok() {
+                    self.pr_id = pr_id;
+                }
+            }
         }
         Command::none()
     }
@@ -87,13 +91,13 @@ impl InstallFrame {
             |column, source| {
                 column.push(Radio::new(
                     *source,
-                    format!("{:?}", source),
+                    format!("{:?}", source).replace(" { id: 1 }", ""),
                     Some(self.source),
                     InstallFrameMessage::SourceChanged,
                 ))
             },
         );
-        if let InstanceSource::PR = self.source {
+        if let InstanceSource::PR { .. } = self.source {
             controls = controls.push(
                 TextInput::new(
                     &mut self.pr_chooser,
