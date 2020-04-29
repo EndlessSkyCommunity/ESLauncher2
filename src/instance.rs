@@ -4,6 +4,7 @@ use anyhow::Result;
 use chrono::{DateTime, Local};
 use iced::{button, Align, Button, Element, Row, Text};
 use platform_dirs::{AppDirs, AppUI};
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -11,13 +12,7 @@ use std::process::Command;
 use std::time::SystemTime;
 use std::{fs, thread};
 
-pub const EXECUTABLE_NAMES: [&str; 3] = [
-    "EndlessSky.exe",
-    "endless-sky",
-    "endless-sky-x86_64-continuous.AppImage",
-];
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum InstanceType {
     MacOS,
     Windows,
@@ -48,10 +43,13 @@ impl InstanceType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Instance {
+    #[serde(skip)]
     play_button: button::State,
+    #[serde(skip)]
     update_button: button::State,
+    #[serde(skip)]
     delete_button: button::State,
     pub path: PathBuf,
     pub executable: PathBuf,
@@ -248,78 +246,33 @@ pub fn get_instances_dir() -> Option<PathBuf> {
     Some(dir)
 }
 
-pub fn scan_instances() -> Option<Vec<Instance>> {
-    info!("Scanning Instances folder");
-    let buf = get_instances_dir()?;
-    let dir = buf.as_path();
-    let mut vec = vec![];
+#[derive(Serialize, Deserialize)]
+struct InstancesContainer(Vec<Instance>);
 
-    if dir.exists() {
-        match dir.read_dir() {
-            Ok(readdir) => {
-                for result in readdir {
-                    match result {
-                        Ok(entry) => match entry.file_type() {
-                            Ok(file_type) => {
-                                if file_type.is_dir() {
-                                    match entry.file_name().into_string() {
-                                        Ok(name) => {
-                                            let mut found = false;
-                                            for exec_name in EXECUTABLE_NAMES.iter() {
-                                                let mut executable = entry.path().clone();
-                                                executable.push(exec_name);
-                                                if executable.exists() {
-                                                    let instance_type = if cfg!(windows) {
-                                                        InstanceType::Windows
-                                                    } else if cfg!(unix) {
-                                                        if executable.ends_with("AppImage") {
-                                                            InstanceType::AppImage
-                                                        } else {
-                                                            InstanceType::Linux
-                                                        }
-                                                    } else {
-                                                        InstanceType::MacOS
-                                                    };
-                                                    vec.push(Instance::new(
-                                                        entry.path(),
-                                                        executable,
-                                                        name.to_string(),
-                                                        instance_type,
-                                                        InstanceSource::Continuous, // TODO
-                                                    ));
-                                                    found = true;
-                                                    break;
-                                                }
-                                            }
-                                            if !found {
-                                                error!(
-                                                    "Failed to find executable at {}",
-                                                    entry.path().to_string_lossy()
-                                                );
-                                            }
-                                        }
-                                        Err(_) => error!(
-                                            "Failed to convert filename of {} to String",
-                                            entry.path().to_string_lossy(),
-                                        ),
-                                    };
-                                }
-                            }
-                            Err(e) => error!(
-                                "Failed to get filetype of {}: {}",
-                                entry.path().to_string_lossy(),
-                                e
-                            ),
-                        },
-                        Err(e) => error!("Failed to read entry from instances folder: {}", e),
-                    }
-                }
-            }
-            Err(e) => error!("Failed to read from instances folder: {}", e),
-        };
-    } else if let Err(e) = fs::create_dir_all(dir) {
-        error!("Failed to create instances dir: {}", e);
-    }
-    info!("Found {} Instances", vec.len());
-    Some(vec)
+pub fn perform_save_instances(instances: Vec<Instance>) {
+    if let Err(e) = save_instances(instances) {
+        error!("Failed to save instances: {}", e);
+    };
+}
+
+fn save_instances(instances: Vec<Instance>) -> Result<()> {
+    let mut instances_file =
+        get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
+    instances_file.push("instances.json");
+
+    let file = fs::File::create(instances_file)?;
+
+    serde_json::to_writer(file, &InstancesContainer(instances))?;
+    Ok(())
+}
+
+pub fn load_instances() -> Result<Vec<Instance>> {
+    let mut instances_file =
+        get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
+    instances_file.push("instances.json");
+
+    let file = fs::File::create(instances_file)?;
+
+    let container: InstancesContainer = serde_json::from_reader(file)?;
+    Ok(container.0)
 }

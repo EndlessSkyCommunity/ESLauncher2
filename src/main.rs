@@ -88,11 +88,13 @@ impl Application for ESLauncher {
             Message::Installed(option) => {
                 if let Some(instance) = option {
                     self.instances_frame.instances.push(instance);
+                    instance::perform_save_instances(self.instances_frame.instances.clone());
                 }
             }
             Message::Deleted(option) => {
                 if let Some(path) = option {
-                    self.instances_frame.instances.retain(|i| !i.path.eq(&path))
+                    self.instances_frame.instances.retain(|i| !i.path.eq(&path));
+                    instance::perform_save_instances(self.instances_frame.instances.clone());
                 }
             }
             Message::Dummy(_) => (),

@@ -4,6 +4,7 @@ use iced::{
     button, text_input, Align, Button, Column, Command, Container, Element, HorizontalAlignment,
     Length, Radio, Text, TextInput,
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub struct InstallFrame {
@@ -23,7 +24,7 @@ pub enum InstallFrameMessage {
     StartInstallation(InstanceType),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InstanceSource {
     Continuous,
     PR,
