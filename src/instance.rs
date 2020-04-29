@@ -1,5 +1,6 @@
 use crate::install_frame::InstanceSource;
 use crate::{install, style, update, Message};
+use anyhow::Result;
 use chrono::{DateTime, Local};
 use iced::{button, Align, Button, Element, Row, Text};
 use platform_dirs::{AppDirs, AppUI};
@@ -104,7 +105,7 @@ impl Instance {
     pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
         match message {
             InstanceMessage::Play => iced::Command::perform(
-                play(
+                perform_play(
                     self.path.clone(),
                     self.executable.clone(),
                     self.name.clone(),
@@ -197,26 +198,34 @@ pub async fn perform_update(path: PathBuf, instance_type: InstanceType, source: 
     });
 }
 
-pub async fn play(path: PathBuf, executable: PathBuf, name: String) {
+pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String) {
+    if let Err(e) = play(path, executable, name).await {
+        error!("Failed to run game: {}", e);
+    }
+}
+
+pub async fn play(path: PathBuf, executable: PathBuf, name: String) -> Result<()> {
     let mut log_path = path;
     log_path.push("logs");
-    fs::create_dir_all(&log_path).unwrap();
+    fs::create_dir_all(&log_path)?;
 
-    let time = DateTime::<Local>::from(SystemTime::now()).to_rfc3339();
+    let time = DateTime::<Local>::from(SystemTime::now())
+        .format("%F %H-%M-%S")
+        .to_string();
     let mut out_path = log_path.clone();
     out_path.push(format!("{}.out", time));
-    let mut out = File::create(out_path).unwrap();
+    let mut out = File::create(out_path)?;
 
     let mut err_path = log_path.clone();
     err_path.push(format!("{}.err", time));
-    let mut err = File::create(err_path).unwrap();
+    let mut err = File::create(err_path)?;
 
     info!("Launching {}", name);
     match Command::new(&executable).output() {
         Ok(output) => {
             info!("{} exited with {}", name, output.status);
-            out.write_all(&output.stdout).unwrap();
-            err.write_all(&output.stderr).unwrap();
+            out.write_all(&output.stdout)?;
+            err.write_all(&output.stderr)?;
             info!(
                 "Logfiles have been written to {}",
                 log_path.to_string_lossy()
@@ -230,6 +239,7 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String) {
         }
         Err(e) => error!("Error starting process: {}", e),
     };
+    Ok(())
 }
 
 pub fn get_instances_dir() -> Option<PathBuf> {
