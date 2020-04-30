@@ -127,13 +127,14 @@ impl Application for ESLauncher {
                 Row::new()
                     .push(instances_frame::view(&mut self.instances_frame))
                     .push(self.install_frame.view().map(Message::InstallFrameMessage))
-                    .spacing(100),
+                    .spacing(50),
             )
             .push(
                 Scrollable::new(&mut self.log_scrollable)
                     .push(logbox)
                     .padding(20)
-                    .align_items(Align::Start),
+                    .align_items(Align::Start)
+                    .width(Length::Fill),
             ); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         Container::new(content)

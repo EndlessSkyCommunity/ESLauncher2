@@ -2,7 +2,7 @@ use crate::install_frame::InstanceSource;
 use crate::{install, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
-use iced::{button, Align, Button, Column, Element, Row, Text};
+use iced::{button, Align, Button, Column, Element, Length, Row, Space, Text};
 use platform_dirs::{AppDirs, AppUI};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -125,15 +125,17 @@ impl Instance {
             .spacing(10)
             .padding(10)
             .align_items(Align::Start)
+            .width(Length::Fill)
             .push(
                 Column::new().push(Text::new(&self.name).size(24)).push(
                     Text::new(format!(
-                        "Source: {} - {}",
+                        "Source: {} {}",
                         self.source.r#type, self.source.identifier
                     ))
                     .size(10),
                 ),
             )
+            .push(Space::new(Length::Fill, Length::Shrink))
             .push(
                 Row::new()
                     .spacing(10)

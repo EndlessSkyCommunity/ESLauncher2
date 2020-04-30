@@ -135,7 +135,6 @@ impl InstallFrame {
         Container::new(
             Column::new()
                 .padding(20)
-                .max_width(400)
                 .push(
                     Text::new("Install")
                         .horizontal_alignment(HorizontalAlignment::Center)
@@ -156,6 +155,7 @@ impl InstallFrame {
                 .spacing(20)
                 .align_items(Align::End),
         )
+        .width(Length::FillPortion(2))
         .into()
     }
 }
