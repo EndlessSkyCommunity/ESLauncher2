@@ -32,6 +32,10 @@ pub fn delete_icon() -> Text {
     icon('\u{E9AD}')
 }
 
+pub fn folder_icon() -> Text {
+    icon('\u{E930}')
+}
+
 pub enum Button {
     Icon,
     Destructive,

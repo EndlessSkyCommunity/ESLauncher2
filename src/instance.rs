@@ -50,6 +50,8 @@ pub struct Instance {
     #[serde(skip)]
     update_button: button::State,
     #[serde(skip)]
+    folder_button: button::State,
+    #[serde(skip)]
     delete_button: button::State,
     pub path: PathBuf,
     pub executable: PathBuf,
@@ -63,6 +65,7 @@ impl Default for Instance {
         Instance {
             play_button: button::State::default(),
             update_button: button::State::default(),
+            folder_button: button::State::default(),
             delete_button: button::State::default(),
             path: Default::default(),
             executable: Default::default(),
@@ -77,6 +80,7 @@ impl Default for Instance {
 pub enum InstanceMessage {
     Play,
     Update,
+    Folder,
     Delete,
 }
 
@@ -91,6 +95,7 @@ impl Instance {
         Instance {
             play_button: button::State::default(),
             update_button: button::State::default(),
+            folder_button: button::State::default(),
             delete_button: button::State::default(),
             path,
             executable,
@@ -114,6 +119,9 @@ impl Instance {
                 perform_update(self.path.clone(), self.instance_type, self.source.clone()),
                 Message::Dummy,
             ),
+            InstanceMessage::Folder => {
+                iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
+            }
             InstanceMessage::Delete => {
                 iced::Command::perform(delete(self.path.clone()), Message::Deleted)
             }
@@ -150,6 +158,11 @@ impl Instance {
                             .on_press(InstanceMessage::Update),
                     )
                     .push(
+                        Button::new(&mut self.folder_button, style::folder_icon())
+                            .style(style::Button::Icon)
+                            .on_press(InstanceMessage::Folder),
+                    )
+                    .push(
                         Button::new(&mut self.delete_button, style::delete_icon())
                             .style(style::Button::Destructive)
                             .on_press(InstanceMessage::Delete),
@@ -171,6 +184,13 @@ pub async fn perform_install(
             error!("Install failed: {:#}", e);
             None
         }
+    }
+}
+
+pub async fn open_folder(path: PathBuf) {
+    info!("Opening {} in file explorer", path.to_string_lossy());
+    if let Err(e) = open::that(path.as_path()) {
+        error!("Failed to open path: {}", e)
     }
 }
 
