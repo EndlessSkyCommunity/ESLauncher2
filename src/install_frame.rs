@@ -13,29 +13,44 @@ pub struct InstallFrame {
     name_chooser: text_input::State,
     install_button: button::State,
     source: InstanceSource,
-    pr_chooser: text_input::State,
-    pr_id: String,
+    source_identifier_input: text_input::State,
 }
 
 #[derive(Debug, Clone)]
 pub enum InstallFrameMessage {
-    SourceChanged(InstanceSource),
+    SourceTypeChanged(InstanceSourceType),
     NameChanged(String),
-    PrIdChanged(String),
+    SourceIdentifierChanged(String),
     StartInstallation(InstanceType),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum InstanceSource {
+pub enum InstanceSourceType {
     Continuous,
-    PR { id: u16 },
+    PR,
 }
 
-impl InstanceSource {
-    pub const ALL: [InstanceSource; 2] = [InstanceSource::Continuous, InstanceSource::PR { id: 1 }];
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct InstanceSource {
+    pub(crate) identifier: String,
+    pub(crate) r#type: InstanceSourceType,
 }
 
-impl fmt::Display for InstanceSource {
+impl Default for InstanceSource {
+    fn default() -> Self {
+        Self {
+            identifier: String::from(""),
+            r#type: InstanceSourceType::Continuous,
+        }
+    }
+}
+
+impl InstanceSourceType {
+    pub const ALL: [InstanceSourceType; 2] =
+        [InstanceSourceType::Continuous, InstanceSourceType::PR];
+}
+
+impl fmt::Display for InstanceSourceType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -47,9 +62,8 @@ impl Default for InstallFrame {
             name: String::default(),
             name_chooser: text_input::State::default(),
             install_button: button::State::default(),
-            source: InstanceSource::Continuous,
-            pr_chooser: text_input::State::default(),
-            pr_id: String::default(),
+            source: InstanceSource::default(),
+            source_identifier_input: text_input::State::default(),
         }
     }
 }
@@ -65,45 +79,42 @@ impl InstallFrame {
                         instance::perform_install(
                             destination,
                             name,
-                            self.pr_id.clone(),
                             instance_type,
-                            self.source,
+                            self.source.clone(),
                         ),
                         Message::Installed,
                     );
                 }
                 None => error!("Could not get instances directory from AppDirs"),
             },
-            InstallFrameMessage::SourceChanged(source) => self.source = source,
+            InstallFrameMessage::SourceTypeChanged(source_type) => self.source.r#type = source_type,
             InstallFrameMessage::NameChanged(name) => self.name = name,
-            InstallFrameMessage::PrIdChanged(pr_id) => {
-                if pr_id.parse::<u16>().is_ok() {
-                    self.pr_id = pr_id;
-                }
+            InstallFrameMessage::SourceIdentifierChanged(identifier) => {
+                self.source.identifier = identifier
             }
         }
         Command::none()
     }
 
     pub fn view(&mut self) -> Element<InstallFrameMessage> {
-        let mut controls = InstanceSource::ALL.iter().fold(
+        let mut controls = InstanceSourceType::ALL.iter().fold(
             Column::new().spacing(10).push(Text::new("Choose a Type:")),
-            |column, source| {
+            |column, source_type| {
                 column.push(Radio::new(
-                    *source,
-                    format!("{:?}", source).replace(" { id: 1 }", ""),
-                    Some(self.source),
-                    InstallFrameMessage::SourceChanged,
+                    *source_type,
+                    format!("{:?}", source_type),
+                    Some(self.source.r#type),
+                    InstallFrameMessage::SourceTypeChanged,
                 ))
             },
         );
-        if let InstanceSource::PR { .. } = self.source {
+        if let InstanceSourceType::PR { .. } = self.source.r#type {
             controls = controls.push(
                 TextInput::new(
-                    &mut self.pr_chooser,
-                    "Enter PR ID",
-                    &self.pr_id,
-                    InstallFrameMessage::PrIdChanged,
+                    &mut self.source_identifier_input,
+                    "Enter PR Number / Commit Hash",
+                    &self.source.identifier,
+                    InstallFrameMessage::SourceIdentifierChanged,
                 )
                 .padding(10),
             );

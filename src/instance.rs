@@ -68,7 +68,7 @@ impl Default for Instance {
             executable: Default::default(),
             name: Default::default(),
             instance_type: InstanceType::Unknown,
-            source: InstanceSource::Continuous,
+            source: InstanceSource::default(),
         }
     }
 }
@@ -111,7 +111,7 @@ impl Instance {
                 Message::Dummy,
             ),
             InstanceMessage::Update => iced::Command::perform(
-                perform_update(self.path.clone(), self.instance_type, self.source),
+                perform_update(self.path.clone(), self.instance_type, self.source.clone()),
                 Message::Dummy,
             ),
             InstanceMessage::Delete => {
@@ -126,9 +126,13 @@ impl Instance {
             .padding(10)
             .align_items(Align::Start)
             .push(
-                Column::new()
-                    .push(Text::new(&self.name).size(24))
-                    .push(Text::new(format!("Source: {}", self.source)).size(10)),
+                Column::new().push(Text::new(&self.name).size(24)).push(
+                    Text::new(format!(
+                        "Source: {} - {}",
+                        self.source.r#type, self.source.identifier
+                    ))
+                    .size(10),
+                ),
             )
             .push(
                 Row::new()
@@ -156,21 +160,10 @@ impl Instance {
 pub async fn perform_install(
     path: PathBuf,
     name: String,
-    pr_id: String,
     instance_type: InstanceType,
     instance_source: InstanceSource,
 ) -> Option<Instance> {
-    let source = match instance_source {
-        InstanceSource::PR { .. } => {
-            let id = pr_id.parse::<u16>();
-            if id.is_err() {
-                error!("Failed to parse PR ID")
-            }
-            InstanceSource::PR { id: id.ok()? }
-        }
-        _ => instance_source,
-    };
-    match install::install(path, name, instance_type, source) {
+    match install::install(path, name, instance_type, instance_source) {
         Ok(instance) => Some(instance),
         Err(e) => {
             error!("Install failed: {:#}", e);

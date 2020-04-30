@@ -1,5 +1,5 @@
 use crate::archive;
-use crate::install_frame::InstanceSource;
+use crate::install_frame::{InstanceSource, InstanceSourceType};
 use crate::instance::InstanceType;
 use anyhow::Result;
 use bitar::{clone_from_archive, clone_in_place, Archive, CloneOptions, ReaderRemote};
@@ -15,7 +15,7 @@ pub async fn update_instance(
     if let InstanceType::Unknown = instance_type {
         return Err(anyhow!("Cannot install InstanceType::Unknown",));
     }
-    if let InstanceSource::PR { .. } = source {
+    if let InstanceSourceType::PR { .. } = source.r#type {
         return Err(anyhow!("Updates are not yet supported for PRs!"));
     }
 

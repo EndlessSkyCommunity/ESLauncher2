@@ -1,5 +1,5 @@
 use crate::github::{get_workflow_run_artifacts, Artifact};
-use crate::install_frame::InstanceSource;
+use crate::install_frame::{InstanceSource, InstanceSourceType};
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
 use anyhow::Result;
@@ -20,9 +20,13 @@ pub fn install(
 
     fs::create_dir_all(&destination)?;
 
-    let archive_file = match instance_source {
-        InstanceSource::Continuous => download_continuous_asset(&destination, instance_type)?,
-        InstanceSource::PR { id } => download_pr_asset(&destination, instance_type, id)?,
+    let archive_file = match instance_source.r#type {
+        InstanceSourceType::Continuous => download_continuous_asset(&destination, instance_type)?,
+        InstanceSourceType::PR => download_pr_asset(
+            &destination,
+            instance_type,
+            instance_source.identifier.parse()?,
+        )?,
     };
 
     if let InstanceType::AppImage = instance_type {
