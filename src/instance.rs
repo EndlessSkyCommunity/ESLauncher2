@@ -115,10 +115,9 @@ impl Instance {
                 ),
                 Message::Dummy,
             ),
-            InstanceMessage::Update => iced::Command::perform(
-                perform_update(self.path.clone(), self.instance_type, self.source.clone()),
-                Message::Dummy,
-            ),
+            InstanceMessage::Update => {
+                iced::Command::perform(perform_update(self.clone()), Message::Dummy)
+            }
             InstanceMessage::Folder => {
                 iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
             }
@@ -207,16 +206,14 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
     }
 }
 
-pub async fn perform_update(path: PathBuf, instance_type: InstanceType, source: InstanceSource) {
+pub async fn perform_update(instance: Instance) {
     // Yes, this is terrible. Sue me. Bitar's objects don't implement Send, and i cannot figure out
     // how to use them in the default executor (which is multithreaded, presumably). Since we don't
     // need any sort of feedback other than logs, we can just update in new, single-threaded runtime.
     thread::spawn(move || {
         match tokio::runtime::Runtime::new() {
             Ok(mut runtime) => {
-                if let Err(e) =
-                    runtime.block_on(update::update_instance(path, instance_type, source))
-                {
+                if let Err(e) = runtime.block_on(update::update_instance(instance)) {
                     error!("Failed to update instance: {:#}", e)
                 }
             }

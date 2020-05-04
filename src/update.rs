@@ -1,40 +1,46 @@
-use crate::archive;
-use crate::install_frame::{InstanceSource, InstanceSourceType};
-use crate::instance::InstanceType;
+use crate::install_frame::InstanceSourceType;
+use crate::instance::{Instance, InstanceType};
+use crate::{archive, install};
 use anyhow::Result;
 use bitar::{clone_from_archive, clone_in_place, Archive, CloneOptions, ReaderRemote};
 use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 use url::Url;
 
-pub async fn update_instance(
-    path: PathBuf,
-    instance_type: InstanceType,
-    source: InstanceSource,
-) -> Result<()> {
-    if let InstanceType::Unknown = instance_type {
-        return Err(anyhow!("Cannot install InstanceType::Unknown",));
-    }
-    if let InstanceSourceType::PR { .. } = source.r#type {
-        return Err(anyhow!("Updates are not yet supported for PRs!"));
+pub async fn update_instance(instance: Instance) -> Result<()> {
+    if let InstanceType::Unknown = instance.instance_type {
+        return Err(anyhow!("Cannot update InstanceType::Unknown",));
     }
 
-    let mut archive_path = path.clone();
-    archive_path.push(instance_type.archive().unwrap());
-    if archive_path.exists() {
-        let url = format!(
-            "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
-            instance_type.archive().unwrap()
-        );
-        bitar_update_archive(&archive_path, url).await?;
+    let mut archive_path = instance.path.clone();
+    archive_path.push(instance.instance_type.archive().unwrap());
+    if !archive_path.exists() {
+        return Err(anyhow!("{} doesn't exist", archive_path.to_string_lossy()));
+    }
 
-        if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
-            archive::unpack(&archive_path, &path)?;
+    match instance.source.r#type {
+        InstanceSourceType::PR => {
+            info!("Incremental update isn't supported for PRs, triggering reinstall");
+            install::install(
+                instance.path.clone(),
+                instance.name,
+                instance.instance_type,
+                instance.source,
+            )?;
         }
-        info!("Done!");
-        return Ok(());
+        InstanceSourceType::Continuous => {
+            let url = format!(
+                "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
+                instance.instance_type.archive().unwrap()
+            );
+            bitar_update_archive(&archive_path, url).await?;
+            if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
+                archive::unpack(&archive_path, &instance.path)?;
+            }
+        }
     }
-    error!("{} doesn't exist", archive_path.to_string_lossy());
+
+    info!("Done!");
     Ok(())
 }
 
