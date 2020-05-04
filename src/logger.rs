@@ -15,7 +15,8 @@ impl Log for ChanneledLogger {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) && should_log(record) {
             let line = format!(
-                "[{}] {}",
+                "{:<7} [{}] {}",
+                record.metadata().level(),
                 record.module_path().unwrap_or("unknown"),
                 record.args()
             );
