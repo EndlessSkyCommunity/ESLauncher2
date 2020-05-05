@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::Utc;
 use progress_streams::ProgressReader;
 use serde::Deserialize;
 use serde_json;
@@ -184,6 +185,28 @@ pub fn get_release_assets() -> Result<Vec<ReleaseAsset>> {
 
 fn make_json_request(url: &str) -> Result<serde_json::Value> {
     let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
+
+    if let Some(remaining) = res.header("X-RateLimit-Remaining") {
+        match remaining.parse::<u32>() {
+            Ok(remaining) => {
+                if remaining == 0 {
+                    error!("Github API RateLimit exceeded!");
+                    if let Some(resets_at) = res.header("X-RateLimit-Reset") {
+                        match resets_at.parse::<i64>() {
+                            Ok(resets_at) => info!(
+                                "RateLimit resets in {} minutes",
+                                (resets_at - Utc::now().timestamp()) / 60
+                            ),
+                            Err(e) => warn!("Failed to parse X-RateLimit-Reset Header: {}", e),
+                        };
+                    }
+                } else if remaining < 10 {
+                    warn!("Only {} github API requests remaining", remaining)
+                }
+            }
+            Err(e) => warn!("Failed to parse X-RateLimit-Remaining Header: {}", e),
+        }
+    }
     Ok(res.into_json()?)
 }
 
