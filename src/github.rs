@@ -12,8 +12,9 @@ use std::thread;
 use std::time::Duration;
 
 #[derive(Deserialize, Debug)]
-struct Release {
+pub struct Release {
     id: i64,
+    pub(crate) tag_name: String,
     assets_url: String,
 }
 
@@ -167,11 +168,25 @@ pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact
     Ok(artifacts.artifacts)
 }
 
-pub fn get_release_assets() -> Result<Vec<ReleaseAsset>> {
+pub fn get_release_by_tag(tag: &str) -> Result<Release> {
+    let value = make_json_request(&format!(
+        "https://api.github.com/repos/endless-sky/endless-sky/releases/tags/{}",
+        tag
+    ))?;
+    let release: Release = serde_json::from_value(value)?;
+    Ok(release)
+}
+
+pub fn get_latest_release() -> Result<Release> {
     let value = make_json_request(
-        "https://api.github.com/repos/endless-sky/endless-sky/releases/tags/continuous",
+        "https://api.github.com/repos/EndlessSkyCommunity/ESLauncher2/releases/latest",
     )?;
     let release: Release = serde_json::from_value(value)?;
+    Ok(release)
+}
+
+pub fn get_continuous_release_assets() -> Result<Vec<ReleaseAsset>> {
+    let release = get_release_by_tag("continuous")?;
     info!("Got release: {:#?}", release);
 
     let value = make_json_request(&format!(

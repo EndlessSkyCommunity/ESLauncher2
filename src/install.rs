@@ -55,7 +55,7 @@ fn download_continuous_asset(
     destination: &PathBuf,
     instance_type: InstanceType,
 ) -> Result<PathBuf> {
-    let assets = github::get_release_assets()?;
+    let assets = github::get_continuous_release_assets()?;
     let asset = choose_artifact(assets, instance_type)?;
     github::download(
         &asset.browser_download_url,

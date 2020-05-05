@@ -24,6 +24,7 @@ use iced::{
 };
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
+use std::thread;
 
 pub fn main() {
     ESLauncher::run(Settings::default())
@@ -55,6 +56,8 @@ impl Application for ESLauncher {
     fn new(_flag: ()) -> (ESLauncher, Command<Message>) {
         let log_reader = logger::init();
         info!("Starting ESLauncher2 v{}", version!());
+        check_for_update();
+
         (
             ESLauncher {
                 install_frame: install_frame::InstallFrame::default(),
@@ -138,4 +141,15 @@ impl Application for ESLauncher {
             .center_y()
             .into()
     }
+}
+
+fn check_for_update() {
+    thread::spawn(|| match github::get_latest_release() {
+        Ok(release) => {
+            if !format!("v{}", version!()).eq(&release.tag_name) {
+                info!("The latest version of ESLauncher2 is {}", release.tag_name)
+            }
+        }
+        Err(e) => error!("Failed to fetch latest ESLauncher2 release: {}", e),
+    });
 }
