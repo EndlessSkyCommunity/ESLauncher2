@@ -4,7 +4,7 @@ extern crate log;
 #[macro_use]
 extern crate anyhow;
 #[macro_use]
-extern crate git_version;
+extern crate version;
 
 mod archive;
 mod github;
@@ -54,6 +54,7 @@ impl Application for ESLauncher {
 
     fn new(_flag: ()) -> (ESLauncher, Command<Message>) {
         let log_reader = logger::init();
+        info!("Starting ESLauncher2 v{}", version!());
         (
             ESLauncher {
                 install_frame: install_frame::InstallFrame::default(),
@@ -67,14 +68,7 @@ impl Application for ESLauncher {
     }
 
     fn title(&self) -> String {
-        format!(
-            "ESLauncher2 {}",
-            git_version!(
-                args = ["--always", "--dirty=-modified", "--tags"],
-                cargo_prefix = "cargo:",
-                fallback = "unknown"
-            )
-        )
+        format!("ESLauncher2 v{}", version!())
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
