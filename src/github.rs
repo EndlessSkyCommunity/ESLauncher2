@@ -207,6 +207,7 @@ fn make_json_request(url: &str) -> Result<serde_json::Value> {
             Err(e) => warn!("Failed to parse X-RateLimit-Remaining Header: {}", e),
         }
     }
+
     Ok(res.into_json()?)
 }
 
