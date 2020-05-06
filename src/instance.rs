@@ -5,12 +5,12 @@ use chrono::{DateTime, Local};
 use iced::{button, Align, Button, Column, Element, Length, Row, Space, Text};
 use platform_dirs::{AppDirs, AppUI};
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::SystemTime;
-use std::{fs, thread};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum InstanceType {
@@ -56,24 +56,9 @@ pub struct Instance {
     pub path: PathBuf,
     pub executable: PathBuf,
     pub name: String,
+    pub version: String,
     pub instance_type: InstanceType,
     pub source: InstanceSource,
-}
-
-impl Default for Instance {
-    fn default() -> Self {
-        Instance {
-            play_button: button::State::default(),
-            update_button: button::State::default(),
-            folder_button: button::State::default(),
-            delete_button: button::State::default(),
-            path: Default::default(),
-            executable: Default::default(),
-            name: Default::default(),
-            instance_type: InstanceType::Unknown,
-            source: InstanceSource::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -89,6 +74,7 @@ impl Instance {
         path: PathBuf,
         executable: PathBuf,
         name: String,
+        version: String,
         instance_type: InstanceType,
         source: InstanceSource,
     ) -> Self {
@@ -100,6 +86,7 @@ impl Instance {
             path,
             executable,
             name,
+            version,
             instance_type,
             source,
         }
@@ -116,7 +103,7 @@ impl Instance {
                 Message::Dummy,
             ),
             InstanceMessage::Update => {
-                iced::Command::perform(perform_update(self.clone()), Message::Dummy)
+                iced::Command::perform(perform_update(self.clone()), Message::Updated)
             }
             InstanceMessage::Folder => {
                 iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
@@ -206,7 +193,8 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
     }
 }
 
-pub async fn perform_update(instance: Instance) {
+pub async fn perform_update(instance: Instance) -> Option<Instance> {
+    /*
     // Yes, this is terrible. Sue me. Bitar's objects don't implement Send, and i cannot figure out
     // how to use them in the default executor (which is multithreaded, presumably). Since we don't
     // need any sort of feedback other than logs, we can just update in new, single-threaded runtime.
@@ -219,7 +207,14 @@ pub async fn perform_update(instance: Instance) {
             }
             Err(e) => error!("Failed to spawn tokio runtime: {}", e),
         };
-    });
+    });*/
+    match update::update_instance(instance).await {
+        Ok(instance) => Some(instance),
+        Err(e) => {
+            error!("Failed to update instance: {:#}", e);
+            None
+        }
+    }
 }
 
 pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String) {

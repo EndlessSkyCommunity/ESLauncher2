@@ -20,7 +20,7 @@ pub fn install(
 
     fs::create_dir_all(&destination)?;
 
-    let archive_file = match instance_source.r#type {
+    let (archive_file, version) = match instance_source.r#type {
         InstanceSourceType::Continuous => download_continuous_asset(&destination, instance_type)?,
         InstanceSourceType::PR => download_pr_asset(
             &destination,
@@ -46,6 +46,7 @@ pub fn install(
         destination,
         executable_path,
         name,
+        version,
         instance_type,
         instance_source,
     ))
@@ -54,21 +55,24 @@ pub fn install(
 fn download_continuous_asset(
     destination: &PathBuf,
     instance_type: InstanceType,
-) -> Result<PathBuf> {
+) -> Result<(PathBuf, String)> {
     let assets = github::get_continuous_release_assets()?;
     let asset = choose_artifact(assets, instance_type)?;
-    github::download(
-        &asset.browser_download_url,
-        asset.name(),
-        &destination.clone(),
-    )
+    Ok((
+        github::download(
+            &asset.browser_download_url,
+            asset.name(),
+            &destination.clone(),
+        )?,
+        String::from("continuous"), //TODO
+    ))
 }
 
 fn download_pr_asset(
     destination: &PathBuf,
     instance_type: InstanceType,
     pr_id: u16,
-) -> Result<PathBuf> {
+) -> Result<(PathBuf, String)> {
     let pr = github::get_pr(pr_id)?;
     let workflow = github::get_cd_workflow()?;
     let run = github::get_latest_workflow_run(workflow.id, pr.head.branch, pr.head.repo.id)?;
@@ -83,9 +87,10 @@ fn download_pr_asset(
     )?;
     archive::unpack(&archive_path, destination)?;
     fs::remove_file(archive_path)?;
+
     let mut result_path = destination.clone();
     result_path.push(artifact.name());
-    Ok(result_path)
+    Ok((result_path, pr.head.sha))
 }
 
 fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceType) -> Result<A> {

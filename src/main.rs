@@ -45,6 +45,7 @@ pub enum Message {
     InstanceMessage(usize, InstanceMessage),
     Installed(Option<Instance>),
     Deleted(Option<PathBuf>),
+    Updated(Option<Instance>),
     Dummy(()),
 }
 
@@ -91,6 +92,15 @@ impl Application for ESLauncher {
             Message::Deleted(option) => {
                 if let Some(path) = option {
                     self.instances_frame.instances.retain(|i| !i.path.eq(&path));
+                    instance::perform_save_instances(self.instances_frame.instances.clone());
+                }
+            }
+            Message::Updated(option) => {
+                if let Some(instance) = option {
+                    self.instances_frame
+                        .instances
+                        .retain(|i| !i.path.eq(&instance.path));
+                    self.instances_frame.instances.push(instance);
                     instance::perform_save_instances(self.instances_frame.instances.clone());
                 }
             }

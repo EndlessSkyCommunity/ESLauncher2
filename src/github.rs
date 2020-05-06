@@ -14,7 +14,7 @@ use std::time::Duration;
 #[derive(Deserialize, Debug)]
 pub struct Release {
     id: i64,
-    pub(crate) tag_name: String,
+    pub tag_name: String,
     assets_url: String,
 }
 
@@ -49,6 +49,7 @@ pub struct PRHead {
     #[serde(alias = "ref")]
     pub branch: String,
     pub repo: Repo,
+    pub sha: String,
 }
 
 #[derive(Deserialize, Debug)]

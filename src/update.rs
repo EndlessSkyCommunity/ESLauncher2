@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 use url::Url;
 
-pub async fn update_instance(instance: Instance) -> Result<()> {
+pub async fn update_instance(instance: Instance) -> Result<Instance> {
     if let InstanceType::Unknown = instance.instance_type {
         return Err(anyhow!("Cannot update InstanceType::Unknown",));
     }
@@ -18,7 +18,7 @@ pub async fn update_instance(instance: Instance) -> Result<()> {
         return Err(anyhow!("{} doesn't exist", archive_path.to_string_lossy()));
     }
 
-    match instance.source.r#type {
+    let new_instance = match instance.source.r#type {
         InstanceSourceType::PR => {
             info!("Incremental update isn't supported for PRs, triggering reinstall");
             install::install(
@@ -26,7 +26,7 @@ pub async fn update_instance(instance: Instance) -> Result<()> {
                 instance.name,
                 instance.instance_type,
                 instance.source,
-            )?;
+            )?
         }
         InstanceSourceType::Continuous => {
             let url = format!(
@@ -37,11 +37,12 @@ pub async fn update_instance(instance: Instance) -> Result<()> {
             if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
                 archive::unpack(&archive_path, &instance.path)?;
             }
+            instance // TODO
         }
-    }
+    };
 
     info!("Done!");
-    Ok(())
+    Ok(new_instance)
 }
 
 async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> {
