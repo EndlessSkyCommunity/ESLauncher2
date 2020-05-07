@@ -1,6 +1,6 @@
 use crate::install_frame::InstanceSourceType;
 use crate::instance::{Instance, InstanceType};
-use crate::{archive, install};
+use crate::{archive, github, install};
 use anyhow::Result;
 use bitar::{clone_from_archive, clone_in_place, Archive, CloneOptions, ReaderRemote};
 use serde::{Deserialize, Serialize};
@@ -21,6 +21,12 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
 
     let new_instance = match instance.source.r#type {
         InstanceSourceType::PR => {
+            let version = github::get_pr(instance.source.identifier.parse()?)?
+                .head
+                .sha;
+            if version.eq(&instance.version) {
+                return Err(anyhow!("Latest version is already installed"));
+            }
             info!("Incremental update isn't supported for PRs, triggering reinstall");
             install::install(
                 instance.path.clone(),
@@ -30,8 +36,11 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
             )?
         }
         InstanceSourceType::Continuous => {
-            let mut new_instance = instance.clone();
-            new_instance.version = get_jenkins_sha().await?;
+            let version = get_jenkins_sha().await?;
+            if version.eq(&instance.version) {
+                return Err(anyhow!("Latest version is already installed"));
+            }
+
             let url = format!(
                 "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
                 instance.instance_type.archive().unwrap()
@@ -50,6 +59,9 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
             if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
                 archive::unpack(&archive_path, &instance.path)?;
             }
+
+            let mut new_instance = instance.clone();
+            new_instance.version = version;
             new_instance
         }
     };
@@ -107,9 +119,7 @@ async fn get_jenkins_sha() -> Result<String> {
     let url = "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastSuccessfulBuild/api/xml?xpath=/*/*/lastBuiltRevision/SHA1";
 
     let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
-    let s = res.into_string()?;
-    dbg!(&s);
-    let sha: SHA1 = serde_xml_rs::from_str(&s)?;
+    let sha: SHA1 = serde_xml_rs::from_str(&res.into_string()?)?;
     info!("Got new version from Jenkins: {}", sha.0);
     Ok(sha.0)
 }

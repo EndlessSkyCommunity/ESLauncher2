@@ -115,7 +115,6 @@ pub fn get_pr(id: u16) -> Result<PR> {
         "https://api.github.com/repos/endless-sky/endless-sky/pulls/{}",
         id
     ))?)?;
-    info!("Got PR: {:#?}", pr);
     Ok(pr)
 }
 
