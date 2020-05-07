@@ -64,7 +64,7 @@ fn download_continuous_asset(
             asset.name(),
             &destination.clone(),
         )?,
-        String::from("continuous"), //TODO
+        github::get_git_ref("tags/continuous")?.object.sha,
     ))
 }
 

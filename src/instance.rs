@@ -121,13 +121,16 @@ impl Instance {
             .align_items(Align::Start)
             .width(Length::Fill)
             .push(
-                Column::new().push(Text::new(&self.name).size(24)).push(
-                    Text::new(format!(
-                        "Source: {} {}",
-                        self.source.r#type, self.source.identifier
-                    ))
-                    .size(10),
-                ),
+                Column::new()
+                    .push(Text::new(&self.name).size(24))
+                    .push(Text::new(format!("Version: {}", self.version)).size(10))
+                    .push(
+                        Text::new(format!(
+                            "Source: {} {}",
+                            self.source.r#type, self.source.identifier
+                        ))
+                        .size(10),
+                    ),
             )
             .push(Space::new(Length::Fill, Length::Shrink))
             .push(
@@ -194,20 +197,6 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
 }
 
 pub async fn perform_update(instance: Instance) -> Option<Instance> {
-    /*
-    // Yes, this is terrible. Sue me. Bitar's objects don't implement Send, and i cannot figure out
-    // how to use them in the default executor (which is multithreaded, presumably). Since we don't
-    // need any sort of feedback other than logs, we can just update in new, single-threaded runtime.
-    thread::spawn(move || {
-        match tokio::runtime::Runtime::new() {
-            Ok(mut runtime) => {
-                if let Err(e) = runtime.block_on(update::update_instance(instance)) {
-                    error!("Failed to update instance: {:#}", e)
-                }
-            }
-            Err(e) => error!("Failed to spawn tokio runtime: {}", e),
-        };
-    });*/
     match update::update_instance(instance).await {
         Ok(instance) => Some(instance),
         Err(e) => {

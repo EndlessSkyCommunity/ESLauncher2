@@ -12,6 +12,16 @@ use std::thread;
 use std::time::Duration;
 
 #[derive(Deserialize, Debug)]
+pub struct GitRef {
+    pub object: GitObject,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GitObject {
+    pub sha: String,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct Release {
     id: i64,
     pub tag_name: String,
@@ -51,7 +61,6 @@ pub struct PRHead {
     pub repo: Repo,
     pub sha: String,
 }
-
 #[derive(Deserialize, Debug)]
 pub struct Repo {
     pub(crate) id: u32,
@@ -176,6 +185,15 @@ pub fn get_release_by_tag(tag: &str) -> Result<Release> {
     ))?;
     let release: Release = serde_json::from_value(value)?;
     Ok(release)
+}
+
+pub fn get_git_ref(name: &str) -> Result<GitRef> {
+    let value = make_json_request(&format!(
+        "https://api.github.com/repos/endless-sky/endless-sky/git/ref/{}",
+        name
+    ))?;
+    let r#ref: GitRef = serde_json::from_value(value)?;
+    Ok(r#ref)
 }
 
 pub fn get_latest_release() -> Result<Release> {

@@ -3,6 +3,8 @@ use crate::instance::{Instance, InstanceType};
 use crate::{archive, install};
 use anyhow::Result;
 use bitar::{clone_from_archive, clone_in_place, Archive, CloneOptions, ReaderRemote};
+use serde::{Deserialize, Serialize};
+use serde_xml_rs;
 use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 
@@ -28,6 +30,8 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
             )?
         }
         InstanceSourceType::Continuous => {
+            let mut new_instance = instance.clone();
+            new_instance.version = get_jenkins_sha().await?;
             let url = format!(
                 "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
                 instance.instance_type.archive().unwrap()
@@ -42,10 +46,11 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
                 }
                 Err(e) => error!("Failed to spawn tokio runtime: {}", e),
             };
+
             if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
                 archive::unpack(&archive_path, &instance.path)?;
             }
-            instance // TODO
+            new_instance
         }
     };
 
@@ -93,4 +98,18 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
     .await?;
     info!("Used {}b from remote", total_read_from_remote,);
     Ok(())
+}
+
+#[derive(Deserialize, Serialize)]
+struct SHA1(String);
+
+async fn get_jenkins_sha() -> Result<String> {
+    let url = "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastSuccessfulBuild/api/xml?xpath=/*/*/lastBuiltRevision/SHA1";
+
+    let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
+    let s = res.into_string()?;
+    dbg!(&s);
+    let sha: SHA1 = serde_xml_rs::from_str(&s)?;
+    info!("Got new version from Jenkins: {}", sha.0);
+    Ok(sha.0)
 }
