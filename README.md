@@ -1,2 +1,13 @@
 # ESLauncher2
-Now that Endless Sky has proper continuous builds, it should also have a tool to easily install and update them. This project aims to be this tool - a fast, cross-platform single-file executable.
+A program for organizing Endless Sky installations.
+
+### Currently supported features:
+- Install [Continuous Builds](https://github.com/endless-sky/endless-sky/releases/tag/continuous)
+- Install Development build of PRs
+- Update instances
+- Play instances
+
+### Planned features:
+- Install specific versions
+- Install specific commits
+- Install & manage plug-ins (eventually™)
