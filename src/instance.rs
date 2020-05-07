@@ -1,4 +1,5 @@
 use crate::install_frame::InstanceSource;
+use crate::music::MusicCommand;
 use crate::{install, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
@@ -100,7 +101,7 @@ impl Instance {
                     self.executable.clone(),
                     self.name.clone(),
                 ),
-                Message::Dummy,
+                |()| Message::MusicMessage(MusicCommand::Pause),
             ),
             InstanceMessage::Update => {
                 iced::Command::perform(perform_update(self.clone()), Message::Updated)

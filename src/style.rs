@@ -20,6 +20,10 @@ fn icon(unicode: char) -> Text {
         .size(20)
 }
 
+pub fn pause_icon() -> Text {
+    icon('\u{EA1D}')
+}
+
 pub fn play_icon() -> Text {
     icon('\u{EA1C}')
 }
