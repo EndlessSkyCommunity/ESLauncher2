@@ -174,9 +174,8 @@ dependencies = [
 
 [[package]]
 name = "bitar"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62e5f2379b610ff8d11649f24439333f22258ebbdde3f955a7dff74d6a1f92a0"
+version = "0.6.3"
+source = "git+https://github.com/oll3/bita.git#5d34ca6d4e98779590328f2a4f2bc599d65df582"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -782,13 +781,13 @@ dependencies = [
  "open",
  "platform-dirs",
  "progress-streams",
+ "reqwest",
  "rodio",
  "serde",
  "serde_json",
  "tar",
  "tokio",
  "ureq",
- "url",
  "version",
  "zip-extensions",
 ]

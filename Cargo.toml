@@ -17,8 +17,8 @@ rodio = { version="0.11", features=["vorbis"], default_features=false }
 iced = "0.1.1"
 log = { version="0.4.8", features=["std"] }
 progress-streams = "1.1.0"
-bitar = { version="0.6.2", features=["rustls-tls"]}
-url = "2.1"
+bitar = { git="https://github.com/oll3/bita.git", features=["rustls-tls"] } # TODO: Switch back to a version once the fix is released.
+reqwest = { version="0.10", features=["rustls-tls"], default_features=false }
 tokio = { version="0.2", features=["fs"] }
 futures = "0.3"
 anyhow = "1.0"
