@@ -95,14 +95,17 @@ impl Instance {
 
     pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
         match message {
-            InstanceMessage::Play => iced::Command::perform(
-                perform_play(
-                    self.path.clone(),
-                    self.executable.clone(),
-                    self.name.clone(),
+            InstanceMessage::Play => iced::Command::batch(vec![
+                iced::Command::perform(dummy(), |()| Message::MusicMessage(MusicCommand::Pause)),
+                iced::Command::perform(
+                    perform_play(
+                        self.path.clone(),
+                        self.executable.clone(),
+                        self.name.clone(),
+                    ),
+                    |()| Message::MusicMessage(MusicCommand::Play),
                 ),
-                |()| Message::MusicMessage(MusicCommand::Pause),
-            ),
+            ]),
             InstanceMessage::Update => {
                 iced::Command::perform(perform_update(self.clone()), Message::Updated)
             }
@@ -161,6 +164,8 @@ impl Instance {
             .into()
     }
 }
+
+async fn dummy() {}
 
 pub async fn perform_install(
     path: PathBuf,

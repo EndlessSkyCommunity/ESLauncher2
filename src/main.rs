@@ -93,10 +93,6 @@ impl Application for ESLauncher {
             Message::InstanceMessage(i, msg) => {
                 let instance = self.instances_frame.instances.get_mut(i);
                 if let Some(instance) = instance {
-                    if let InstanceMessage::Play = msg {
-                        self.music_sender.send(MusicCommand::Pause).ok();
-                    }
-
                     return instance.update(msg);
                 }
             }
