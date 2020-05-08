@@ -1,6 +1,6 @@
 [package]
 name = "eslauncher2"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["M*C*O <mcofficer@gmx.de>"]
 edition = "2018"
 
