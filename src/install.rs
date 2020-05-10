@@ -21,7 +21,14 @@ pub fn install(
     fs::create_dir_all(&destination)?;
 
     let (archive_file, version) = match instance_source.r#type {
-        InstanceSourceType::Continuous => download_continuous_asset(&destination, instance_type)?,
+        InstanceSourceType::Continuous => (
+            download_release_asset("continuous", &destination, instance_type)?,
+            github::get_git_ref("tags/continuous")?.object.sha,
+        ),
+        InstanceSourceType::Release => (
+            download_release_asset(&instance_source.identifier, &destination, instance_type)?,
+            String::from(&instance_source.identifier),
+        ),
         InstanceSourceType::PR => download_pr_asset(
             &destination,
             instance_type,
@@ -29,14 +36,14 @@ pub fn install(
         )?,
     };
 
+    let mut executable_path = destination.clone();
+    executable_path.push(instance_type.executable().unwrap());
+
     if let InstanceType::AppImage = instance_type {
-        // Awkward way to invert an if let...https://github.com/rust-lang/rfcs/issues/2616
+        fs::rename(&archive_file, &executable_path)?;
     } else {
         archive::unpack(&archive_file, &destination)?;
     }
-
-    let mut executable_path = destination.clone();
-    executable_path.push(instance_type.executable().unwrap());
 
     if cfg!(unix) {
         chmod_x(&executable_path);
@@ -52,20 +59,19 @@ pub fn install(
     ))
 }
 
-fn download_continuous_asset(
+fn download_release_asset(
+    tag: &str,
     destination: &PathBuf,
     instance_type: InstanceType,
-) -> Result<(PathBuf, String)> {
-    let assets = github::get_continuous_release_assets()?;
+) -> Result<PathBuf> {
+    let release = github::get_release_by_tag(tag)?;
+    let assets = github::get_release_assets(release.id)?;
     let asset = choose_artifact(assets, instance_type)?;
-    Ok((
-        github::download(
-            &asset.browser_download_url,
-            asset.name(),
-            &destination.clone(),
-        )?,
-        github::get_git_ref("tags/continuous")?.object.sha,
-    ))
+    Ok(github::download(
+        &asset.browser_download_url,
+        asset.name(),
+        &destination.clone(),
+    )?)
 }
 
 fn download_pr_asset(

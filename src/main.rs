@@ -204,12 +204,14 @@ impl Application for ESLauncher {
 }
 
 fn check_for_update() {
-    thread::spawn(|| match github::get_latest_release() {
-        Ok(release) => {
-            if !format!("v{}", version!()).eq(&release.tag_name) {
-                info!("The latest version of ESLauncher2 is {}", release.tag_name)
+    thread::spawn(
+        || match github::get_latest_release("EndlessSkyCommunity/ESLauncher2") {
+            Ok(release) => {
+                if !format!("v{}", version!()).eq(&release.tag_name) {
+                    info!("The latest version of ESLauncher2 is {}", release.tag_name)
+                }
             }
-        }
-        Err(e) => error!("Failed to fetch latest ESLauncher2 release: {}", e),
-    });
+            Err(e) => error!("Failed to fetch latest ESLauncher2 release: {}", e),
+        },
+    );
 }

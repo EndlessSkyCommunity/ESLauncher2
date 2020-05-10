@@ -26,6 +26,7 @@ pub enum InstallFrameMessage {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InstanceSourceType {
+    Release,
     Continuous,
     PR,
 }
@@ -46,8 +47,11 @@ impl Default for InstanceSource {
 }
 
 impl InstanceSourceType {
-    pub const ALL: [InstanceSourceType; 2] =
-        [InstanceSourceType::Continuous, InstanceSourceType::PR];
+    pub const ALL: [InstanceSourceType; 3] = [
+        InstanceSourceType::Continuous,
+        InstanceSourceType::Release,
+        InstanceSourceType::PR,
+    ];
 }
 
 impl fmt::Display for InstanceSourceType {
@@ -108,11 +112,11 @@ impl InstallFrame {
                 ))
             },
         );
-        if let InstanceSourceType::PR { .. } = self.source.r#type {
+        if InstanceSourceType::Continuous != self.source.r#type {
             controls = controls.push(
                 TextInput::new(
                     &mut self.source_identifier_input,
-                    "Enter PR Number / Commit Hash",
+                    "Enter Version / Hash / PR Number",
                     &self.source.identifier,
                     InstallFrameMessage::SourceIdentifierChanged,
                 )

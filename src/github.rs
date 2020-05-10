@@ -23,7 +23,7 @@ pub struct GitObject {
 
 #[derive(Deserialize, Debug)]
 pub struct Release {
-    id: i64,
+    pub id: i64,
     pub tag_name: String,
     assets_url: String,
 }
@@ -195,24 +195,22 @@ pub fn get_git_ref(name: &str) -> Result<GitRef> {
     Ok(r#ref)
 }
 
-pub fn get_latest_release() -> Result<Release> {
-    let value = make_json_request(
-        "https://api.github.com/repos/EndlessSkyCommunity/ESLauncher2/releases/latest",
-    )?;
+pub fn get_latest_release(repo_slug: &str) -> Result<Release> {
+    let value = make_json_request(&format!(
+        "https://api.github.com/repos/{}/releases/latest",
+        repo_slug
+    ))?;
     let release: Release = serde_json::from_value(value)?;
     Ok(release)
 }
 
-pub fn get_continuous_release_assets() -> Result<Vec<ReleaseAsset>> {
-    let release = get_release_by_tag("continuous")?;
-    info!("Got release: {:#?}", release);
-
+pub fn get_release_assets(release_id: i64) -> Result<Vec<ReleaseAsset>> {
     let value = make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/releases/{}/assets",
-        release.id
+        release_id
     ))?;
     let assets: ReleaseAssets = serde_json::from_value(value)?;
-    info!("Got {} assets for release {}", assets.0.len(), release.id);
+    info!("Got {} assets for release {}", assets.0.len(), release_id);
     Ok(assets.0)
 }
 

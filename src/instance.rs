@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::SystemTime;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum InstanceType {
     MacOS,
     Windows,
@@ -25,10 +25,10 @@ pub enum InstanceType {
 impl InstanceType {
     pub fn archive(self) -> Option<&'static str> {
         match self {
-            InstanceType::MacOS => Some("EndlessSky-macOS-continuous.zip"),
-            InstanceType::Windows => Some("EndlessSky-win64-continuous.zip"),
-            InstanceType::Linux => Some("endless-sky-x86_64-continuous.tar.gz"),
-            InstanceType::AppImage => Some("endless-sky-x86_64-continuous.AppImage"),
+            InstanceType::MacOS => Some("EndlessSky-macOS"),
+            InstanceType::Windows => Some("EndlessSky-win64"),
+            InstanceType::Linux => Some(".tar.gz"),
+            InstanceType::AppImage => Some(".AppImage"),
             InstanceType::Unknown => None,
         }
     }
@@ -38,7 +38,7 @@ impl InstanceType {
             InstanceType::MacOS => Some("Endless Sky.app/Content/MacOS/Endless Sky"),
             InstanceType::Windows => Some("EndlessSky.exe"),
             InstanceType::Linux => Some("endless-sky"),
-            InstanceType::AppImage => Some("endless-sky-x86_64-continuous.AppImage"),
+            InstanceType::AppImage => Some("endless-sky.AppImage"),
             InstanceType::Unknown => None,
         }
     }

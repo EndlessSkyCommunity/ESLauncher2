@@ -13,60 +13,76 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
         return Err(anyhow!("Cannot update InstanceType::Unknown",));
     }
 
-    let mut archive_path = instance.path.clone();
-    archive_path.push(instance.instance_type.archive().unwrap());
+    let mut archive_path = if InstanceType::AppImage == instance.instance_type {
+        instance.executable.clone()
+    } else {
+        let mut p = instance.path.clone();
+        p.push(instance.instance_type.archive().unwrap());
+        p
+    };
     if !archive_path.exists() {
         return Err(anyhow!("{} doesn't exist", archive_path.to_string_lossy()));
     }
 
-    let new_instance = match instance.source.r#type {
-        InstanceSourceType::PR => {
-            let version = github::get_pr(instance.source.identifier.parse()?)?
+    let new_instance = if InstanceSourceType::Continuous == instance.source.r#type {
+        update_continuous_instance(&instance, &mut archive_path).await?
+    } else {
+        let version = if InstanceSourceType::PR == instance.source.r#type {
+            github::get_pr(instance.source.identifier.parse()?)?
                 .head
-                .sha;
-            if version.eq(&instance.version) {
-                return Err(anyhow!("Latest version is already installed"));
-            }
-            info!("Incremental update isn't supported for PRs, triggering reinstall");
-            install::install(
-                instance.path.clone(),
-                instance.name,
-                instance.instance_type,
-                instance.source,
-            )?
+                .sha
+        } else {
+            // InstanceSourceType::Release
+            github::get_latest_release("endless-sky/endless-sky")?.tag_name
+        };
+        if version.eq(&instance.version) {
+            return Err(anyhow!("Latest version is already installed"));
         }
-        InstanceSourceType::Continuous => {
-            let version = get_jenkins_sha().await?;
-            if version.eq(&instance.version) {
-                return Err(anyhow!("Latest version is already installed"));
-            }
-
-            let url = format!(
-                "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
-                instance.instance_type.archive().unwrap()
-            );
-            // We need a tokio Runtime because, apparently, OpenOptions and friends are doing some tokio-specific stuff
-            // under the hood. This isn't actually blocking in that it doesn't block the application thread.
-            match tokio::runtime::Runtime::new() {
-                Ok(mut runtime) => {
-                    if let Err(e) = runtime.block_on(bitar_update_archive(&archive_path, url)) {
-                        error!("Failed to update instance: {:#}", e)
-                    }
-                }
-                Err(e) => error!("Failed to spawn tokio runtime: {}", e),
-            };
-
-            if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
-                archive::unpack(&archive_path, &instance.path)?;
-            }
-
-            let mut new_instance = instance.clone();
-            new_instance.version = version;
-            new_instance
-        }
+        info!(
+            "Incremental update isn't supported for this InstanceSourceType, triggering reinstall"
+        );
+        install::install(
+            instance.path.clone(),
+            instance.name,
+            instance.instance_type,
+            instance.source,
+        )?
     };
 
     info!("Done!");
+    Ok(new_instance)
+}
+
+async fn update_continuous_instance(
+    instance: &Instance,
+    archive_path: &mut PathBuf,
+) -> Result<Instance> {
+    let version = get_jenkins_sha().await?;
+    if version.eq(&instance.version) {
+        return Err(anyhow!("Latest version is already installed"));
+    }
+
+    let url = format!(
+        "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
+        instance.instance_type.archive().unwrap()
+    );
+    // We need a tokio Runtime because, apparently, OpenOptions and friends are doing some tokio-specific stuff
+    // under the hood. This isn't actually blocking in that it doesn't block the application thread.
+    match tokio::runtime::Runtime::new() {
+        Ok(mut runtime) => {
+            if let Err(e) = runtime.block_on(bitar_update_archive(&archive_path, url)) {
+                error!("Failed to update instance: {:#}", e)
+            }
+        }
+        Err(e) => error!("Failed to spawn tokio runtime: {}", e),
+    };
+
+    if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
+        archive::unpack(&archive_path, &instance.path)?;
+    }
+
+    let mut new_instance = instance.clone();
+    new_instance.version = version;
     Ok(new_instance)
 }
 
