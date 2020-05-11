@@ -99,7 +99,7 @@ fn download_pr_asset(
     Ok((result_path, pr.head.sha))
 }
 
-fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceType) -> Result<A> {
+pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceType) -> Result<A> {
     for artifact in artifacts {
         let matches = artifact
             .name()

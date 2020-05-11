@@ -12,6 +12,7 @@ mod install;
 mod install_frame;
 mod instance;
 mod instances_frame;
+mod jenkins;
 mod logger;
 mod music;
 mod style;
@@ -20,6 +21,7 @@ mod update;
 use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage};
 use crate::music::{MusicCommand, MusicState};
+
 use iced::{
     button, scrollable, Align, Application, Button, Column, Command, Container, Element,
     HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Text,

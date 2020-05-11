@@ -1,10 +1,9 @@
+use crate::github::Artifact;
 use crate::install_frame::InstanceSourceType;
 use crate::instance::{Instance, InstanceType};
-use crate::{archive, github, install};
+use crate::{archive, github, install, jenkins};
 use anyhow::Result;
 use bitar::{clone_from_archive, clone_in_place, Archive, CloneOptions, ReaderRemote};
-use serde::{Deserialize, Serialize};
-use serde_xml_rs;
 use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 
@@ -57,15 +56,19 @@ async fn update_continuous_instance(
     instance: &Instance,
     archive_path: &mut PathBuf,
 ) -> Result<Instance> {
-    let version = get_jenkins_sha().await?;
+    let version = jenkins::get_latest_sha()?;
     if version.eq(&instance.version) {
         return Err(anyhow!("Latest version is already installed"));
     }
 
+    let artifacts = jenkins::get_latest_artifacts()?;
+    let artifact = install::choose_artifact(artifacts, instance.instance_type)?;
+
     let url = format!(
-        "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}.cba",
-        instance.instance_type.archive().unwrap()
+        "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/artifact/{}",
+        artifact.name()
     );
+
     // We need a tokio Runtime because, apparently, OpenOptions and friends are doing some tokio-specific stuff
     // under the hood. This isn't actually blocking in that it doesn't block the application thread.
     match tokio::runtime::Runtime::new() {
@@ -77,7 +80,10 @@ async fn update_continuous_instance(
         Err(e) => error!("Failed to spawn tokio runtime: {}", e),
     };
 
-    if !archive_path.ends_with(InstanceType::AppImage.archive().unwrap()) {
+    if !archive_path
+        .to_string_lossy()
+        .ends_with(InstanceType::AppImage.archive().unwrap())
+    {
         archive::unpack(&archive_path, &instance.path)?;
     }
 
@@ -96,7 +102,7 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
         .await?;
 
     let client = reqwest::Client::new().get(&url);
-    let mut reader = ReaderRemote::new(client, 3, None);
+    let mut reader = ReaderRemote::from_request(client);
     let archive = Archive::try_init(&mut reader).await?;
     let mut chunks_left = archive.source_index().clone();
 
@@ -126,16 +132,4 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
     .await?;
     info!("Used {}b from remote", total_read_from_remote,);
     Ok(())
-}
-
-#[derive(Deserialize, Serialize)]
-struct SHA1(String);
-
-async fn get_jenkins_sha() -> Result<String> {
-    let url = "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastSuccessfulBuild/api/xml?xpath=/*/*/lastBuiltRevision/SHA1";
-
-    let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
-    let sha: SHA1 = serde_xml_rs::from_str(&res.into_string()?)?;
-    info!("Got new version from Jenkins: {}", sha.0);
-    Ok(sha.0)
 }
