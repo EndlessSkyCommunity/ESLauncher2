@@ -175,7 +175,8 @@ dependencies = [
 [[package]]
 name = "bitar"
 version = "0.6.4"
-source = "git+https://github.com/oll3/bita.git#8bb98d6d1bb8effff4f91a6070c9d6d618d5f3c0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f02aba75147ec80d4005e93006e3b9d8ece48fc4b5399a2758a56f2c2423b1eb"
 dependencies = [
  "async-stream",
  "async-trait",
