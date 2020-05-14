@@ -9,3 +9,9 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 dirs = "2.0"
+attohttpc = { version="0.13",default_features=false, features=["tls-rustls", "json", "compress"] }
+serde = { version = "1.0", features = ["derive"] }
+
+[profile.release]
+opt-level = 'z'  # Optimize for size.
+lto = true

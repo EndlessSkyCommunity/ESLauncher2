@@ -3,8 +3,10 @@
 #[macro_use]
 extern crate anyhow;
 
+mod index;
 mod scan;
 
+use crate::index::AvailablePlugin;
 use anyhow::Result;
 use std::path::PathBuf;
 
@@ -13,19 +15,38 @@ pub struct InstalledPlugin {
 }
 
 pub struct ESPIM {
+    available_plugins: Vec<AvailablePlugin>,
     installed_plugins: Vec<InstalledPlugin>,
 }
 
 impl ESPIM {
     pub fn new() -> Result<Self> {
         Ok(ESPIM {
+            available_plugins: index::get_available_plugins()?,
             installed_plugins: scan::scan_plugins()?,
         })
     }
 
-    /// A cached version of `scan_plugins()`
+    /// Scans installed plug-ins, returning them and refreshing ESPIM's cache
+    pub fn retrieve_installed_plugins(&mut self) -> Result<&Vec<InstalledPlugin>> {
+        self.installed_plugins = scan::scan_plugins()?;
+        Ok(&self.installed_plugins)
+    }
+
+    /// A cached version of `retrieve_installed_plugins()`
     pub fn installed_plugins(&self) -> &Vec<InstalledPlugin> {
         &self.installed_plugins
+    }
+
+    /// Retrieves available plug-ins, returning them and refreshing ESPIM's cache
+    pub fn retrieve_available_plugins(&mut self) -> Result<&Vec<AvailablePlugin>> {
+        self.available_plugins = index::get_available_plugins()?;
+        Ok(&self.available_plugins)
+    }
+
+    /// A cached version of `retrieve_available_plugins()`
+    pub fn available_plugins(&self) -> &Vec<AvailablePlugin> {
+        &self.available_plugins
     }
 }
 
