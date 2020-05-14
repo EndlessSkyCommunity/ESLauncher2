@@ -59,9 +59,27 @@ pub fn es_plugin_dir() -> Option<PathBuf> {
 #[cfg(test)]
 mod tests {
     use crate::ESPIM;
+    use rand;
+    use rand::Rng;
 
     #[test]
     fn initialize() {
         ESPIM::new().unwrap();
+    }
+
+    #[test]
+    fn download_wf() {
+        let espim = ESPIM::new().unwrap();
+        let mut out = std::env::temp_dir();
+        out.push(format!(
+            "espim-unit-{}",
+            rand::thread_rng().gen_range(0, 999)
+        ));
+        espim
+            .available_plugins
+            .get(0)
+            .unwrap()
+            .download(out)
+            .unwrap();
     }
 }

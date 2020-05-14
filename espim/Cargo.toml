@@ -9,8 +9,13 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 dirs = "2.0"
-attohttpc = { version="0.13",default_features=false, features=["tls-rustls", "json", "compress"] }
 serde = { version = "1.0", features = ["derive"] }
+zip = {version = "0.5.5", default_features=false, features=["deflate"] }
+ureq = { version = "0.12", features = ["tls"], default_features=false }
+serde_json = "1.0"
+
+[dev-dependencies]
+rand = "0.7"
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.
