@@ -41,7 +41,21 @@ impl AvailablePlugin {
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).unwrap();
             let mut outpath = extract_to.clone();
-            outpath.push(file.sanitized_name());
+            let archive_path = file.sanitized_name();
+            let base = archive_path
+                .components()
+                .take(1)
+                .fold(PathBuf::new(), |mut p, c| {
+                    p.push(c);
+                    p
+                });
+            let archive_path = archive_path.strip_prefix(base)?;
+            if archive_path.to_string_lossy().is_empty() {
+                // Top-level directory
+                continue;
+            }
+
+            outpath.push(archive_path);
 
             {
                 let comment = file.comment();
