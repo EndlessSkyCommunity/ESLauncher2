@@ -60,19 +60,19 @@ impl AvailablePlugin {
             {
                 let comment = file.comment();
                 if !comment.is_empty() {
-                    println!("File {} comment: {}", i, comment);
+                    debug!("File {} comment: {}", i, comment);
                 }
             }
 
             if (&*file.name()).ends_with('/') {
-                println!(
+                debug!(
                     "File {} extracted to \"{}\"",
                     i,
                     outpath.as_path().display()
                 );
                 fs::create_dir_all(&outpath).unwrap();
             } else {
-                println!(
+                debug!(
                     "File {} extracted to \"{}\" ({} bytes)",
                     i,
                     outpath.as_path().display(),

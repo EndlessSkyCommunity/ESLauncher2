@@ -131,6 +131,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "dirs",
+ "log",
  "rand",
  "serde",
  "serde_json",
