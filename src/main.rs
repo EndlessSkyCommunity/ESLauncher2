@@ -15,6 +15,7 @@ mod instances_frame;
 mod jenkins;
 mod logger;
 mod music;
+mod plugins_frame;
 mod style;
 mod update;
 
@@ -41,6 +42,7 @@ struct ESLauncher {
     music_state: MusicState,
     install_frame: install_frame::InstallFrame,
     instances_frame: instances_frame::InstancesFrameState,
+    plugins_frame: plugins_frame::PluginsFrameState,
     log_scrollable: scrollable::State,
     log_reader: Receiver<String>,
     log_buffer: Vec<String>,
@@ -87,6 +89,7 @@ impl Application for ESLauncher {
                 music_state: MusicState::Playing,
                 install_frame: install_frame::InstallFrame::default(),
                 instances_frame: instances_frame::InstancesFrameState::default(),
+                plugins_frame: plugins_frame::PluginsFrameState::new(),
                 log_scrollable: scrollable::State::default(),
                 log_reader,
                 log_buffer: vec![],
@@ -180,7 +183,7 @@ impl Application for ESLauncher {
                     .push(self.install_frame.view().map(Message::InstallFrameMessage))
                     .spacing(50),
             ),
-            MainView::Plugins => Container::new(Text::new("STUB: Plug-In View")),
+            MainView::Plugins => self.plugins_frame.view(),
         };
 
         let logbox = self.log_buffer.iter().fold(

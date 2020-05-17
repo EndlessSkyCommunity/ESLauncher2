@@ -25,6 +25,7 @@ futures = "0.3"
 anyhow = "1.0"
 open = "1"
 version = "3"
+espim = { path="espim" }
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.

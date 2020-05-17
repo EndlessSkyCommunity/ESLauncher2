@@ -774,6 +774,7 @@ dependencies = [
  "anyhow",
  "bitar",
  "chrono",
+ "espim",
  "flate2",
  "futures 0.3.5",
  "iced",
@@ -791,6 +792,19 @@ dependencies = [
  "ureq",
  "version",
  "zip-extensions",
+]
+
+[[package]]
+name = "espim"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dirs 2.0.2",
+ "log",
+ "serde",
+ "serde_json",
+ "ureq",
+ "zip",
 ]
 
 [[package]]

@@ -19,13 +19,13 @@ pub struct InstalledPlugin {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AvailablePlugin {
-    name: String,
-    url: String,
-    version: String,
+    pub name: String,
+    pub url: String,
+    pub version: String,
     #[serde(alias = "iconUrl")]
-    icon_url: String,
-    author: String,
-    description: String,
+    pub icon_url: String,
+    pub author: String,
+    pub description: String,
 }
 
 #[derive(Debug, Clone)]
