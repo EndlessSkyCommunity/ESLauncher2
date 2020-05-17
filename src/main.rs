@@ -44,6 +44,15 @@ struct ESLauncher {
     log_scrollable: scrollable::State,
     log_reader: Receiver<String>,
     log_buffer: Vec<String>,
+    view: MainView,
+    instances_view_button: button::State,
+    plugins_view_button: button::State,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum MainView {
+    Instances,
+    Plugins,
 }
 
 #[derive(Debug, Clone)]
@@ -55,6 +64,7 @@ pub enum Message {
     Updated(Option<Instance>),
     Dummy(()),
     MusicMessage(MusicCommand),
+    ViewChanged(MainView),
 }
 
 impl Application for ESLauncher {
@@ -80,6 +90,9 @@ impl Application for ESLauncher {
                 log_scrollable: scrollable::State::default(),
                 log_reader,
                 log_buffer: vec![],
+                view: MainView::Instances,
+                instances_view_button: button::State::default(),
+                plugins_view_button: button::State::default(),
             },
             Command::none(),
         )
@@ -126,6 +139,7 @@ impl Application for ESLauncher {
                     MusicCommand::Play => MusicState::Playing,
                 }
             }
+            Message::ViewChanged(view) => self.view = view,
             Message::Dummy(_) => (),
         }
         Command::none()
@@ -136,6 +150,38 @@ impl Application for ESLauncher {
         while let Ok(line) = self.log_reader.try_recv() {
             self.log_buffer.push(line);
         }
+
+        let view_chooser = Row::new()
+            .spacing(100)
+            .padding(30)
+            .align_items(Align::Center)
+            .push(
+                Button::new(
+                    &mut self.instances_view_button,
+                    Container::new(Text::new("Instances")).padding(5),
+                )
+                .padding(5)
+                .on_press(Message::ViewChanged(MainView::Instances))
+                .style(style::Button::Tab(self.view == MainView::Instances)),
+            )
+            .push(
+                Button::new(
+                    &mut self.plugins_view_button,
+                    Container::new(Text::new("Plugins")).padding(5),
+                )
+                .on_press(Message::ViewChanged(MainView::Plugins))
+                .style(style::Button::Tab(self.view == MainView::Plugins)),
+            );
+
+        let main_view = match self.view {
+            MainView::Instances => Container::new(
+                Row::new()
+                    .push(instances_frame::view(&mut self.instances_frame))
+                    .push(self.install_frame.view().map(Message::InstallFrameMessage))
+                    .spacing(50),
+            ),
+            MainView::Plugins => Container::new(Text::new("STUB: Plug-In View")),
+        };
 
         let logbox = self.log_buffer.iter().fold(
             Column::new().padding(20).align_items(Align::Start),
@@ -152,12 +198,8 @@ impl Application for ESLauncher {
         let content = Column::new()
             .padding(20)
             .align_items(Align::Center)
-            .push(
-                Row::new()
-                    .push(instances_frame::view(&mut self.instances_frame))
-                    .push(self.install_frame.view().map(Message::InstallFrameMessage))
-                    .spacing(50),
-            )
+            .push(view_chooser)
+            .push(main_view)
             .push(
                 Scrollable::new(&mut self.log_scrollable)
                     .push(logbox)

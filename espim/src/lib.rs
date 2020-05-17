@@ -93,7 +93,6 @@ mod tests {
         };
         let mut out = es_plugin_dir().unwrap();
         out.push(&wf.name);
-        dbg!(&wf);
         wf.download().unwrap();
         fs::remove_dir_all(out).unwrap();
     }

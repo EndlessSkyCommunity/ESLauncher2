@@ -43,6 +43,7 @@ pub fn folder_icon() -> Text {
 pub enum Button {
     Icon,
     Destructive,
+    Tab(bool),
 }
 
 impl button::StyleSheet for Button {
@@ -59,6 +60,21 @@ impl button::StyleSheet for Button {
                 shadow_offset: Vector::new(1.0, 1.0),
                 ..button::Style::default()
             },
+            Button::Tab(active) => {
+                if *active {
+                    button::Style {
+                        background: Some(Background::Color(Color::WHITE)),
+                        border_color: Color::from_rgb(0.5, 0.5, 0.5),
+                        border_width: 1,
+                        border_radius: 3,
+                        ..button::Style::default()
+                    }
+                } else {
+                    button::Style {
+                        ..button::Style::default()
+                    }
+                }
+            }
         }
     }
 
