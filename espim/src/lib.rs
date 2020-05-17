@@ -8,14 +8,27 @@ extern crate log;
 mod index;
 mod scan;
 
-use crate::index::AvailablePlugin;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+#[derive(Debug, Clone)]
 pub struct InstalledPlugin {
     pub name: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AvailablePlugin {
+    name: String,
+    url: String,
+    version: String,
+    #[serde(alias = "iconUrl")]
+    icon_url: String,
+    author: String,
+    description: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct ESPIM {
     available_plugins: Vec<AvailablePlugin>,
     installed_plugins: Vec<InstalledPlugin>,
@@ -60,9 +73,8 @@ pub fn es_plugin_dir() -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ESPIM;
-    use rand;
-    use rand::Rng;
+    use crate::{es_plugin_dir, AvailablePlugin, ESPIM};
+    use std::fs;
 
     #[test]
     fn initialize() {
@@ -71,17 +83,18 @@ mod tests {
 
     #[test]
     fn download_wf() {
-        let espim = ESPIM::new().unwrap();
-        let mut out = std::env::temp_dir();
-        out.push(format!(
-            "espim-unit-{}",
-            rand::thread_rng().gen_range(0, 999)
-        ));
-        espim
-            .available_plugins
-            .get(0)
-            .unwrap()
-            .download(out)
-            .unwrap();
+        let wf = AvailablePlugin {
+            name: String::from( "World Forge"),
+            url: String::from("https://github.com/EndlessSkyCommunity/world-forge"),
+            version: String::from("22f036fcff384dcdd41c583783597eb994b9ab7a"),
+            icon_url: String::from("https://github.com/EndlessSkyCommunity/world-forge/raw/master/icon.png"),
+            author: String::from("Amazinite"),
+            description: String::from("A plugin for Endless Sky that allows the player to access everything in the game in one place. Includes features that the all-content plugin does not have such as the ability to boost your combat rating and change your friendly/hostile status with factions of the game without having to save-edit. Intended to help content creators test their plugins."),
+        };
+        let mut out = es_plugin_dir().unwrap();
+        out.push(&wf.name);
+        dbg!(&wf);
+        wf.download().unwrap();
+        fs::remove_dir_all(out).unwrap();
     }
 }

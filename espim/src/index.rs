@@ -1,3 +1,4 @@
+use crate::{es_plugin_dir, AvailablePlugin, InstalledPlugin};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -10,23 +11,12 @@ use zip;
 #[derive(Serialize, Deserialize)]
 struct PluginIndex(Vec<AvailablePlugin>);
 
-#[derive(Serialize, Deserialize)]
-pub struct AvailablePlugin {
-    name: String,
-    url: String,
-    version: String,
-    #[serde(alias = "iconUrl")]
-    icon_url: String,
-    author: String,
-    description: String,
-}
-
 impl AvailablePlugin {
     pub fn download_url(&self) -> String {
         format!("{}/archive/{}.zip", self.url, self.version)
     }
 
-    pub fn download(&self, extract_to: PathBuf) -> Result<()> {
+    pub fn download(&self) -> Result<InstalledPlugin> {
         let resp = ureq::get(&self.download_url()).call();
         if resp.error() {
             return Err(anyhow!("Got bad status code {}", resp.status()));
@@ -40,7 +30,9 @@ impl AvailablePlugin {
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).unwrap();
-            let mut outpath = extract_to.clone();
+            let mut outpath =
+                es_plugin_dir().ok_or_else(|| anyhow!("Failed to get ES Plug-In Dir"))?;
+            outpath.push(&self.name);
             let archive_path = file.sanitized_name();
             let base = archive_path
                 .components()
@@ -88,7 +80,9 @@ impl AvailablePlugin {
             }
         }
 
-        Ok(())
+        Ok(InstalledPlugin {
+            name: self.name.clone(),
+        })
     }
 }
 
