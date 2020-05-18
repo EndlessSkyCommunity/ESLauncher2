@@ -5,27 +5,36 @@ authors = ["M*C*O <mcofficer@gmx.de>"]
 edition = "2018"
 
 [dependencies]
+anyhow = "1.0"
+bitar = { version="0.6.4", features=["rustls-tls"] }
 chrono = { version = "0.4", features = ["serde"] }
+espim = { path="espim" }
+flate2 = "1.0"
+futures = "0.3"
+log = { version="0.4.8", features=["std"] }
+open = "1"
+platform-dirs = "0.2.0"
+progress-streams = "1.1.0"
+reqwest = { version="0.10", default_features = false, features=["rustls-tls"] }
+rodio = { version="0.11", default_features = false, features=["vorbis"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde-xml-rs = "0.4"
-ureq = { version = "1.0", features = ["json", "tls"], default_features=false }
-flate2 = "1.0"
 tar = "0.4"
-zip-extensions = "0.4"
-platform-dirs = "0.2.0"
-rodio = { version="0.11", features=["vorbis"], default_features=false }
-iced = "0.1.1"
-log = { version="0.4.8", features=["std"] }
-progress-streams = "1.1.0"
-bitar = { version="0.6.4", features=["rustls-tls"] }
-reqwest = { version="0.10", features=["rustls-tls"], default_features=false }
-tokio = { version="0.2", features=["fs"] }
-futures = "0.3"
-anyhow = "1.0"
-open = "1"
+tokio = { version="0.2", default_features = false, features=["fs"] }
+ureq = { version = "1.0", default_features = false, features = ["json", "tls"] }
 version = "3"
-espim = { path="espim" }
+zip-extensions = "0.4"
+
+[dependencies.iced]
+version = "0.1.1"
+default_features = false
+# TODO: consider features = ["async-std"]
+
+[dev-dependencies.iced]
+version = "0.1.1"
+default_features = false
+features = ["debug"]
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.
