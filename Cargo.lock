@@ -113,7 +113,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25f9db3b38af870bf7e5cc649167533b493928e50744e2c30ae350230b414670"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -124,7 +124,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26c4f3195085c36ea8d24d32b2f828d23296a9370a28aa39d111f6f16bef9f3b"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -166,7 +166,7 @@ dependencies = [
  "lazycell",
  "peeking_take_while",
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "regex",
  "rustc-hash",
  "shlex",
@@ -175,7 +175,8 @@ dependencies = [
 [[package]]
 name = "bitar"
 version = "0.6.4"
-source = "git+https://github.com/oll3/bita.git#66fe32a6061e0b4a7c7dca9e4400a3948ed26ff6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f02aba75147ec80d4005e93006e3b9d8ece48fc4b5399a2758a56f2c2423b1eb"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -417,9 +418,9 @@ dependencies = [
 
 [[package]]
 name = "cocoa"
-version = "0.20.0"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a4736c86d51bd878b474400d9ec888156f4037015f5d09794fab9f26eab1ad4"
+checksum = "8f7b6f3f7f4f0b3ec5c5039aaa9e8c3cef97a7a480a400fd62944841314f293d"
 dependencies = [
  "bitflags",
  "block",
@@ -648,7 +649,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb582b60359da160a9477ee80f15c8d784c477e69c217ef2cdd4169c24ea380f"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -1014,7 +1015,7 @@ checksum = "d0b5a30a4328ab5473878237c447333c093297bded83a4983d10f4deea240d39"
 dependencies = [
  "proc-macro-hack",
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -1879,7 +1880,7 @@ checksum = "ffa5a33ddddfee04c0283a7653987d634e880347e96b5b2ed64de07efb59db9d"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -2055,7 +2056,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a82996f11efccb19b685b14b5df818de31c1edcee3daa256ab5775dd98e72feb"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -2180,7 +2181,7 @@ dependencies = [
  "anyhow",
  "itertools",
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -2214,9 +2215,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.5"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42934bc9c8ab0d3b273a16d8551c8f0fcff46be73276ca083ec2414c15c4ba5e"
+checksum = "54a21852a652ad6f610c9510194f398ff6f8692e334fd1145fed931f7fbe44ea"
 dependencies = [
  "proc-macro2 1.0.13",
 ]
@@ -2601,7 +2602,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "818fbf6bfa9a42d3bfcaca148547aa00c7b915bec71d1757aa2d44ca68771984"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -2793,7 +2794,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1425de3c33b0941002740a420b1a906a350b88d08b82b2c8a01035a3f9447bac"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "unicode-xid 0.2.0",
 ]
 
@@ -2851,7 +2852,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab81dbd1cd69cd2ce22ecfbdd3bdb73334ba25350649408cc6c085f46d89573d"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -3102,7 +3103,7 @@ dependencies = [
  "lazy_static",
  "log",
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
  "wasm-bindgen-shared",
 ]
@@ -3138,7 +3139,7 @@ version = "0.2.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2cd85aa2c579e8892442954685f0d801f9129de24fa2136b2c6a539c76b65776"
 dependencies = [
- "quote 1.0.5",
+ "quote 1.0.6",
  "wasm-bindgen-macro-support",
 ]
 
@@ -3149,7 +3150,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8eb197bd3a47553334907ffd2f16507b4f4f01bbec3ac921a7719e0decdfe72a"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
