@@ -1,7 +1,6 @@
 use crate::{es_plugin_dir, AvailablePlugin, InstalledPlugin};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::io::Read;
 use std::path::PathBuf;
 use std::{fs, io};
@@ -94,6 +93,6 @@ pub fn get_available_plugins() -> Result<Vec<AvailablePlugin>> {
     if resp.error() {
         return Err(anyhow!("Got bad status code {}", resp.status()));
     }
-    let index: PluginIndex = serde_json::from_reader(resp.into_reader())?;
+    let index: PluginIndex = resp.into_json_deserialize()?;
     Ok(index.0)
 }

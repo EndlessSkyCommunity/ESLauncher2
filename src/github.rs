@@ -1,8 +1,8 @@
 use anyhow::Result;
 use chrono::Utc;
 use progress_streams::ProgressReader;
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
-use serde_json;
 use std::fs::File;
 use std::io::{copy, BufReader};
 use std::path::PathBuf;
@@ -111,27 +111,22 @@ impl Artifact for WorkflowRunArtifact {
 }
 
 pub fn get_pr(id: u16) -> Result<PR> {
-    let pr: PR = serde_json::from_value(make_json_request(&format!(
+    make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/pulls/{}",
         id
-    ))?)?;
-    Ok(pr)
+    ))
 }
 
 pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact> {
-    let value = make_json_request(&format!(
+    make_json_request(&format!(
         "https://endlesssky.mcofficer.me/actions-artifacts/artifact/{}",
         artifact_id
-    ))?;
-    let artifact: UnblockedArtifact = serde_json::from_value(value)?;
-    info!("Got unblocked artifact URL");
-    Ok(artifact)
+    ))
 }
 pub fn get_cd_workflow() -> Result<Workflow> {
-    let value = make_json_request(
+    let workflows: Workflows = make_json_request(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/workflows",
     )?;
-    let workflows: Workflows = serde_json::from_value(value)?;
     for workflow in workflows.workflows {
         if workflow.name.eq("CD") {
             info!("Found workflow with name 'CD', id {}", workflow.id);
@@ -146,11 +141,10 @@ pub fn get_latest_workflow_run(
     branch: String,
     head_repo_id: u32,
 ) -> Result<WorkflowRun> {
-    let value = make_json_request(&format!(
+    let runs: WorkflowRuns = make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/workflows/{}/runs?branch={}",
         workflow_id, branch
     ))?;
-    let runs: WorkflowRuns = serde_json::from_value(value)?;
     info!(
         "Got {} runs for workflow {}",
         runs.workflow_runs.len(),
@@ -164,11 +158,10 @@ pub fn get_latest_workflow_run(
 }
 
 pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact>> {
-    let value = make_json_request(&format!(
+    let artifacts: WorkflowRunArtifacts = make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/runs/{}/artifacts",
         run_id
     ))?;
-    let artifacts: WorkflowRunArtifacts = serde_json::from_value(value)?;
     info!(
         "Got {} artifacts for workflow run {}",
         artifacts.artifacts.len(),
@@ -178,43 +171,36 @@ pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact
 }
 
 pub fn get_release_by_tag(tag: &str) -> Result<Release> {
-    let value = make_json_request(&format!(
+    make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/releases/tags/{}",
         tag
-    ))?;
-    let release: Release = serde_json::from_value(value)?;
-    Ok(release)
+    ))
 }
 
 pub fn get_git_ref(name: &str) -> Result<GitRef> {
-    let value = make_json_request(&format!(
+    make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/git/ref/{}",
         name
-    ))?;
-    let r#ref: GitRef = serde_json::from_value(value)?;
-    Ok(r#ref)
+    ))
 }
 
 pub fn get_latest_release(repo_slug: &str) -> Result<Release> {
-    let value = make_json_request(&format!(
+    make_json_request(&format!(
         "https://api.github.com/repos/{}/releases/latest",
         repo_slug
-    ))?;
-    let release: Release = serde_json::from_value(value)?;
-    Ok(release)
+    ))
 }
 
 pub fn get_release_assets(release_id: i64) -> Result<Vec<ReleaseAsset>> {
-    let value = make_json_request(&format!(
+    let assets: ReleaseAssets = make_json_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/releases/{}/assets",
         release_id
     ))?;
-    let assets: ReleaseAssets = serde_json::from_value(value)?;
     info!("Got {} assets for release {}", assets.0.len(), release_id);
     Ok(assets.0)
 }
 
-fn make_json_request(url: &str) -> Result<serde_json::Value> {
+fn make_json_request<T: DeserializeOwned>(url: &str) -> Result<T> {
     let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
 
     if let Some(remaining) = res.header("X-RateLimit-Remaining") {
@@ -239,7 +225,7 @@ fn make_json_request(url: &str) -> Result<serde_json::Value> {
         }
     }
 
-    Ok(res.into_json()?)
+    Ok(res.into_json_deserialize()?)
 }
 
 pub fn download(url: &str, name: &str, folder: &PathBuf) -> Result<PathBuf> {

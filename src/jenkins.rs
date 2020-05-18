@@ -35,6 +35,6 @@ pub fn get_latest_artifacts() -> Result<Vec<BuildArtifact>> {
     let url = "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/api/json?tree=artifacts[*]";
 
     let res = ureq::get(url).call();
-    let build: Build = serde_json::from_reader(res.into_reader())?;
+    let build: Build = res.into_json_deserialize()?;
     Ok(build.artifacts)
 }
