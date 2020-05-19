@@ -1,6 +1,6 @@
 use crate::Message;
-use espim::{AvailablePlugin, InstalledPlugin, ESPIM};
-use iced::{Align, Column, Container, Element, Length, Row, Text};
+use espim::ESPIM;
+use iced::{image, Align, Column, Container, Element, Image, Length, Row, Text, VerticalAlignment};
 
 #[derive(Debug, Clone)]
 pub struct PluginsFrameState {
@@ -11,22 +11,17 @@ pub struct PluginsFrameState {
 impl PluginsFrameState {
     pub fn new() -> Self {
         match ESPIM::new() {
-            Ok(espim) => {
-                let mut plugins: Vec<Plugin> = espim
-                    .installed_plugins()
+            Ok(espim) => Self {
+                plugins: espim
+                    .plugins
                     .iter()
-                    .map(|p| Plugin::Installed { plugin: p.clone() })
-                    .collect();
-                for p in espim.available_plugins() {
-                    if !espim.installed_plugins().iter().any(|i| i.name.eq(&p.name)) {
-                        plugins.push(Plugin::Available { plugin: p.clone() });
-                    }
-                }
-                Self {
-                    espim: Some(espim),
-                    plugins,
-                }
-            }
+                    .map(|p| Plugin {
+                        espim_plugin: p.clone(),
+                        icon_bytes: p.retrieve_icon(),
+                    })
+                    .collect(),
+                espim: Some(espim),
+            },
             Err(e) => {
                 error!(
                     "Failed to initialize ESPIM, Plug-Ins will unavailable: {}",
@@ -60,22 +55,24 @@ impl PluginsFrameState {
 }
 
 #[derive(Debug, Clone)]
-enum Plugin {
-    Available { plugin: AvailablePlugin },
-    Installed { plugin: InstalledPlugin },
+struct Plugin {
+    espim_plugin: espim::Plugin,
+    icon_bytes: Option<Vec<u8>>,
 }
 
 impl Plugin {
     fn view(&self) -> Element<Message> {
-        let content = Row::new().spacing(10).padding(10);
-        match self {
-            Plugin::Available { plugin } => {
-                content.push(Text::new(format!("Available: {}", plugin.name.clone())))
-            }
-            Plugin::Installed { plugin } => {
-                content.push(Text::new(format!("Installed: {}", plugin.name.clone())))
-            }
+        let mut content = Row::new().spacing(10).padding(10);
+        if let Some(bytes) = &self.icon_bytes {
+            content = content.push(
+                Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
+                    .height(Length::Units(64))
+                    .width(Length::Units(64)),
+            );
         }
-        .into()
+
+        content
+            .push(Text::new(self.espim_plugin.name()).vertical_alignment(VerticalAlignment::Center))
+            .into()
     }
 }

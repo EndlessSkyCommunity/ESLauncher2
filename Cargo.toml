@@ -29,12 +29,13 @@ zip-extensions = "0.4"
 [dependencies.iced]
 version = "0.1.1"
 default_features = false
+features = ["image"]
 # TODO: consider features = ["async-std"]
 
 [dev-dependencies.iced]
 version = "0.1.1"
 default_features = false
-features = ["debug"]
+features = ["debug", "image"]
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.

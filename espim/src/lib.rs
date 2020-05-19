@@ -6,62 +6,87 @@ extern crate anyhow;
 extern crate log;
 
 mod index;
+mod plugin;
 mod scan;
+mod util;
 
 use anyhow::Result;
+pub use plugin::Plugin;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
-pub struct InstalledPlugin {
-    pub name: String,
+struct InstalledPlugin {
+    name: String,
+}
+
+impl InstalledPlugin {
+    pub(crate) fn path(&self) -> PathBuf {
+        let mut path = es_plugin_dir().unwrap();
+        path.push(&self.name);
+        path
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct AvailablePlugin {
-    pub name: String,
-    pub url: String,
-    pub version: String,
+struct AvailablePlugin {
+    name: String,
+    url: String,
+    version: String,
     #[serde(alias = "iconUrl")]
-    pub icon_url: String,
-    pub author: String,
-    pub description: String,
+    icon_url: String,
+    author: String,
+    description: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct ESPIM {
-    available_plugins: Vec<AvailablePlugin>,
-    installed_plugins: Vec<InstalledPlugin>,
+    pub plugins: Vec<Plugin>,
 }
 
 impl ESPIM {
+    /// Creates and initializes ESPIM.
+    /// This involves fetching the plug-in index, scanning installed plug-ins and matching them against one another.
     pub fn new() -> Result<Self> {
         Ok(ESPIM {
-            available_plugins: index::get_available_plugins()?,
-            installed_plugins: scan::scan_plugins()?,
+            plugins: Self::retrieve_plugins()?,
         })
     }
 
-    /// Scans installed plug-ins, returning them and refreshing ESPIM's cache
-    pub fn retrieve_installed_plugins(&mut self) -> Result<&Vec<InstalledPlugin>> {
-        self.installed_plugins = scan::scan_plugins()?;
-        Ok(&self.installed_plugins)
+    /// (Re-)initialize.
+    pub fn initialize(&mut self) -> Result<()> {
+        self.plugins = Self::retrieve_plugins()?;
+        Ok(())
     }
 
-    /// A cached version of `retrieve_installed_plugins()`
-    pub fn installed_plugins(&self) -> &Vec<InstalledPlugin> {
-        &self.installed_plugins
-    }
+    fn retrieve_plugins() -> Result<Vec<Plugin>> {
+        let available = index::get_available_plugins()?;
+        let mut installed = scan::scan_plugins()?;
+        let mut plugins = vec![];
 
-    /// Retrieves available plug-ins, returning them and refreshing ESPIM's cache
-    pub fn retrieve_available_plugins(&mut self) -> Result<&Vec<AvailablePlugin>> {
-        self.available_plugins = index::get_available_plugins()?;
-        Ok(&self.available_plugins)
-    }
+        for a in available {
+            let mut associated = None;
+            for i in &mut installed {
+                if i.name == a.name {
+                    associated = Some(i.clone());
+                    installed.retain(|p| p.name != associated.as_ref().unwrap().name);
+                    break;
+                }
+            }
+            plugins.push(Plugin {
+                installed: associated,
+                available: Some(a),
+            })
+        }
 
-    /// A cached version of `retrieve_available_plugins()`
-    pub fn available_plugins(&self) -> &Vec<AvailablePlugin> {
-        &self.available_plugins
+        for i in installed {
+            plugins.push(Plugin {
+                installed: Some(i),
+                available: None,
+            })
+        }
+
+        Ok(plugins)
     }
 }
 
@@ -71,9 +96,16 @@ pub fn es_plugin_dir() -> Option<PathBuf> {
     Some(dirs::data_dir()?.join("endless-sky").join("plugins"))
 }
 
+impl Default for ESPIM {
+    /// Creates an uninitialized ESPIM. Useful if you don't want to call (and handle the Result of) `initialize` yet.
+    fn default() -> Self {
+        Self { plugins: vec![] }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{es_plugin_dir, AvailablePlugin, ESPIM};
+    use crate::{AvailablePlugin, ESPIM};
     use std::fs;
 
     #[test]

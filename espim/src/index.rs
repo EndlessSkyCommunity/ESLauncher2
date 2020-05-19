@@ -1,4 +1,4 @@
-use crate::{es_plugin_dir, AvailablePlugin, InstalledPlugin};
+use crate::{es_plugin_dir, util, AvailablePlugin, InstalledPlugin, ESPIM};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::io::Read;
@@ -16,15 +16,7 @@ impl AvailablePlugin {
     }
 
     pub fn download(&self) -> Result<InstalledPlugin> {
-        let resp = ureq::get(&self.download_url()).call();
-        if resp.error() {
-            return Err(anyhow!("Got bad status code {}", resp.status()));
-        }
-
-        let mut reader = io::BufReader::new(resp.into_reader());
-        let mut bytes = vec![];
-        reader.read_to_end(&mut bytes)?;
-
+        let bytes = util::download(&self.download_url())?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))?;
 
         for i in 0..archive.len() {
@@ -85,7 +77,7 @@ impl AvailablePlugin {
     }
 }
 
-pub fn get_available_plugins() -> Result<Vec<AvailablePlugin>> {
+pub(crate) fn get_available_plugins() -> Result<Vec<AvailablePlugin>> {
     let resp = ureq::get(
         "https://raw.githubusercontent.com/MCOfficer/endless-sky-plugins/master/plugins.json",
     )
