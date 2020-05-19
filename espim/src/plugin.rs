@@ -52,6 +52,7 @@ impl Plugin {
         None
     }
 
+    /// Downloads & installs the plug-in to `es_plugin_folder()`/`name()`
     pub fn install(&mut self) -> Result<()> {
         self.installed = Some(
             self.available
@@ -60,5 +61,13 @@ impl Plugin {
                 .download()?,
         );
         Ok(())
+    }
+
+    /// Returns the (`installed`, `available`) versions, if known
+    pub fn versions(&self) -> (Option<&str>, Option<&str>) {
+        (
+            self.installed.as_ref().map(|_i| "unknown"), // TODO: Implement
+            self.available.as_ref().map(|a| a.version.as_ref()),
+        )
     }
 }

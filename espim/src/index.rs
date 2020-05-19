@@ -15,6 +15,7 @@ impl AvailablePlugin {
     }
 
     pub fn download(&self) -> Result<InstalledPlugin> {
+        // TODO: Wipe directory
         let bytes = util::download(&self.download_url())?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))?;
 

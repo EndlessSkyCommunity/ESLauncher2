@@ -1,6 +1,8 @@
 use crate::Message;
 use espim::ESPIM;
-use iced::{image, Align, Column, Container, Element, Image, Length, Row, Text, VerticalAlignment};
+use iced::{
+    image, Align, Color, Column, Container, Element, Image, Length, Row, Text, VerticalAlignment,
+};
 
 #[derive(Debug, Clone)]
 pub struct PluginsFrameState {
@@ -62,17 +64,33 @@ struct Plugin {
 
 impl Plugin {
     fn view(&self) -> Element<Message> {
+        let versions = self.espim_plugin.versions();
         let mut content = Row::new().spacing(10).padding(10);
         if let Some(bytes) = &self.icon_bytes {
             content = content.push(
                 Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
-                    .height(Length::Units(64))
-                    .width(Length::Units(64)),
+                    .height(Length::Units(48))
+                    .width(Length::Units(48)),
             );
         }
 
         content
-            .push(Text::new(self.espim_plugin.name()).vertical_alignment(VerticalAlignment::Center))
+            .push(
+                Column::new()
+                    .push(
+                        Text::new(self.espim_plugin.name())
+                            .vertical_alignment(VerticalAlignment::Center),
+                    )
+                    .push(
+                        Text::new(format!(
+                            "Installed: {}, Available: {}",
+                            versions.0.unwrap_or("unknown"),
+                            versions.1.unwrap_or("unknown")
+                        ))
+                        .size(14)
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                    ),
+            )
             .into()
     }
 }
