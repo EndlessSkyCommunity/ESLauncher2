@@ -82,11 +82,20 @@ impl Plugin {
                             .vertical_alignment(VerticalAlignment::Center),
                     )
                     .push(
-                        Text::new(format!(
-                            "Installed: {}, Available: {}",
-                            versions.0.unwrap_or("unknown"),
-                            versions.1.unwrap_or("unknown")
-                        ))
+                        Text::new(if self.espim_plugin.is_installed() {
+                            format!("Installed: {}", versions.0.unwrap_or("unknown"))
+                        } else {
+                            String::from("Not installed")
+                        })
+                        .size(14)
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                    )
+                    .push(
+                        Text::new(if self.espim_plugin.is_available() {
+                            format!("Available: {}", versions.1.unwrap_or("unknown"))
+                        } else {
+                            String::from("Unavailable")
+                        })
                         .size(14)
                         .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     ),
