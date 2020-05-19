@@ -105,7 +105,7 @@ impl Default for ESPIM {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AvailablePlugin, ESPIM};
+    use crate::{es_plugin_dir, AvailablePlugin, ESPIM};
     use std::fs;
 
     #[test]

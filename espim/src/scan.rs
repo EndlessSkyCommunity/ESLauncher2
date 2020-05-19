@@ -1,4 +1,4 @@
-use crate::{es_plugin_dir, InstalledPlugin, ESPIM};
+use crate::{es_plugin_dir, InstalledPlugin};
 use anyhow::Result;
 
 /// Attempts to read plug-ins from the default directory

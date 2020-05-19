@@ -1,8 +1,9 @@
 use crate::{util, AvailablePlugin, InstalledPlugin};
+use anyhow::Result;
 use std::path::PathBuf;
 
 /// Possible icon names, in order of preference
-const ICON_NAMES: [&'static str; 4] = ["icon@2x.png", "icon@2x.jpg", "icon.png", "icon.jpg"];
+const ICON_NAMES: [&str; 4] = ["icon@2x.png", "icon@2x.jpg", "icon.png", "icon.jpg"];
 
 #[derive(Debug, Clone)]
 pub struct Plugin {
@@ -49,5 +50,15 @@ impl Plugin {
             return util::download(&a.icon_url).ok();
         }
         None
+    }
+
+    pub fn install(&mut self) -> Result<()> {
+        self.installed = Some(
+            self.available
+                .as_ref()
+                .ok_or_else(|| anyhow!("Not an available Plug-In"))?
+                .download()?,
+        );
+        Ok(())
     }
 }

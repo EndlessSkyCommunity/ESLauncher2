@@ -1,7 +1,6 @@
-use crate::{es_plugin_dir, util, AvailablePlugin, InstalledPlugin, ESPIM};
+use crate::{es_plugin_dir, util, AvailablePlugin, InstalledPlugin};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::io::Read;
 use std::path::PathBuf;
 use std::{fs, io};
 use ureq;
