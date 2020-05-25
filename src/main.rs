@@ -22,6 +22,7 @@ mod update;
 use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage};
 use crate::music::{MusicCommand, MusicState};
+use crate::plugins_frame::PluginMessage;
 
 use iced::{
     button, scrollable, Align, Application, Button, Column, Command, Container, Element,
@@ -61,6 +62,7 @@ pub enum MainView {
 pub enum Message {
     InstallFrameMessage(InstallFrameMessage),
     InstanceMessage(usize, InstanceMessage),
+    PluginMessage(String, PluginMessage),
     Installed(Option<Instance>),
     Deleted(Option<PathBuf>),
     Updated(Option<Instance>),
@@ -113,6 +115,9 @@ impl Application for ESLauncher {
                 if let Some(instance) = instance {
                     return instance.update(msg);
                 }
+            }
+            Message::PluginMessage(name, msg) => {
+                let plugin = self.plugins_frame.plu
             }
             Message::Installed(option) => {
                 if let Some(instance) = option {

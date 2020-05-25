@@ -1,7 +1,9 @@
-use crate::Message;
+use crate::{style, Message};
+use anyhow::Error;
 use espim::ESPIM;
 use iced::{
-    image, Align, Color, Column, Container, Element, Image, Length, Row, Text, VerticalAlignment,
+    button, image, Align, Color, Column, Command, Container, Element, Image, Length, Row, Space,
+    Text, VerticalAlignment,
 };
 
 #[derive(Debug, Clone)]
@@ -20,6 +22,7 @@ impl PluginsFrameState {
                     .map(|p| Plugin {
                         espim_plugin: p.clone(),
                         icon_bytes: p.retrieve_icon(),
+                        install_button: button::State::default(),
                     })
                     .collect(),
                 espim: Some(espim),
@@ -37,12 +40,19 @@ impl PluginsFrameState {
         }
     }
     pub fn view(&mut self) -> Container<Message> {
-        let plugin_list = self.plugins.iter().fold(
+        let plugin_list = self.plugins.iter_mut().fold(
             Column::new()
                 .padding(20)
                 .spacing(20)
                 .align_items(Align::Center),
-            |column, plugin| column.push(plugin.view()),
+            |column, mut plugin| {
+                let name = String::from(plugin.espim_plugin.name());
+                column.push(
+                    plugin
+                        .view()
+                        .map(move |pm| Message::PluginMessage(name, pm)),
+                )
+            },
         );
 
         Container::new(
@@ -57,13 +67,27 @@ impl PluginsFrameState {
 }
 
 #[derive(Debug, Clone)]
+pub enum PluginMessage {
+    Install,
+}
+
+#[derive(Debug, Clone)]
 struct Plugin {
     espim_plugin: espim::Plugin,
     icon_bytes: Option<Vec<u8>>,
+    install_button: button::State,
 }
 
 impl Plugin {
-    fn view(&self) -> Element<Message> {
+    pub fn update(&mut self, message: PluginMessage) -> Command<PluginMessage> {
+        match message {
+            PluginMessage::Install => {}
+        }
+
+        Command::none()
+    }
+
+    fn view(&mut self) -> Element<PluginMessage> {
         let versions = self.espim_plugin.versions();
         let mut content = Row::new().spacing(10).padding(10);
         if let Some(bytes) = &self.icon_bytes {
@@ -100,6 +124,19 @@ impl Plugin {
                         .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     ),
             )
+            .push(Space::new(Length::Fill, Length::Shrink))
+            .push(
+                button::Button::new(&mut self.install_button, style::update_icon()) //Use other icon here?
+                    .style(style::Button::Icon)
+                    .on_press(PluginMessage::Install),
+            )
             .into()
+    }
+}
+
+pub async fn perform_install(plugin: &mut espim::Plugin) {
+    match plugin.install() {
+        Ok(_) => {}
+        Err(e) => error!("Install failed: {}", e),
     }
 }

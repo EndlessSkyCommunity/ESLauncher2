@@ -79,7 +79,7 @@ impl AvailablePlugin {
 
 pub(crate) fn get_available_plugins() -> Result<Vec<AvailablePlugin>> {
     let resp = ureq::get(
-        "https://raw.githubusercontent.com/MCOfficer/endless-sky-plugins/master/plugins.json",
+        "https://github.com/EndlessSkyCommunity/endless-sky-plugins/raw/master/generated/plugins.json",
     )
     .call();
     if resp.error() {
