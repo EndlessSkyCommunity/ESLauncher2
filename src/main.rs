@@ -110,14 +110,17 @@ impl Application for ESLauncher {
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
-            Message::InstanceMessage(i, msg) => {
-                let instance = self.instances_frame.instances.get_mut(i);
-                if let Some(instance) = instance {
-                    return instance.update(msg);
-                }
-            }
+            Message::InstanceMessage(i, msg) => match self.instances_frame.instances.get_mut(i) {
+                None => error!("Failed to find internal Instance with position {}", i),
+                Some(i) => return i.update(msg),
+            },
             Message::PluginMessage(name, msg) => {
-                let plugin = self.plugins_frame.plu
+                let mut plugins = self.plugins_frame.plugins.clone();
+                plugins.retain(|p| p.espim_plugin.name().eq(&name));
+                match plugins.get_mut(0) {
+                    None => error!("Failed to find internal Plug-In with name {}", name),
+                    Some(p) => return p.update(msg),
+                }
             }
             Message::Installed(option) => {
                 if let Some(instance) = option {

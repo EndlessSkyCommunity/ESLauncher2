@@ -47,7 +47,7 @@ impl Plugin {
             }
         }
         if let Some(a) = &self.available {
-            return util::download(&a.icon_url).ok();
+            return util::download(a.icon_url.as_ref()?).ok();
         }
         None
     }

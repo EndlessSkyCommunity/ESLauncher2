@@ -34,7 +34,7 @@ struct AvailablePlugin {
     url: String,
     version: String,
     #[serde(alias = "iconUrl")]
-    icon_url: String,
+    icon_url: Option<String>,
     author: String,
     description: String,
 }

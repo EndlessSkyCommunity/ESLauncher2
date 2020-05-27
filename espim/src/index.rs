@@ -15,15 +15,23 @@ impl AvailablePlugin {
     }
 
     pub fn download(&self) -> Result<InstalledPlugin> {
+        let mut destination =
+            es_plugin_dir().ok_or_else(|| anyhow!("Failed to get ES Plug-In Dir"))?;
+        destination.push(&self.name);
+
+        info!(
+            "Downloading {} to {}",
+            self.name,
+            destination.to_string_lossy()
+        );
+
         // TODO: Wipe directory
         let bytes = util::download(&self.download_url())?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))?;
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).unwrap();
-            let mut outpath =
-                es_plugin_dir().ok_or_else(|| anyhow!("Failed to get ES Plug-In Dir"))?;
-            outpath.push(&self.name);
+            let mut outpath = destination.clone();
             let archive_path = file.sanitized_name();
             let base = archive_path
                 .components()
@@ -71,6 +79,7 @@ impl AvailablePlugin {
             }
         }
 
+        info!("Done!");
         Ok(InstalledPlugin {
             name: self.name.clone(),
         })

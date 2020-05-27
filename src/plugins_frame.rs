@@ -1,5 +1,5 @@
 use crate::{style, Message};
-use anyhow::Error;
+
 use espim::ESPIM;
 use iced::{
     button, image, Align, Color, Column, Command, Container, Element, Image, Length, Row, Space,
@@ -9,7 +9,7 @@ use iced::{
 #[derive(Debug, Clone)]
 pub struct PluginsFrameState {
     espim: Option<ESPIM>,
-    plugins: Vec<Plugin>,
+    pub plugins: Vec<Plugin>,
 }
 
 impl PluginsFrameState {
@@ -45,12 +45,12 @@ impl PluginsFrameState {
                 .padding(20)
                 .spacing(20)
                 .align_items(Align::Center),
-            |column, mut plugin| {
+            |column, plugin| {
                 let name = String::from(plugin.espim_plugin.name());
                 column.push(
                     plugin
                         .view()
-                        .map(move |pm| Message::PluginMessage(name, pm)),
+                        .map(move |msg| Message::PluginMessage(name.clone(), msg)),
                 )
             },
         );
@@ -72,19 +72,19 @@ pub enum PluginMessage {
 }
 
 #[derive(Debug, Clone)]
-struct Plugin {
-    espim_plugin: espim::Plugin,
+pub struct Plugin {
+    pub espim_plugin: espim::Plugin,
     icon_bytes: Option<Vec<u8>>,
     install_button: button::State,
 }
 
 impl Plugin {
-    pub fn update(&mut self, message: PluginMessage) -> Command<PluginMessage> {
+    pub fn update(&mut self, message: PluginMessage) -> Command<Message> {
         match message {
-            PluginMessage::Install => {}
+            PluginMessage::Install => {
+                Command::perform(perform_install(self.espim_plugin.clone()), Message::Dummy)
+            }
         }
-
-        Command::none()
     }
 
     fn view(&mut self) -> Element<PluginMessage> {
@@ -134,7 +134,7 @@ impl Plugin {
     }
 }
 
-pub async fn perform_install(plugin: &mut espim::Plugin) {
+pub async fn perform_install(mut plugin: espim::Plugin) {
     match plugin.install() {
         Ok(_) => {}
         Err(e) => error!("Install failed: {}", e),
