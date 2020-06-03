@@ -120,33 +120,42 @@ impl Plugin {
             Column::new().push(Text::new(&self.name).vertical_alignment(VerticalAlignment::Center));
         let mut controls = Row::new();
 
-        if let PluginState::Idle { espim_plugin } = &self.state {
-            let versions = espim_plugin.versions();
-            infos = infos
-                .push(
-                    Text::new(if espim_plugin.is_installed() {
-                        format!("Installed: {}", versions.0.unwrap_or("unknown"))
-                    } else {
-                        String::from("Not installed")
-                    })
-                    .size(14)
-                    .color(Color::from_rgb(0.6, 0.6, 0.6)),
-                )
-                .push(
-                    Text::new(if espim_plugin.is_available() {
-                        format!("Available: {}", versions.1.unwrap_or("unknown"))
-                    } else {
-                        String::from("Unavailable")
-                    })
-                    .size(14)
-                    .color(Color::from_rgb(0.6, 0.6, 0.6)),
+        match &self.state {
+            PluginState::Idle { espim_plugin } => {
+                let versions = espim_plugin.versions();
+                infos = infos
+                    .push(
+                        Text::new(if espim_plugin.is_installed() {
+                            format!("Installed: {}", versions.0.unwrap_or("unknown"))
+                        } else {
+                            String::from("Not installed")
+                        })
+                        .size(14)
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                    )
+                    .push(
+                        Text::new(if espim_plugin.is_available() {
+                            format!("Available: {}", versions.1.unwrap_or("unknown"))
+                        } else {
+                            String::from("Unavailable")
+                        })
+                        .size(14)
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                    );
+                controls = controls.push(
+                    button::Button::new(&mut self.install_button, style::update_icon()) //Use other icon here?
+                        .style(style::Button::Icon)
+                        .on_press(PluginMessage::Install),
                 );
-            controls = controls.push(
-                button::Button::new(&mut self.install_button, style::update_icon()) //Use other icon here?
-                    .style(style::Button::Icon)
-                    .on_press(PluginMessage::Install),
-            );
-        }
+            }
+            PluginState::Working => {
+                infos = infos.push(
+                    Text::new("Working...")
+                        .size(14)
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                )
+            }
+        };
 
         content
             .push(infos)
