@@ -1,6 +1,6 @@
 use crate::{style, Message};
 
-use espim::ESPIM;
+use espim::Plugin as EspimPlugin;
 use iced::{
     button, image, Align, Color, Column, Command, Container, Element, Image, Length, Row, Space,
     Text, VerticalAlignment,
@@ -8,37 +8,35 @@ use iced::{
 
 #[derive(Debug, Clone)]
 pub struct PluginsFrameState {
-    espim: Option<ESPIM>,
     pub plugins: Vec<Plugin>,
 }
 
 impl PluginsFrameState {
     pub fn new() -> Self {
-        match ESPIM::new() {
-            Ok(espim) => Self {
-                plugins: espim
-                    .plugins
-                    .iter()
-                    .map(|p| Plugin {
-                        espim_plugin: p.clone(),
-                        icon_bytes: p.retrieve_icon(),
+        let mut plugins = vec![];
+        match espim::retrieve_plugins() {
+            Ok(retrieved) => {
+                for p in retrieved {
+                    let name = String::from(p.name());
+                    let icon_bytes = p.retrieve_icon();
+                    plugins.push(Plugin {
+                        state: PluginState::Idle { espim_plugin: p },
+                        name,
+                        icon_bytes,
                         install_button: button::State::default(),
                     })
-                    .collect(),
-                espim: Some(espim),
-            },
+                }
+            }
             Err(e) => {
                 error!(
                     "Failed to initialize ESPIM, Plug-Ins will unavailable: {}",
                     e
                 );
-                Self {
-                    espim: None,
-                    plugins: vec![],
-                }
             }
         }
+        Self { plugins }
     }
+
     pub fn view(&mut self) -> Container<Message> {
         let plugin_list = self.plugins.iter_mut().fold(
             Column::new()
@@ -46,7 +44,7 @@ impl PluginsFrameState {
                 .spacing(20)
                 .align_items(Align::Center),
             |column, plugin| {
-                let name = String::from(plugin.espim_plugin.name());
+                let name = plugin.name.clone();
                 column.push(
                     plugin
                         .view()
@@ -69,11 +67,19 @@ impl PluginsFrameState {
 #[derive(Debug, Clone)]
 pub enum PluginMessage {
     Install,
+    WorkFinished(EspimPlugin),
+}
+
+#[derive(Debug, Clone)]
+pub enum PluginState {
+    Working,
+    Idle { espim_plugin: EspimPlugin },
 }
 
 #[derive(Debug, Clone)]
 pub struct Plugin {
-    pub espim_plugin: espim::Plugin,
+    pub state: PluginState,
+    pub name: String,
     icon_bytes: Option<Vec<u8>>,
     install_button: button::State,
 }
@@ -82,13 +88,25 @@ impl Plugin {
     pub fn update(&mut self, message: PluginMessage) -> Command<Message> {
         match message {
             PluginMessage::Install => {
-                Command::perform(perform_install(self.espim_plugin.clone()), Message::Dummy)
+                if let PluginState::Idle { espim_plugin } = &mut self.state {
+                    let name = self.name.clone();
+                    let plugin = espim_plugin.clone();
+                    self.state = PluginState::Working;
+                    return Command::perform(perform_install(plugin), move |p| {
+                        Message::PluginMessage(name.clone(), PluginMessage::WorkFinished(p))
+                    });
+                }
+            }
+            PluginMessage::WorkFinished(plugin) => {
+                self.state = PluginState::Idle {
+                    espim_plugin: plugin,
+                };
             }
         }
+        Command::none()
     }
 
     fn view(&mut self) -> Element<PluginMessage> {
-        let versions = self.espim_plugin.versions();
         let mut content = Row::new().spacing(10).padding(10);
         if let Some(bytes) = &self.icon_bytes {
             content = content.push(
@@ -98,45 +116,53 @@ impl Plugin {
             );
         }
 
-        content
-            .push(
-                Column::new()
-                    .push(
-                        Text::new(self.espim_plugin.name())
-                            .vertical_alignment(VerticalAlignment::Center),
-                    )
-                    .push(
-                        Text::new(if self.espim_plugin.is_installed() {
-                            format!("Installed: {}", versions.0.unwrap_or("unknown"))
-                        } else {
-                            String::from("Not installed")
-                        })
-                        .size(14)
-                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
-                    )
-                    .push(
-                        Text::new(if self.espim_plugin.is_available() {
-                            format!("Available: {}", versions.1.unwrap_or("unknown"))
-                        } else {
-                            String::from("Unavailable")
-                        })
-                        .size(14)
-                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
-                    ),
-            )
-            .push(Space::new(Length::Fill, Length::Shrink))
-            .push(
+        if self.name == "All Content Plugin" {
+            dbg!(&self.state);
+        }
+
+        let mut infos =
+            Column::new().push(Text::new(&self.name).vertical_alignment(VerticalAlignment::Center));
+        let mut controls = Row::new();
+
+        if let PluginState::Idle { espim_plugin } = &self.state {
+            let versions = espim_plugin.versions();
+            infos = infos
+                .push(
+                    Text::new(if espim_plugin.is_installed() {
+                        format!("Installed: {}", versions.0.unwrap_or("unknown"))
+                    } else {
+                        String::from("Not installed")
+                    })
+                    .size(14)
+                    .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                )
+                .push(
+                    Text::new(if espim_plugin.is_available() {
+                        format!("Available: {}", versions.1.unwrap_or("unknown"))
+                    } else {
+                        String::from("Unavailable")
+                    })
+                    .size(14)
+                    .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                );
+            controls = controls.push(
                 button::Button::new(&mut self.install_button, style::update_icon()) //Use other icon here?
                     .style(style::Button::Icon)
                     .on_press(PluginMessage::Install),
-            )
+            );
+        }
+
+        content
+            .push(infos)
+            .push(Space::new(Length::Fill, Length::Shrink))
+            .push(controls)
             .into()
     }
 }
 
-pub async fn perform_install(mut plugin: espim::Plugin) {
-    match plugin.install() {
-        Ok(_) => {}
-        Err(e) => error!("Install failed: {}", e),
+pub async fn perform_install(mut plugin: EspimPlugin) -> EspimPlugin {
+    if let Err(e) = plugin.install() {
+        error!("Install failed: {}", e)
     }
+    plugin
 }

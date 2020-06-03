@@ -115,9 +115,12 @@ impl Application for ESLauncher {
                 Some(i) => return i.update(msg),
             },
             Message::PluginMessage(name, msg) => {
-                let mut plugins = self.plugins_frame.plugins.clone();
-                plugins.retain(|p| p.espim_plugin.name().eq(&name));
-                match plugins.get_mut(0) {
+                match self
+                    .plugins_frame
+                    .plugins
+                    .iter_mut()
+                    .find(|p| p.name == name)
+                {
                     None => error!("Failed to find internal Plug-In with name {}", name),
                     Some(p) => return p.update(msg),
                 }
