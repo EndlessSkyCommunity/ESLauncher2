@@ -116,10 +116,6 @@ impl Plugin {
             );
         }
 
-        if self.name == "All Content Plugin" {
-            dbg!(&self.state);
-        }
-
         let mut infos =
             Column::new().push(Text::new(&self.name).vertical_alignment(VerticalAlignment::Center));
         let mut controls = Row::new();
