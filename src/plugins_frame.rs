@@ -2,13 +2,14 @@ use crate::{style, Message};
 
 use espim::Plugin as EspimPlugin;
 use iced::{
-    button, image, Align, Color, Column, Command, Container, Element, Image, Length, Row, Space,
-    Text, VerticalAlignment,
+    button, image, scrollable, Align, Color, Column, Command, Container, Element, Image, Length,
+    Row, Scrollable, Space, Text, VerticalAlignment,
 };
 
 #[derive(Debug, Clone)]
 pub struct PluginsFrameState {
     pub plugins: Vec<Plugin>,
+    plugin_scrollable: scrollable::State,
 }
 
 impl PluginsFrameState {
@@ -34,7 +35,10 @@ impl PluginsFrameState {
                 );
             }
         }
-        Self { plugins }
+        Self {
+            plugins,
+            plugin_scrollable: scrollable::State::default(),
+        }
     }
 
     pub fn view(&mut self) -> Container<Message> {
@@ -55,7 +59,7 @@ impl PluginsFrameState {
 
         Container::new(
             Column::new()
-                .push(plugin_list)
+                .push(Scrollable::new(&mut self.plugin_scrollable).push(plugin_list))
                 .spacing(20)
                 .width(Length::Fill),
         )
