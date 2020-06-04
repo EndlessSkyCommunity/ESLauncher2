@@ -101,8 +101,7 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
         .open(&target_path)
         .await?;
 
-    let client = reqwest::Client::new().get(&url);
-    let mut reader = ReaderRemote::from_request(client);
+    let mut reader = ReaderRemote::from_url(url.parse()?);
     let archive = Archive::try_init(&mut reader).await?;
     let mut chunks_left = archive.source_index().clone();
 
