@@ -162,17 +162,22 @@ impl Plugin {
                         .size(14)
                         .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     );
-                controls = controls
-                    .push(
-                        button::Button::new(&mut self.install_button, style::update_icon()) // TODO: Use other icon here?
-                            .style(style::Button::Icon)
-                            .on_press(PluginMessage::Install),
-                    )
-                    .push(
-                        button::Button::new(&mut self.remove_button, style::delete_icon())
-                            .style(style::Button::Destructive)
-                            .on_press(PluginMessage::Remove),
-                    );
+
+                let mut install_button =
+                    button::Button::new(&mut self.install_button, style::update_icon()) // TODO: Use other icon here?
+                        .style(style::Button::Icon);
+                if espim_plugin.is_available() {
+                    install_button = install_button.on_press(PluginMessage::Install)
+                }
+
+                let mut remove_button =
+                    button::Button::new(&mut self.remove_button, style::delete_icon())
+                        .style(style::Button::Destructive);
+                if espim_plugin.is_installed() {
+                    remove_button = remove_button.on_press(PluginMessage::Remove)
+                }
+
+                controls = controls.push(install_button).push(remove_button);
             }
             PluginState::Working => {
                 infos = infos.push(
