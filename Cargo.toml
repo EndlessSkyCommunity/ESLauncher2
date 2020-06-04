@@ -3,6 +3,7 @@ name = "eslauncher2"
 version = "0.4.0"
 authors = ["M*C*O <mcofficer@gmx.de>"]
 edition = "2018"
+build = "build.rs"
 
 [dependencies]
 anyhow = "1.0"
@@ -35,6 +36,9 @@ features = ["image"]
 version = "0.1.1"
 default_features = false
 features = ["debug", "image"]
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
 
 [profile.release]
 opt-level = 'z'  # Optimize for size.
