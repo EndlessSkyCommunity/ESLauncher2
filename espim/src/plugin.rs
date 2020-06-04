@@ -66,8 +66,8 @@ impl Plugin {
     /// Returns the (`installed`, `available`) versions, if known
     pub fn versions(&self) -> (Option<&str>, Option<&str>) {
         (
-            self.installed.as_ref().map(|_i| "unknown"), // TODO: Implement
-            self.available.as_ref().map(|a| a.version.as_ref()),
+            self.installed.as_ref().map(|i| i.version.as_str()),
+            self.available.as_ref().map(|a| a.version.as_str()),
         )
     }
 }

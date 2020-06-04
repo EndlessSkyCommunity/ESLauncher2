@@ -1,6 +1,7 @@
 use crate::{es_plugin_dir, util, AvailablePlugin, InstalledPlugin};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::io::Write;
 use std::path::PathBuf;
 use std::{fs, io};
 use ureq;
@@ -25,7 +26,11 @@ impl AvailablePlugin {
             destination.to_string_lossy()
         );
 
-        // TODO: Wipe directory
+        if destination.exists() {
+            fs::remove_dir_all(&destination)?;
+        }
+        fs::create_dir_all(&destination)?;
+
         let bytes = util::download(&self.download_url())?;
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))?;
 
@@ -79,9 +84,15 @@ impl AvailablePlugin {
             }
         }
 
+        let mut version_file_path = destination;
+        version_file_path.push(".version");
+        let mut version_file = fs::File::create(version_file_path)?;
+        version_file.write_all(self.version.as_bytes())?;
+
         info!("Done!");
         Ok(InstalledPlugin {
             name: self.name.clone(),
+            version: self.version.clone(),
         })
     }
 }

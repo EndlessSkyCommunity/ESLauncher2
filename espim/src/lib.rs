@@ -18,6 +18,7 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 struct InstalledPlugin {
     name: String,
+    version: String,
 }
 
 impl InstalledPlugin {
@@ -77,22 +78,35 @@ pub fn es_plugin_dir() -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{es_plugin_dir, AvailablePlugin};
+    use crate::{es_plugin_dir, AvailablePlugin, Plugin};
     use std::fs;
 
     #[test]
     fn download_wf() {
-        let wf = AvailablePlugin {
-            name: String::from( "World Forge"),
-            url: String::from("https://github.com/EndlessSkyCommunity/world-forge"),
-            version: String::from("22f036fcff384dcdd41c583783597eb994b9ab7a"),
-            icon_url: Some(String::from("https://github.com/EndlessSkyCommunity/world-forge/raw/master/icon.png")),
-            author: String::from("Amazinite"),
-            description: String::from("A plugin for Endless Sky that allows the player to access everything in the game in one place. Includes features that the all-content plugin does not have such as the ability to boost your combat rating and change your friendly/hostile status with factions of the game without having to save-edit. Intended to help content creators test their plugins."),
+        let mut wf = Plugin {
+            installed: None,
+            available: Some(AvailablePlugin
+                    {
+                        name: String::from( "World Forge"),
+                        url: String::from("https://github.com/EndlessSkyCommunity/world-forge"),
+                        version: String::from("22f036fcff384dcdd41c583783597eb994b9ab7a"),
+                        icon_url: Some(String::from("https://github.com/EndlessSkyCommunity/world-forge/raw/master/icon.png")),
+                        author: String::from("Amazinite"),
+                        description: String::from("A plugin for Endless Sky that allows the player to access everything in the game in one place. Includes features that the all-content plugin does not have such as the ability to boost your combat rating and change your friendly/hostile status with factions of the game without having to save-edit. Intended to help content creators test their plugins."),
+                    }
+            ),
         };
         let mut out = es_plugin_dir().unwrap();
-        out.push(&wf.name);
-        wf.download().unwrap();
+        out.push(&wf.available.as_ref().unwrap().name);
+        wf.install().unwrap();
+
+        let (available_version, installed_version) = wf.versions();
+        assert_eq!(
+            available_version.unwrap(),
+            installed_version.unwrap(),
+            "22f036fcff384dcdd41c583783597eb994b9ab7a"
+        );
+
         fs::remove_dir_all(out).unwrap();
     }
 }
