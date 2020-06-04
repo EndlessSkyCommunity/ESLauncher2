@@ -25,6 +25,7 @@ impl PluginsFrameState {
                         name,
                         icon_bytes,
                         install_button: button::State::default(),
+                        remove_button: button::State::default(),
                     })
                 }
             }
@@ -71,6 +72,7 @@ impl PluginsFrameState {
 #[derive(Debug, Clone)]
 pub enum PluginMessage {
     Install,
+    Remove,
     WorkFinished(EspimPlugin),
 }
 
@@ -86,6 +88,7 @@ pub struct Plugin {
     pub name: String,
     icon_bytes: Option<Vec<u8>>,
     install_button: button::State,
+    remove_button: button::State,
 }
 
 impl Plugin {
@@ -98,6 +101,13 @@ impl Plugin {
                     self.state = PluginState::Working;
                     return Command::perform(perform_install(plugin), move |p| {
                         Message::PluginMessage(name.clone(), PluginMessage::WorkFinished(p))
+                    });
+                }
+            }
+            PluginMessage::Remove => {
+                if let PluginState::Idle { espim_plugin } = &mut self.state {
+                    espim_plugin.remove().unwrap_or_else(|e| {
+                        error!("Failed to remove Plug-In {}: {}", self.name, e)
                     });
                 }
             }
@@ -122,7 +132,7 @@ impl Plugin {
 
         let mut infos =
             Column::new().push(Text::new(&self.name).vertical_alignment(VerticalAlignment::Center));
-        let mut controls = Row::new();
+        let mut controls = Row::new().spacing(10);
 
         match &self.state {
             PluginState::Idle { espim_plugin } => {
@@ -146,11 +156,17 @@ impl Plugin {
                         .size(14)
                         .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     );
-                controls = controls.push(
-                    button::Button::new(&mut self.install_button, style::update_icon()) //Use other icon here?
-                        .style(style::Button::Icon)
-                        .on_press(PluginMessage::Install),
-                );
+                controls = controls
+                    .push(
+                        button::Button::new(&mut self.install_button, style::update_icon()) // TODO: Use other icon here?
+                            .style(style::Button::Icon)
+                            .on_press(PluginMessage::Install),
+                    )
+                    .push(
+                        button::Button::new(&mut self.remove_button, style::delete_icon())
+                            .style(style::Button::Destructive)
+                            .on_press(PluginMessage::Remove),
+                    );
             }
             PluginState::Working => {
                 infos = infos.push(
@@ -170,7 +186,7 @@ impl Plugin {
 }
 
 pub async fn perform_install(mut plugin: EspimPlugin) -> EspimPlugin {
-    if let Err(e) = plugin.install() {
+    if let Err(e) = plugin.download() {
         error!("Install failed: {}", e)
     }
     plugin

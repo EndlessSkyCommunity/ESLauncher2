@@ -1,5 +1,6 @@
 use crate::{util, AvailablePlugin, InstalledPlugin};
 use anyhow::Result;
+use std::fs;
 use std::path::PathBuf;
 
 /// Possible icon names, in order of preference
@@ -53,13 +54,23 @@ impl Plugin {
     }
 
     /// Downloads & installs the plug-in to `es_plugin_folder()`/`name()`
-    pub fn install(&mut self) -> Result<()> {
+    pub fn download(&mut self) -> Result<()> {
         self.installed = Some(
             self.available
                 .as_ref()
                 .ok_or_else(|| anyhow!("Not an available Plug-In"))?
                 .download()?,
         );
+        Ok(())
+    }
+
+    /// Removes the plug-in locally
+    pub fn remove(&mut self) -> Result<()> {
+        fs::remove_dir_all(
+            self.path()
+                .ok_or_else(|| anyhow!("Not an installed Plug-In"))?,
+        )?;
+        self.installed = None;
         Ok(())
     }
 

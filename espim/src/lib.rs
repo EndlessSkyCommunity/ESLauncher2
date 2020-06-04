@@ -79,7 +79,6 @@ pub fn es_plugin_dir() -> Option<PathBuf> {
 #[cfg(test)]
 mod tests {
     use crate::{es_plugin_dir, AvailablePlugin, Plugin};
-    use std::fs;
 
     #[test]
     fn download_wf() {
@@ -98,7 +97,7 @@ mod tests {
         };
         let mut out = es_plugin_dir().unwrap();
         out.push(&wf.available.as_ref().unwrap().name);
-        wf.install().unwrap();
+        wf.download().unwrap();
 
         let (available_version, installed_version) = wf.versions();
         assert_eq!(
@@ -107,6 +106,6 @@ mod tests {
             "22f036fcff384dcdd41c583783597eb994b9ab7a"
         );
 
-        fs::remove_dir_all(out).unwrap();
+        wf.remove().unwrap();
     }
 }
