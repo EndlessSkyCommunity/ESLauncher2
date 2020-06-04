@@ -123,10 +123,16 @@ impl Plugin {
     fn view(&mut self) -> Element<PluginMessage> {
         let mut content = Row::new().spacing(10).padding(10);
         if let Some(bytes) = &self.icon_bytes {
+            const ICON_DIMENSION: u16 = 48;
             content = content.push(
-                Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
-                    .height(Length::Units(48))
-                    .width(Length::Units(48)),
+                Row::new()
+                    .width(Length::Units(ICON_DIMENSION))
+                    .align_items(Align::Center)
+                    .push(
+                        Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
+                            .height(Length::Units(ICON_DIMENSION))
+                            .width(Length::Units(ICON_DIMENSION)),
+                    ),
             );
         }
 
