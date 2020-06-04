@@ -7,7 +7,7 @@ A program for organizing Endless Sky installations.
 - Install specific versions
 - Update instances
 - Play instances
+- Install & manage plug-ins
 
 ### Planned features:
 - Install specific commits
-- Install & manage plug-ins (eventually™)
