@@ -1,4 +1,6 @@
 #![forbid(unsafe_code)]
+#![windows_subsystem = "windows"]
+
 #[macro_use]
 extern crate log;
 #[macro_use]
