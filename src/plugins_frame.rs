@@ -31,7 +31,7 @@ impl PluginsFrameState {
             }
             Err(e) => {
                 error!(
-                    "Failed to initialize ESPIM, Plug-Ins will unavailable: {}",
+                    "Failed to initialize ESPIM, Plug-Ins will be unavailable: {}",
                     e
                 );
             }
