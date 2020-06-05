@@ -12,7 +12,7 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
         return Err(anyhow!("Cannot update InstanceType::Unknown",));
     }
 
-    let mut archive_path = if InstanceType::AppImage != instance.instance_type {
+    let mut archive_path = if InstanceType::AppImage == instance.instance_type {
         instance.executable.clone()
     } else {
         find_archive_path(&instance.path, instance.instance_type)?
