@@ -1,3 +1,4 @@
+use env_logger::Logger;
 use log::{Level, LevelFilter, Log, Metadata, Record};
 use std::sync::mpsc;
 
@@ -41,16 +42,15 @@ fn should_log(record: &Record) -> bool {
     }
 }
 
-fn set_logger(logger: ChanneledLogger) -> Result<(), log::SetLoggerError> {
-    log::set_boxed_logger(Box::new(logger)).map(|()| log::set_max_level(LevelFilter::Debug))
-}
-
 pub fn init() -> mpsc::Receiver<String> {
     let (log_writer, log_reader) = mpsc::sync_channel(128);
-    let logger = ChanneledLogger {
+
+    let channeled = Box::new(ChanneledLogger {
         channel: log_writer,
-    };
-    set_logger(logger).unwrap();
-    info!("Initialized logger");
+    });
+    let env = Box::new(env_logger::builder().build());
+    multi_log::MultiLogger::init(vec![channeled, env], log::Level::Debug).unwrap();
+
+    log::info!("Initialized logger");
     log_reader
 }

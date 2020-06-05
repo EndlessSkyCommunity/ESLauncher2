@@ -9,10 +9,12 @@ build = "build.rs"
 anyhow = "1.0"
 bitar = { version="0.6.4", features=["rustls-tls"] }
 chrono = { version = "0.4", features = ["serde"] }
+env_logger = "0.7"
 espim = { path="espim" }
 flate2 = "1.0"
 futures = "0.3"
 log = { version="0.4.8", features=["std"] }
+multi_log = "0.1.2"
 open = "1"
 platform-dirs = "0.2.0"
 progress-streams = "1.1.0"
