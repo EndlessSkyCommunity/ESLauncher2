@@ -4,7 +4,6 @@ use std::ffi::OsStr;
 use std::fs::{create_dir, File};
 use std::path::PathBuf;
 use tar::Archive;
-use zip_extensions::zip_extract;
 
 pub fn unpack(archive_file: &PathBuf, destination: &PathBuf) -> Result<()> {
     info!(
@@ -23,7 +22,7 @@ pub fn unpack(archive_file: &PathBuf, destination: &PathBuf) -> Result<()> {
             if !destination.exists() {
                 create_dir(destination)?;
             }
-            zip_extract(archive_file, destination)?;
+            espim::unzip(&destination, std::fs::read(archive_file)?)?;
         }
         _ => panic!("Unsupported archive!"),
     };
