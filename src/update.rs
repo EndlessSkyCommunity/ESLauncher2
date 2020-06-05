@@ -12,12 +12,10 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
         return Err(anyhow!("Cannot update InstanceType::Unknown",));
     }
 
-    let mut archive_path = if InstanceType::AppImage == instance.instance_type {
+    let mut archive_path = if InstanceType::AppImage != instance.instance_type {
         instance.executable.clone()
     } else {
-        let mut p = instance.path.clone();
-        p.push(instance.instance_type.archive().unwrap());
-        p
+        find_archive_path(&instance.path, instance.instance_type)?
     };
     if !archive_path.exists() {
         return Err(anyhow!("{} doesn't exist", archive_path.to_string_lossy()));
@@ -50,6 +48,22 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
 
     info!("Done!");
     Ok(new_instance)
+}
+
+fn find_archive_path(instance_path: &PathBuf, instance_type: InstanceType) -> Result<PathBuf> {
+    let mut p = instance_path.clone();
+    let matcher = instance_type
+        .archive()
+        .ok_or_else(|| anyhow!("Got InstanceType without archive property"))?;
+
+    for r in instance_path.read_dir()? {
+        let candidate = r?.path();
+        if candidate.to_string_lossy().contains(matcher) {
+            p.push(candidate);
+            return Ok(p);
+        }
+    }
+    Err(anyhow!("Failed to find local instance"))
 }
 
 async fn update_continuous_instance(
