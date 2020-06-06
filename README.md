@@ -9,5 +9,5 @@ A program for organizing Endless Sky installations.
 - Play instances
 - Install & manage plug-ins
 
-### Planned features:
-- Install specific commits
+### Requirements
+ESLauncher2 requires DirectX 11 or 12, Vulkan or Metal. See also [#4](https://github.com/EndlessSkyCommunity/ESLauncher2/issues/4).
