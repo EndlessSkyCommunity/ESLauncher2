@@ -215,13 +215,14 @@ impl Application for ESLauncher {
             .padding(20)
             .align_items(Align::Center)
             .push(view_chooser)
-            .push(main_view)
+            .push(main_view.height(Length::FillPortion(3)))
             .push(
                 Scrollable::new(&mut self.log_scrollable)
                     .push(logbox)
                     .padding(20)
                     .align_items(Align::Start)
-                    .width(Length::Fill),
+                    .width(Length::Fill)
+                    .height(Length::FillPortion(1)),
             ); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         let music_controls = Row::new()

@@ -1,10 +1,14 @@
 use crate::instance::{load_instances, Instance};
 use crate::Message;
-use iced::{Align, Color, Column, Container, Element, HorizontalAlignment, Length, Text};
+use iced::{
+    scrollable, Align, Color, Column, Container, Element, HorizontalAlignment, Length, Scrollable,
+    Text,
+};
 
 #[derive(Debug, Clone)]
 pub struct InstancesFrameState {
     pub instances: Vec<Instance>,
+    scrollable: scrollable::State,
 }
 
 impl Default for InstancesFrameState {
@@ -16,7 +20,10 @@ impl Default for InstancesFrameState {
                 vec![]
             }
         };
-        InstancesFrameState { instances }
+        InstancesFrameState {
+            instances,
+            scrollable: scrollable::State::default(),
+        }
     }
 }
 
@@ -46,16 +53,18 @@ pub fn view(state: &mut InstancesFrameState) -> Element<Message> {
             .into()
     };
     Container::new(
-        Column::new()
-            .push(
-                Text::new("Instances")
-                    .size(26)
-                    .horizontal_alignment(HorizontalAlignment::Center)
-                    .width(Length::Fill),
-            )
-            .push(instances_list)
-            .spacing(20)
-            .width(Length::Fill),
+        Scrollable::new(&mut state.scrollable).push(
+            Column::new()
+                .push(
+                    Text::new("Instances")
+                        .size(26)
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .width(Length::Fill),
+                )
+                .push(instances_list)
+                .spacing(20)
+                .width(Length::Fill),
+        ),
     )
     .width(Length::FillPortion(3))
     .padding(30)

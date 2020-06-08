@@ -2,8 +2,8 @@ use crate::instance::{get_instances_dir, InstanceType};
 use crate::{instance, Message};
 use core::fmt;
 use iced::{
-    button, text_input, Align, Button, Column, Command, Container, Element, HorizontalAlignment,
-    Length, Radio, Text, TextInput,
+    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
+    HorizontalAlignment, Length, Radio, Scrollable, Text, TextInput,
 };
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +14,7 @@ pub struct InstallFrame {
     install_button: button::State,
     source: InstanceSource,
     source_identifier_input: text_input::State,
+    scrollable: scrollable::State,
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +69,7 @@ impl Default for InstallFrame {
             install_button: button::State::default(),
             source: InstanceSource::default(),
             source_identifier_input: text_input::State::default(),
+            scrollable: scrollable::State::default(),
         }
     }
 }
@@ -137,27 +139,29 @@ impl InstallFrame {
         }
 
         Container::new(
-            Column::new()
-                .padding(20)
-                .push(
-                    Text::new("Install")
-                        .horizontal_alignment(HorizontalAlignment::Center)
-                        .width(Length::Fill)
-                        .size(26),
-                )
-                .push(
-                    TextInput::new(
-                        &mut self.name_chooser,
-                        "Choose Name",
-                        &self.name,
-                        InstallFrameMessage::NameChanged,
+            Scrollable::new(&mut self.scrollable).push(
+                Column::new()
+                    .padding(20)
+                    .push(
+                        Text::new("Install")
+                            .horizontal_alignment(HorizontalAlignment::Center)
+                            .width(Length::Fill)
+                            .size(26),
                     )
-                    .padding(10),
-                )
-                .push(controls)
-                .push(install_button)
-                .spacing(20)
-                .align_items(Align::End),
+                    .push(
+                        TextInput::new(
+                            &mut self.name_chooser,
+                            "Choose Name",
+                            &self.name,
+                            InstallFrameMessage::NameChanged,
+                        )
+                        .padding(10),
+                    )
+                    .push(controls)
+                    .push(install_button)
+                    .spacing(20)
+                    .align_items(Align::End),
+            ),
         )
         .width(Length::FillPortion(2))
         .into()
