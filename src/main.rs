@@ -44,7 +44,7 @@ struct ESLauncher {
     music_button: button::State,
     music_state: MusicState,
     install_frame: install_frame::InstallFrame,
-    instances_frame: instances_frame::InstancesFrameState,
+    instances_frame: instances_frame::InstancesFrame,
     plugins_frame: plugins_frame::PluginsFrameState,
     log_scrollable: scrollable::State,
     log_reader: Receiver<String>,
@@ -92,7 +92,7 @@ impl Application for ESLauncher {
                 music_button: button::State::default(),
                 music_state: MusicState::Playing,
                 install_frame: install_frame::InstallFrame::default(),
-                instances_frame: instances_frame::InstancesFrameState::default(),
+                instances_frame: instances_frame::InstancesFrame::default(),
                 plugins_frame: plugins_frame::PluginsFrameState::new(),
                 log_scrollable: scrollable::State::default(),
                 log_reader,
@@ -192,7 +192,7 @@ impl Application for ESLauncher {
         let main_view = match self.view {
             MainView::Instances => Container::new(
                 Row::new()
-                    .push(instances_frame::view(&mut self.instances_frame))
+                    .push(self.instances_frame.view())
                     .push(self.install_frame.view().map(Message::InstallFrameMessage))
                     .spacing(50),
             ),
