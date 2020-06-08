@@ -160,24 +160,19 @@ fn mac_postprocess(archive_path: String) {
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
 
-    // extract the file stem, because this is the namne under which MacOS mounts the volume
+    // Now copy the app via script, because it's not possible to do this from the rust runtime
+    // we need the stem of the archive name, because this is the name under which MacOS mounts
+    // and the target is the instance location
     let mount_name = Path::new(&archive_path).file_stem().unwrap().to_str().unwrap();
-    // let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
-    // let app_source_path = format!("/Volumes/{}/*", mount_name);
-    // let app_target_path = format!("{}", archive_parent);
-    // info!("  Copying {} to {}", app_source_path.clone(), app_target_path.clone());
-    // let output = Command::new("/usr/bin/cp")
-//                             .arg("-r")
-//                             .arg(app_source_path.clone())
-//                             .arg("/tmp/")
-//                             .output()
-//                             .expect("Copy failed");
-    // info!("  Result of copy: {}", output.status);
-    // io::stdout().write_all(&output.stdout).unwrap();
-    // io::stderr().write_all(&output.stderr).unwrap();
-
-    info!("  Calling copy script");
-    let output = Command::new("./do_copy.sh")
+    let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
+    let app_source_path = format!("/Volumes/{}/*", mount_name);
+    let app_target_path = format!("{}/", archive_parent);
+    info!("  Calling copy script with parameters:");
+    info!("    {}", app_source_path.clone());
+    info!("    {}", app_target_path.clone());
+    let output = Command::new("./ESLauncher2_copy.sh")
+                            .arg(app_source_path.clone())
+                            .arg(app_target_path.clone())
                             .output()
                             .expect("Copy failed");
     info!("  Result of copy: {}", output.status);
