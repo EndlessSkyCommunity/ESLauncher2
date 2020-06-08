@@ -25,7 +25,7 @@ pub enum InstanceType {
 impl InstanceType {
     pub fn archive(self) -> Option<&'static str> {
         match self {
-            InstanceType::MacOS => Some("EndlessSky-macOS"),
+            InstanceType::MacOS => Some("endless-sky-macos"),
             InstanceType::Windows => Some("win64"),
             InstanceType::Linux => Some(".tar.gz"),
             InstanceType::AppImage => Some(".AppImage"),

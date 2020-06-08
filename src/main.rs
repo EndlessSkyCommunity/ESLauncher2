@@ -81,6 +81,15 @@ impl Application for ESLauncher {
     fn new(_flag: ()) -> (ESLauncher, Command<Message>) {
         let log_reader = logger::init();
         info!("Starting ESLauncher2 v{}", version!());
+        if cfg!(target_os = "macos") {
+            info!("  running on target environment macos");
+        } else if cfg!(target_os = "windows") {
+            info!("  running on target environment windows");
+        } else if cfg!(target_os = "linux") {
+            info!("  running on target environment linux");
+        } else {
+            info!("  running on target environment other");
+        }
 
         let music_sender = music::spawn();
 

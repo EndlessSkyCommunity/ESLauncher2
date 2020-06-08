@@ -1,7 +1,9 @@
+use crate::instance::{get_instances_dir};
 use log::{Level, Log, Metadata, Record};
 use simplelog::{
     CombinedLogger, Config, LevelFilter, SharedLogger, TermLogger, TerminalMode, WriteLogger,
 };
+use std::fs;
 use std::fs::File;
 use std::sync::mpsc;
 
@@ -61,6 +63,15 @@ fn should_log(record: &Record) -> bool {
 
 fn open_logfile() -> File {
     let mut path = std::env::current_dir().unwrap();
+    if cfg!(target_os = "macos") {
+        match get_instances_dir() {
+            Some(instance_path) => {
+                path = instance_path;
+                fs::create_dir_all(path.clone()).expect("Creation of instance directories failed.");
+            }
+            None => {}
+        }
+    }
     path.push("ESLauncher2.log");
     File::create(path).unwrap()
 }

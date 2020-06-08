@@ -3,9 +3,9 @@ use crate::install_frame::{InstanceSource, InstanceSourceType};
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
 use anyhow::Result;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::{fs, io};
+use std::{fs, io, io::Write};
 
 pub fn install(
     destination: PathBuf,
@@ -52,12 +52,20 @@ pub fn install(
     if let InstanceType::AppImage = instance_type {
         fs::rename(&archive_file, &executable_path)?;
     } else {
-        archive::unpack(&archive_file, &destination)?;
+        // MacOS get's a disk image, which the regular unpacker doesn't know and causes him to panic
+        if !cfg!(target_os = "macos") {
+            archive::unpack(&archive_file, &destination)?;
+        }    
     }
 
-    if cfg!(unix) {
+    if cfg!(target_os = "linux") {
         chmod_x(&executable_path);
     }
+
+    if cfg!(target_os = "macos") {
+        mac_postprocess(archive_file.to_string_lossy().to_string());
+    }
+
     info!("Done!");
     Ok(Instance::new(
         destination,
@@ -135,4 +143,49 @@ fn chmod_x(file: &PathBuf) {
     if let Err(e) = Command::new("/usr/bin/chmod").arg("+x").arg(file).output() {
         error!("Failed to run chmod +x: {}", e)
     };
+}
+
+fn mac_postprocess(archive_path: String) {
+    info!("Mac postprocessing starting...");
+    
+    // Mount the disk image file
+    let archive_path_wq = format!("{}", archive_path);
+    info!("  Mounting dmg file {}", archive_path_wq.clone());
+    let output = Command::new("/usr/bin/hdiutil")
+                            .arg("attach")
+                            .arg(archive_path_wq.clone())
+                            .output()
+                            .expect("Mount failed");
+    info!("  Result of mount: {}", output.status);
+    io::stdout().write_all(&output.stdout).unwrap();
+    io::stderr().write_all(&output.stderr).unwrap();
+
+    // extract the file stem, because this is the namne under which MacOS mounts the volume
+    let mount_name = Path::new(&archive_path).file_stem().unwrap().to_str().unwrap();
+    let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
+    let app_source_path = format!("/Volumes/{}/*", mount_name);
+    let app_target_path = format!("{}", archive_parent);
+    info!("  Copying {} to {}", app_source_path.clone(), app_target_path.clone());
+    let output = Command::new("/usr/bin/cp")
+                            .arg("-r")
+                            .arg(app_source_path.clone())
+                            .arg("/tmp/")
+                            .output()
+                            .expect("Copy failed");
+    info!("  Result of copy: {}", output.status);
+    io::stdout().write_all(&output.stdout).unwrap();
+    io::stderr().write_all(&output.stderr).unwrap();
+                        
+    // detach the drive
+    let detach_path = format!("/Volumes/{}", mount_name);
+    info!("  Detaching {}", detach_path.clone());
+    let output = Command::new("/usr/bin/hdiutil")
+                            .arg("detach")
+                            .arg(detach_path.clone())
+                            .output()
+                            .expect("Detach failed");
+    info!("  Result of copy: {}", output.status);
+    io::stdout().write_all(&output.stdout).unwrap();
+    io::stderr().write_all(&output.stderr).unwrap();
+    info!("Mac postprocessing done...");
 }
