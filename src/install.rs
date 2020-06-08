@@ -162,20 +162,28 @@ fn mac_postprocess(archive_path: String) {
 
     // extract the file stem, because this is the namne under which MacOS mounts the volume
     let mount_name = Path::new(&archive_path).file_stem().unwrap().to_str().unwrap();
-    let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
-    let app_source_path = format!("/Volumes/{}/*", mount_name);
-    let app_target_path = format!("{}", archive_parent);
-    info!("  Copying {} to {}", app_source_path.clone(), app_target_path.clone());
-    let output = Command::new("/usr/bin/cp")
-                            .arg("-r")
-                            .arg(app_source_path.clone())
-                            .arg("/tmp/")
+    // let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
+    // let app_source_path = format!("/Volumes/{}/*", mount_name);
+    // let app_target_path = format!("{}", archive_parent);
+    // info!("  Copying {} to {}", app_source_path.clone(), app_target_path.clone());
+    // let output = Command::new("/usr/bin/cp")
+//                             .arg("-r")
+//                             .arg(app_source_path.clone())
+//                             .arg("/tmp/")
+//                             .output()
+//                             .expect("Copy failed");
+    // info!("  Result of copy: {}", output.status);
+    // io::stdout().write_all(&output.stdout).unwrap();
+    // io::stderr().write_all(&output.stderr).unwrap();
+
+    info!("  Calling copy script");
+    let output = Command::new("./do_copy.sh")
                             .output()
                             .expect("Copy failed");
     info!("  Result of copy: {}", output.status);
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
-                        
+
     // detach the drive
     let detach_path = format!("/Volumes/{}", mount_name);
     info!("  Detaching {}", detach_path.clone());
