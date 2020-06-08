@@ -165,7 +165,7 @@ fn mac_postprocess(archive_path: String) {
     // and the target is the instance location
     let mount_name = Path::new(&archive_path).file_stem().unwrap().to_str().unwrap();
     let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
-    let app_source_path = format!("/Volumes/{}/*", mount_name);
+    let app_source_path = format!("/Volumes/{}/Endless Sky.app", mount_name);
     let app_target_path = format!("{}/", archive_parent);
     info!("  Calling copy script with parameters:");
     info!("    {}", app_source_path.clone());
@@ -187,8 +187,10 @@ fn mac_postprocess(archive_path: String) {
                             .arg(detach_path.clone())
                             .output()
                             .expect("Detach failed");
-    info!("  Result of copy: {}", output.status);
+    info!("  Result of detach: {}", output.status);
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
     info!("Mac postprocessing done...");
+
+    // for now missing: delete the dmg file
 }
