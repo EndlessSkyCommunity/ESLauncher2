@@ -11,11 +11,21 @@ pub fn install(
     destination: PathBuf,
     name: String,
     instance_type: InstanceType,
-    instance_source: InstanceSource,
+    mut instance_source: InstanceSource,
 ) -> Result<Instance> {
     info!("Installing to {}", destination.to_string_lossy());
     if let InstanceType::Unknown = instance_type {
         return Err(anyhow!("Cannot install InstanceType::Unknown",));
+    }
+
+    if InstanceSourceType::PR == instance_source.r#type
+        && instance_source.identifier.starts_with('#')
+    {
+        instance_source.identifier.remove(0);
+    } else if InstanceSourceType::Release == instance_source.r#type
+        && !instance_source.identifier.starts_with('v')
+    {
+        instance_source.identifier.insert(0, 'v');
     }
 
     fs::create_dir_all(&destination)?;

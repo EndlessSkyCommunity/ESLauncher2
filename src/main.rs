@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"] // Don't show console on windows
 
 #[macro_use]
 extern crate log;
