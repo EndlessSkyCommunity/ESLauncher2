@@ -35,7 +35,7 @@ impl InstanceType {
 
     pub fn executable(self) -> Option<&'static str> {
         match self {
-            InstanceType::MacOS => Some("Endless Sky.app/Content/MacOS/Endless Sky"),
+            InstanceType::MacOS => Some("Endless Sky.app/Contents/MacOS/Endless Sky"),
             InstanceType::Windows => Some("EndlessSky.exe"),
             InstanceType::Linux => Some("endless-sky"),
             InstanceType::AppImage => Some("endless-sky.AppImage"),
