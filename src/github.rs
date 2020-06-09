@@ -91,7 +91,7 @@ pub struct WorkflowRuns {
 pub struct WorkflowRun {
     pub(crate) id: u32,
     run_number: u32,
-    head_repository: Repo,
+    head_repository: Option<Repo>,
 }
 
 pub trait Artifact {
@@ -152,9 +152,12 @@ pub fn get_latest_workflow_run(
     );
     runs.workflow_runs
         .into_iter()
-        .filter(|run| run.head_repository.id.eq(&head_repo_id))
+        .filter(|run| {
+            run.head_repository.is_some()
+                && run.head_repository.as_ref().unwrap().id.eq(&head_repo_id)
+        })
         .max_by_key(|run| run.run_number)
-        .ok_or_else(|| anyhow!("Got no runs for workflow!"))
+        .ok_or_else(|| anyhow!("Found no suitable workflow runs! This can happen if the PR doesn't have the changes that produce usable builds."))
 }
 
 pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact>> {
