@@ -52,19 +52,23 @@ pub fn install(
     if let InstanceType::AppImage = instance_type {
         fs::rename(&archive_file, &executable_path)?;
     } else {
-        // MacOS get's a disk image, which the regular unpacker doesn't know and causes him to panic
-        if !cfg!(target_os = "macos") || archive_file.to_string_lossy().to_string().contains("*.zip") {
-            info!("Extracting archive...");
+        if !cfg!(target_os = "macos") {
             archive::unpack(&archive_file, &destination)?;
         }    
     }
 
-    if cfg!(target_os = "linux") {
-        chmod_x(&executable_path);
+    if cfg!(target_os = "macos") {
+        info!("xyxyx mac-treatment: archive_file: {}", archive_file.to_string_lossy().to_string());
+        if !cfg!(target_os = "macos") || archive_file.to_string_lossy().to_string().contains("*.zip") {
+            info!("Extracting archive...");
+            archive::unpack(&archive_file, &destination)?;
+        } else {
+            mac_process_dmg(archive_file.to_string_lossy().to_string());
+        }
     }
 
-    if cfg!(target_os = "macos") {
-        mac_postprocess(archive_file.to_string_lossy().to_string());
+    if cfg!(target_os = "linux") {
+        chmod_x(&executable_path);
     }
 
     info!("Done!");
@@ -147,8 +151,8 @@ fn chmod_x(file: &PathBuf) {
     };
 }
 
-fn mac_postprocess(archive_path: String) {
-    info!("Mac postprocessing starting...");
+fn mac_process_dmg(archive_path: String) {
+    info!("Mac dmg postprocessing starting...");
     
     // Mount the disk image file
     let archive_path_wq = format!("{}", archive_path);
@@ -212,5 +216,5 @@ fn mac_postprocess(archive_path: String) {
         error!("Failed to remove archive. {}", e)
     };
 
-    info!("Mac postprocessing done...");
+    info!("Mac dmg postprocessing done...");
 }
