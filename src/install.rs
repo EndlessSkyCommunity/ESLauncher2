@@ -118,14 +118,7 @@ fn download_pr_asset(
 }
 
 pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceType) -> Result<A> {
-    info!("xyxyx looking for: {}", instance_type.archive().ok_or_else(|| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Got InstanceType without archive property",
-        )
-    })?);
     for artifact in artifacts {
-        info!("xyxyx looking at {}", artifact.name());
         let matches = artifact
             .name()
             .contains(instance_type.archive().ok_or_else(|| {
