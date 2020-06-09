@@ -5,7 +5,7 @@ use crate::{archive, github};
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::{fs, io, io::Write};
+use std::{fs, fs::File, io, io::Write};
 
 pub fn install(
     destination: PathBuf,
@@ -166,11 +166,20 @@ fn mac_postprocess(archive_path: String) {
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
 
-    // Now copy the app via script, because it's not possible to do this from the rust runtime
     // we need the stem of the archive name, because this is the name under which MacOS mounts
     // and the target is the instance location
     let mount_name = Path::new(&archive_path).file_stem().unwrap().to_str().unwrap();
     let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
+
+    // Now create a script, becase it's not possible to do this from the rust runtime directly (MacOS security)
+    let buffer = "#!/bin/sh\n\nsource=\"$1\"\ntarget=\"$2\"\n\ncp -r \"$source\" \"$target\"\n";
+    let script_path = format!("{}/ESLauncher2.sh", archive_parent.clone());
+    let mut script_file = File::create(script_path.clone()).expect("Creation of script failed!");
+    if let Err(e) = script_file.write_all(buffer.as_bytes()) {
+        error!("Failed to write script. {}", e)
+    };
+    
+    // Call the script
     let app_source_path = format!("/Volumes/{}/Endless Sky.app", mount_name);
     let app_target_path = format!("{}/", archive_parent);
     info!("  Calling copy script with parameters:");
@@ -197,11 +206,15 @@ fn mac_postprocess(archive_path: String) {
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
 
-    // delete the dmg file
+    // delete the dmg file and the script
     info!("  Deleting dmg file {}", archive_path);
     if let Err(e) = fs::remove_file(archive_path) {
         error!("Failed to remove archive. {}", e)
     };
+    info!("  Deleting script file {}", script_path.clone());
+    // if let Err(e) = fs::remove_file(script_path) {
+    //     error!("Failed to remove archive. {}", e)
+    // };
 
     info!("Mac postprocessing done...");
 }
