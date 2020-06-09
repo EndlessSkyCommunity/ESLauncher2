@@ -59,7 +59,7 @@ pub fn install(
 
     if cfg!(target_os = "macos") {
         info!("xyxyx mac-treatment: archive_file: {}", archive_file.to_string_lossy().to_string());
-        if !cfg!(target_os = "macos") || archive_file.to_string_lossy().to_string().contains("*.zip") {
+        if archive_file.to_string_lossy().to_string().contains("zip") {
             info!("Extracting archive...");
             archive::unpack(&archive_file, &destination)?;
         } else {
