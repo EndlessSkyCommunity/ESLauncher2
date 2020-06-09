@@ -234,7 +234,7 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String) -> Result<()
     err_path.push(format!("{}.err", time));
     let mut err = File::create(err_path)?;
 
-    info!("Launching {}", name);
+    info!("Launching {} via executable {}", name, executable.to_string_lossy().to_string());
     match Command::new(&executable).output() {
         Ok(output) => {
             info!("{} exited with {}", name, output.status);

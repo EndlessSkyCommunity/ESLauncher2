@@ -58,12 +58,12 @@ pub fn install(
     }
 
     if cfg!(target_os = "macos") {
-        info!("xyxyx mac-treatment: archive_file: {}", archive_file.to_string_lossy().to_string());
-        if archive_file.to_string_lossy().to_string().contains("zip") {
-            info!("Extracting archive...");
-            archive::unpack(&archive_file, &destination)?;
+        let archive_path = archive_file.to_string_lossy().to_string();
+        info!("Initiating mac treatment for: {}", archive_path);
+        if archive_path.contains("zip") {
+            mac_process_zip(archive_path);
         } else {
-            mac_process_dmg(archive_file.to_string_lossy().to_string());
+            mac_process_dmg(archive_path);
         }
     }
 
@@ -151,15 +151,39 @@ fn chmod_x(file: &PathBuf) {
     };
 }
 
+fn mac_process_zip(archive_path: String) {
+    info!("Mac zip postprocessing starting...");
+
+    // We have to do the unzipping via shell because the tool omits the app directory and doesn't set the execution flag properly
+    let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
+    info!("  Unzipping {} to {}", archive_path, archive_parent);
+    let output = Command::new("/usr/bin/unzip")
+                            .arg(archive_path)
+                            .arg("-d")
+                            .arg(archive_parent)
+                            .output()
+                            .expect("Unzip failed");
+    info!("  Result of unzip: {}", output.status);
+    io::stdout().write_all(&output.stdout).unwrap();
+    io::stderr().write_all(&output.stderr).unwrap();
+
+    // delete the zip file
+    info!("  Deleting zip file {}", archive_path);
+    if let Err(e) = fs::remove_file(archive_path) {
+        error!("Failed to remove archive. {}", e)
+    };
+
+    info!("Mac zip postprocessing done...");
+}
+
 fn mac_process_dmg(archive_path: String) {
     info!("Mac dmg postprocessing starting...");
     
     // Mount the disk image file
-    let archive_path_wq = format!("{}", archive_path);
-    info!("  Mounting dmg file {}", archive_path_wq.clone());
+    info!("  Mounting dmg file {}", archive_path.clone());
     let output = Command::new("/usr/bin/hdiutil")
                             .arg("attach")
-                            .arg(archive_path_wq.clone())
+                            .arg(archive_path.clone())
                             .output()
                             .expect("Mount failed");
     info!("  Result of mount: {}", output.status);
