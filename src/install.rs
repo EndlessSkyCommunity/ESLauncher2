@@ -158,9 +158,9 @@ fn mac_process_zip(archive_path: String) {
     let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
     info!("  Unzipping {} to {}", archive_path, archive_parent);
     let output = Command::new("/usr/bin/unzip")
-                            .arg(archive_path)
+                            .arg(archive_path.clone())
                             .arg("-d")
-                            .arg(archive_parent)
+                            .arg(archive_parent.clone())
                             .output()
                             .expect("Unzip failed");
     info!("  Result of unzip: {}", output.status);
@@ -168,7 +168,7 @@ fn mac_process_zip(archive_path: String) {
     io::stderr().write_all(&output.stderr).unwrap();
 
     // delete the zip file
-    info!("  Deleting zip file {}", archive_path);
+    info!("  Deleting zip file {}", archive_path.clone());
     if let Err(e) = fs::remove_file(archive_path) {
         error!("Failed to remove archive. {}", e)
     };
