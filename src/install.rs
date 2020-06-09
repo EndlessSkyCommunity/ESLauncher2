@@ -90,7 +90,7 @@ fn download_release_asset(
     let release = github::get_release_by_tag(tag)?;
     let assets = github::get_release_assets(release.id)?;
     let asset = choose_artifact(assets, instance_type)?;
-    info!("Donwnloading artifact from {}", asset.browser_download_url);
+    info!("Downloading artifact from {}", asset.browser_download_url);
     Ok(github::download(
         &asset.browser_download_url,
         asset.name(),
