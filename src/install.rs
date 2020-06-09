@@ -125,6 +125,7 @@ pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceTy
         )
     })?);
     for artifact in artifacts {
+        info!("xyxyx looking at {}", artifact.name());
         let matches = artifact
             .name()
             .contains(instance_type.archive().ok_or_else(|| {
@@ -212,10 +213,9 @@ fn mac_postprocess(archive_path: String) {
         error!("Failed to remove archive. {}", e)
     };
     info!("  Deleting script file {}", script_path.clone());
-    // not now
-    // if let Err(e) = fs::remove_file(script_path) {
-    //     error!("Failed to remove archive. {}", e)
-    // };
+    if let Err(e) = fs::remove_file(script_path) {
+        error!("Failed to remove archive. {}", e)
+    };
 
     info!("Mac postprocessing done...");
 }
