@@ -118,6 +118,12 @@ fn download_pr_asset(
 }
 
 pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceType) -> Result<A> {
+    info!("xyxyx looking for: {}", instance_type.archive().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Got InstanceType without archive property",
+        )
+    })?);
     for artifact in artifacts {
         let matches = artifact
             .name()
@@ -190,7 +196,12 @@ fn mac_postprocess(archive_path: String) {
     info!("  Result of detach: {}", output.status);
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
-    info!("Mac postprocessing done...");
 
-    // for now missing: delete the dmg file
+    // delete the dmg file
+    info!("  Deleting dmg file {}", archive_path);
+    if let Err(e) = fs::remove_file(archive_path) {
+        error!("Failed to remove archive. {}", e)
+    };
+
+    info!("Mac postprocessing done...");
 }
