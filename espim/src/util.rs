@@ -71,9 +71,12 @@ pub fn unzip(destination: &PathBuf, bytes: Vec<u8>) -> Result<()> {
 
 fn has_toplevel(archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>) -> bool {
     let mut toplevel_dir: Option<PathBuf> = None;
+    if archive.len() < 2 {
+        return false;
+    }
+
     for i in 0..archive.len() {
         let file = archive.by_index(i).unwrap().sanitized_name();
-        dbg!(&file.to_string_lossy());
         if let Some(toplevel_dir) = &toplevel_dir {
             if !file.starts_with(toplevel_dir) {
                 return false;
