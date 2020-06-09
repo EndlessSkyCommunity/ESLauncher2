@@ -212,6 +212,7 @@ fn mac_postprocess(archive_path: String) {
         error!("Failed to remove archive. {}", e)
     };
     info!("  Deleting script file {}", script_path.clone());
+    // not now
     // if let Err(e) = fs::remove_file(script_path) {
     //     error!("Failed to remove archive. {}", e)
     // };
