@@ -54,10 +54,15 @@ pub fn install(
     if let InstanceType::AppImage = instance_type {
         fs::rename(&archive_file, &executable_path)?;
     } else {
-        // Attention MCO: This implementation assumes that all files which do fall under this else condition are either zipped or Mac DMG files. Please confirm, or we need to rewrite the conditions.
-        // What I am missing is the deletion of the archive file - saves 100 MB each
-        if archive_file.to_string_lossy().contains("zip") {
+        if !cfg!(target_os = "macos") {
 			archive::unpack(&archive_file, &destination, true)?;
+        }            
+    }
+
+    if cfg!(target_os = "macos") {
+        debug!("Initiating mac treatment for: {}", archive_file.to_string_lossy());
+        if archive_file.to_string_lossy().contains("zip") {
+			archive::unpack(&archive_file, &destination, false)?;
         } else {
             mac_process_dmg(&archive_file);
         }
