@@ -85,7 +85,7 @@ pub fn init() -> mpsc::Receiver<String> {
     CombinedLogger::init(vec![
         Box::new(channeled),
         TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed),
-        WriteLogger::new(LevelFilter::Debug, Config::default(), open_logfile()),
+        WriteLogger::new(LevelFilter::Info, Config::default(), open_logfile()),
     ])
     .unwrap();
 
