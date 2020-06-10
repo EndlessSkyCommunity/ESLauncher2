@@ -17,17 +17,18 @@ pub(crate) fn download(url: &str) -> Result<Vec<u8>> {
 }
 
 /// Unzips a zip archive to `destination`. If the archive contains only a top-level
-/// directory, the everything inside it will be extracted.
-pub fn unzip(destination: &PathBuf, bytes: Vec<u8>) -> Result<()> {
+/// directory, the everything inside it will be extracted. If `strip_toplevel` is true,
+/// archives containing a single folder will extract the contents of that folder instead.
+pub fn unzip(destination: &PathBuf, bytes: Vec<u8>, strip_toplevel: bool) -> Result<()> {
     let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))?;
-    let has_toplevel = has_toplevel(&mut archive);
+    let should_strip_toplevel = strip_toplevel && has_toplevel(&mut archive);
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).unwrap();
         let mut outpath = destination.clone();
         let mut archive_path = file.sanitized_name();
-        if has_toplevel {
-            archive_path = strip_toplevel(archive_path)?;
+        if should_strip_toplevel {
+            archive_path = strip_toplevel_dir(archive_path)?;
         }
         if archive_path.to_string_lossy().is_empty() {
             // Top-level directory
@@ -89,7 +90,7 @@ fn has_toplevel(archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>) -> bool {
     true
 }
 
-fn strip_toplevel(archive_path: PathBuf) -> Result<PathBuf> {
+fn strip_toplevel_dir(archive_path: PathBuf) -> Result<PathBuf> {
     let base = archive_path
         .components()
         .take(1)
