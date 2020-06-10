@@ -7,7 +7,7 @@ build = "build.rs"
 
 [dependencies]
 anyhow = "1.0"
-bitar = { version="0.6.4", features=["rustls-tls"] }
+bitar = { version="0.7.0", features=["rustls-tls"] }
 chrono = { version = "0.4", features = ["serde"] }
 espim = { path="espim" }
 flate2 = "1.0"
