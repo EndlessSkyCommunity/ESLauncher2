@@ -64,6 +64,7 @@ pub fn install(
         if archive_file.to_string_lossy().contains("zip") {
             archive::unpack(&archive_file, &destination, false)?;
             chmod_x(&executable_path);
+            fs::remove_file(archive_file)?;
         } else {
             mac_process_dmg(&archive_file);
         }
@@ -147,7 +148,7 @@ pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceTy
 }
 
 fn chmod_x(file: &PathBuf) {
-    debug!("Running chmod +x {}", file.to_string_lossy());
+    info!("Running chmod +x {}", file.to_string_lossy());
     if let Err(e) = Command::new("/usr/bin/chmod").arg("+x").arg(file).output() {
         error!("Failed to run chmod +x: {}", e)
     };
