@@ -1,13 +1,13 @@
 [package]
 name = "eslauncher2"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["M*C*O <mcofficer@gmx.de>"]
 edition = "2018"
 build = "build.rs"
 
 [dependencies]
 anyhow = "1.0"
-bitar = { version="0.6.4", features=["rustls-tls"] }
+bitar = { version="0.7.0", features=["rustls-tls"] }
 chrono = { version = "0.4", features = ["serde"] }
 dmg = "0.1.1"
 espim = { path="espim" }

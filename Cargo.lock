@@ -97,27 +97,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-stream"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22068c0c19514942eefcfd4daf8976ef1aad84e61539f95cd200c35202f80af5"
-dependencies = [
- "async-stream-impl",
- "futures-core",
-]
-
-[[package]]
-name = "async-stream-impl"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25f9db3b38af870bf7e5cc649167533b493928e50744e2c30ae350230b414670"
-dependencies = [
- "proc-macro2 1.0.18",
- "quote 1.0.6",
- "syn 1.0.30",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -184,11 +163,10 @@ dependencies = [
 
 [[package]]
 name = "bitar"
-version = "0.6.4"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f02aba75147ec80d4005e93006e3b9d8ece48fc4b5399a2758a56f2c2423b1eb"
+checksum = "239bdacee60050c10849a8eddbdfab368ba2bf7e41f1909d324ceb79c266ee69"
 dependencies = [
- "async-stream",
  "async-trait",
  "blake2",
  "brotli",
@@ -200,6 +178,7 @@ dependencies = [
  "prost",
  "prost-build",
  "reqwest",
+ "smallvec 1.4.0",
  "tokio",
 ]
 
@@ -783,7 +762,7 @@ dependencies = [
 
 [[package]]
 name = "eslauncher2"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "anyhow",
  "bitar",

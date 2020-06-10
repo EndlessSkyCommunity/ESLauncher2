@@ -3,7 +3,7 @@ use crate::install_frame::InstanceSourceType;
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github, install, jenkins};
 use anyhow::Result;
-use bitar::{clone_from_archive, clone_in_place, Archive, CloneOptions, ReaderRemote};
+use bitar::{Archive, ReaderRemote};
 use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 
@@ -98,7 +98,7 @@ async fn update_continuous_instance(
         .to_string_lossy()
         .ends_with(InstanceType::AppImage.archive().unwrap())
     {
-        archive::unpack(&archive_path, &instance.path)?;
+        archive::unpack(&archive_path, &instance.path, true)?;
     }
 
     let mut new_instance = instance.clone();
@@ -117,15 +117,15 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
 
     let mut reader = ReaderRemote::from_url(url.parse()?);
     let archive = Archive::try_init(&mut reader).await?;
-    let mut chunks_left = archive.source_index().clone();
+    let mut chunks_left = archive.build_source_index();
 
     // Build an index of the output file's chunks
     info!(
         "Updating chunks of {} in-place",
         target_path.to_string_lossy()
     );
-    let used_from_self = clone_in_place(
-        &CloneOptions::default(),
+    let used_from_self = bitar::clone::in_place(
+        &bitar::clone::Options::default(),
         &mut chunks_left,
         &archive,
         &mut target,
@@ -135,8 +135,8 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
 
     // Read the rest from archive
     info!("Fetching {} chunks from {}", chunks_left.len(), url);
-    let total_read_from_remote = clone_from_archive(
-        &CloneOptions::default(),
+    let total_read_from_remote = bitar::clone::from_archive(
+        &bitar::clone::Options::default(),
         &mut reader,
         &archive,
         &mut chunks_left,

@@ -5,7 +5,10 @@ use std::fs::{create_dir, File};
 use std::path::PathBuf;
 use tar::Archive;
 
-pub fn unpack(archive_file: &PathBuf, destination: &PathBuf) -> Result<()> {
+/// Unpacks a .tar.gz or .zip archive.
+/// If `strip_toplevel` is true, zip archives containing a single folder will extract the contents of that folder instead.
+/// .tar.gz archives are not affected by `strip_toplevel`.
+pub fn unpack(archive_file: &PathBuf, destination: &PathBuf, strip_toplevel: bool) -> Result<()> {
     info!(
         "Extracting {} to {}",
         archive_file.to_string_lossy(),
@@ -22,7 +25,7 @@ pub fn unpack(archive_file: &PathBuf, destination: &PathBuf) -> Result<()> {
             if !destination.exists() {
                 create_dir(destination)?;
             }
-            espim::unzip(&destination, std::fs::read(archive_file)?)?;
+            espim::unzip(&destination, std::fs::read(archive_file)?, strip_toplevel)?;
         }
         _ => panic!("Unsupported archive!"),
     };

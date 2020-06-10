@@ -55,7 +55,7 @@ pub fn install(
         fs::rename(&archive_file, &executable_path)?;
     } else {
         if !cfg!(target_os = "macos") {
-            archive::unpack(&archive_file, &destination)?;
+			archive::unpack(&archive_file, &destination, true)?;
         }    
     }
 
@@ -116,7 +116,7 @@ fn download_pr_asset(
         &format!("{}.zip", artifact.name()),
         destination,
     )?;
-    archive::unpack(&archive_path, destination)?;
+    archive::unpack(&archive_path, destination, true)?;
     fs::remove_file(archive_path)?;
 
     let mut result_path = destination.clone();
