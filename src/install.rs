@@ -60,11 +60,8 @@ pub fn install(
     }
 
     if cfg!(target_os = "macos") {
-        debug!("Initiating mac treatment for: {}", archive_file.to_string_lossy());
         if archive_file.to_string_lossy().contains("zip") {
-            archive::unpack(&archive_file, &destination, false)?;
-            chmod_x(&executable_path);
-            fs::remove_file(archive_file)?;
+            mac_process_zip(&archive_file);
         } else {
             mac_process_dmg(&archive_file);
         }
@@ -154,22 +151,31 @@ fn chmod_x(file: &PathBuf) {
     };
 }
 
+fn mac_process_zip(archive_path: &PathBuf) {
+    // Using Mac unzip because it keeps the execution flags intact. 
+    let archive_parent = archive_path.parent().unwrap();
+    let _output = Command::new("/usr/bin/unzip")
+                            .arg(archive_path.to_string_lossy().to_string())
+                            .arg("-d")
+                            .arg(archive_parent.to_string_lossy().to_string())
+                            .output()
+                            .expect("Problem in Mac postprocessing: Unzip failed");
+
+    // delete the zip file
+    if let Err(e) = fs::remove_file(archive_path) {
+        error!("Problem in Mac postprocessing: failed to remove archive. {}", e)
+    };
+}
+
 fn mac_process_dmg(archive_path: &PathBuf) {
-    debug!("Mac dmg postprocessing starting...");
-    
     // Mount the disk image file
-    debug!("  Mounting dmg file {}", archive_path.to_string_lossy());
     let attach_info = Attach::new(archive_path).attach().expect("Problem in Mac post-processing: mounting of dmg file failed");
 
     // Copy the application (which is in fact a directory)
     let mut app_source_path = PathBuf::from("/Volumes");
     app_source_path.push(archive_path.file_stem().unwrap());
     app_source_path.push("Endless Sky.app");
-    debug!("  Copy-Source: {}", app_source_path.to_string_lossy());
-    
     let app_target_path = PathBuf::from(archive_path.parent().unwrap());
-    debug!("  Copy-Target: {}", app_target_path.to_string_lossy());
-
     let mut options = CopyOptions::new();
     options.overwrite = true;
     if let Err(e) = copy(app_source_path, app_target_path, &options) {
@@ -181,6 +187,4 @@ fn mac_process_dmg(archive_path: &PathBuf) {
     if let Err(e) = fs::remove_file(archive_path) {
         error!("Problem in Mac post-processing: failed to delete dmg file. {}", e)
     };
-
-    info!("Mac dmg postprocessing done...");
 }
