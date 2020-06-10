@@ -146,7 +146,7 @@ pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceTy
 }
 
 fn chmod_x(file: &PathBuf) {
-    info!("Running chmod +x {}", file.to_string_lossy());
+    debug!("Running chmod +x {}", file.to_string_lossy());
     if let Err(e) = Command::new("/usr/bin/chmod").arg("+x").arg(file).output() {
         error!("Failed to run chmod +x: {}", e)
     };
@@ -187,6 +187,7 @@ fn mac_process_dmg(archive_path: &PathBuf) {
     // Copy the application (which is in fact a directory)
     let mut app_source_path = PathBuf::from("/Volumes");
     app_source_path.push(archive_path.file_stem().unwrap());
+    app_source_path.push("Endless Sky.app");
     debug!("  Copy-Source: {}", app_source_path.to_string_lossy());
     
     let app_target_path = PathBuf::from(archive_path.parent().unwrap());
