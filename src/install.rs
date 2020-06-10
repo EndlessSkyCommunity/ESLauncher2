@@ -3,6 +3,7 @@ use crate::install_frame::{InstanceSource, InstanceSourceType};
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
 use anyhow::Result;
+use dmg::Attach;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, fs::File, io, io::Write};
@@ -58,12 +59,11 @@ pub fn install(
     }
 
     if cfg!(target_os = "macos") {
-        let archive_path = archive_file.to_string_lossy().to_string();
-        info!("Initiating mac treatment for: {}", archive_path);
-        if archive_path.contains("zip") {
-            mac_process_zip(archive_path);
+        info!("Initiating mac treatment for: {}", archive_file.to_string_lossy());
+        if archive_file.to_string_lossy().contains("zip") {
+            mac_process_zip(&archive_file);
         } else {
-            mac_process_dmg(archive_path);
+            mac_process_dmg(&archive_file);
         }
     }
 
@@ -151,16 +151,16 @@ fn chmod_x(file: &PathBuf) {
     };
 }
 
-fn mac_process_zip(archive_path: String) {
+fn mac_process_zip(archive_path: &PathBuf) {
     info!("Mac zip postprocessing starting...");
 
-    // We have to do the unzipping via shell because the tool omits the app directory and doesn't set the execution flag properly
-    let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
-    info!("  Unzipping {} to {}", archive_path, archive_parent);
+    // Using Mac unzip because it keeps the execution flags intact. 
+    let archive_parent = archive_path.parent().unwrap();
+    info!("  Unzipping {} to {}", archive_path.to_string_lossy(), archive_parent.to_string_lossy() );
     let output = Command::new("/usr/bin/unzip")
-                            .arg(archive_path.clone())
+                            .arg(archive_path.to_string_lossy().to_string())
                             .arg("-d")
-                            .arg(archive_parent.clone())
+                            .arg(archive_parent.to_string_lossy().to_string())
                             .output()
                             .expect("Unzip failed");
     info!("  Result of unzip: {}", output.status);
@@ -168,7 +168,7 @@ fn mac_process_zip(archive_path: String) {
     io::stderr().write_all(&output.stderr).unwrap();
 
     // delete the zip file
-    info!("  Deleting zip file {}", archive_path.clone());
+    info!("  Deleting zip file {}", archive_path.to_string_lossy());
     if let Err(e) = fs::remove_file(archive_path) {
         error!("Failed to remove archive. {}", e)
     };
@@ -176,19 +176,13 @@ fn mac_process_zip(archive_path: String) {
     info!("Mac zip postprocessing done...");
 }
 
-fn mac_process_dmg(archive_path: String) {
+fn mac_process_dmg(archive_path: &PathBuf) {
     info!("Mac dmg postprocessing starting...");
     
     // Mount the disk image file
-    info!("  Mounting dmg file {}", archive_path.clone());
-    let output = Command::new("/usr/bin/hdiutil")
-                            .arg("attach")
-                            .arg(archive_path.clone())
-                            .output()
-                            .expect("Mount failed");
-    info!("  Result of mount: {}", output.status);
-    io::stdout().write_all(&output.stdout).unwrap();
-    io::stderr().write_all(&output.stderr).unwrap();
+    info!("  Mounting dmg file {}", archive_path.to_string_lossy());
+    let attach_info = Attach::new(archive_path).attach().expect("Mounting of dmg file failed");
+    println!("Device node {:?}", attach_info.device);
 
     // we need the stem of the archive name, because this is the name under which MacOS mounts
     // and the target is the instance location
@@ -219,19 +213,10 @@ fn mac_process_dmg(archive_path: String) {
     io::stderr().write_all(&output.stderr).unwrap();
 
     // detach the drive
-    let detach_path = format!("/Volumes/{}", mount_name);
-    info!("  Detaching {}", detach_path.clone());
-    let output = Command::new("/usr/bin/hdiutil")
-                            .arg("detach")
-                            .arg(detach_path.clone())
-                            .output()
-                            .expect("Detach failed");
-    info!("  Result of detach: {}", output.status);
-    io::stdout().write_all(&output.stdout).unwrap();
-    io::stderr().write_all(&output.stderr).unwrap();
+    attach_info.detach().expect("could not detach");
 
     // delete the dmg file and the script
-    info!("  Deleting dmg file {}", archive_path);
+    info!("  Deleting dmg file {}", archive_path.to_string_lossy());
     if let Err(e) = fs::remove_file(archive_path) {
         error!("Failed to remove archive. {}", e)
     };
