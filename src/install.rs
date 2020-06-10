@@ -7,7 +7,7 @@ use dmg::Attach;
 use fs_extra::dir::{copy, CopyOptions};
 use std::path::PathBuf;
 use std::process::Command;
-use std::{fs, io, io::Write};
+use std::{fs, io};
 
 pub fn install(
     destination: PathBuf,
@@ -54,15 +54,10 @@ pub fn install(
     if let InstanceType::AppImage = instance_type {
         fs::rename(&archive_file, &executable_path)?;
     } else {
-        if !cfg!(target_os = "macos") {
-			archive::unpack(&archive_file, &destination, true)?;
-        }    
-    }
-
-    if cfg!(target_os = "macos") {
-        debug!("Initiating mac treatment for: {}", archive_file.to_string_lossy());
+        // Attention MCO: This implementation assumes that all files which do fall under this else condition are either zipped or Mac DMG files. Please confirm, or we need to rewrite the conditions.
+        // What I am missing is the deletion of the archive file - saves 100 MB each
         if archive_file.to_string_lossy().contains("zip") {
-            mac_process_zip(&archive_file);
+			archive::unpack(&archive_file, &destination, true)?;
         } else {
             mac_process_dmg(&archive_file);
         }
@@ -150,31 +145,6 @@ fn chmod_x(file: &PathBuf) {
     if let Err(e) = Command::new("/usr/bin/chmod").arg("+x").arg(file).output() {
         error!("Failed to run chmod +x: {}", e)
     };
-}
-
-fn mac_process_zip(archive_path: &PathBuf) {
-    debug!("Mac zip postprocessing starting...");
-
-    // Using Mac unzip because it keeps the execution flags intact. 
-    let archive_parent = archive_path.parent().unwrap();
-    debug!("  Unzipping {} to {}", archive_path.to_string_lossy(), archive_parent.to_string_lossy() );
-    let output = Command::new("/usr/bin/unzip")
-                            .arg(archive_path.to_string_lossy().to_string())
-                            .arg("-d")
-                            .arg(archive_parent.to_string_lossy().to_string())
-                            .output()
-                            .expect("Problem in Mac postprocessing: Unzip failed");
-    debug!("  Result of unzip: {}", output.status);
-    io::stdout().write_all(&output.stdout).unwrap();
-    io::stderr().write_all(&output.stderr).unwrap();
-
-    // delete the zip file
-    debug!("  Deleting zip file {}", archive_path.to_string_lossy());
-    if let Err(e) = fs::remove_file(archive_path) {
-        error!("Problem in Mac postprocessing: failed to remove archive. {}", e)
-    };
-
-    debug!("Mac zip postprocessing done...");
 }
 
 fn mac_process_dmg(archive_path: &PathBuf) {
