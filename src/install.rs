@@ -4,9 +4,10 @@ use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
 use anyhow::Result;
 use dmg::Attach;
-use std::path::{Path, PathBuf};
+use fs_extra::dir::{copy, CopyOptions};
+use std::path::PathBuf;
 use std::process::Command;
-use std::{fs, fs::File, io, io::Write};
+use std::{fs, io, io::Write};
 
 pub fn install(
     destination: PathBuf,
@@ -59,7 +60,7 @@ pub fn install(
     }
 
     if cfg!(target_os = "macos") {
-        info!("Initiating mac treatment for: {}", archive_file.to_string_lossy());
+        debug!("Initiating mac treatment for: {}", archive_file.to_string_lossy());
         if archive_file.to_string_lossy().contains("zip") {
             mac_process_zip(&archive_file);
         } else {
@@ -152,77 +153,55 @@ fn chmod_x(file: &PathBuf) {
 }
 
 fn mac_process_zip(archive_path: &PathBuf) {
-    info!("Mac zip postprocessing starting...");
+    debug!("Mac zip postprocessing starting...");
 
     // Using Mac unzip because it keeps the execution flags intact. 
     let archive_parent = archive_path.parent().unwrap();
-    info!("  Unzipping {} to {}", archive_path.to_string_lossy(), archive_parent.to_string_lossy() );
+    debug!("  Unzipping {} to {}", archive_path.to_string_lossy(), archive_parent.to_string_lossy() );
     let output = Command::new("/usr/bin/unzip")
                             .arg(archive_path.to_string_lossy().to_string())
                             .arg("-d")
                             .arg(archive_parent.to_string_lossy().to_string())
                             .output()
-                            .expect("Unzip failed");
-    info!("  Result of unzip: {}", output.status);
+                            .expect("Problem in Mac postprocessing: Unzip failed");
+    debug!("  Result of unzip: {}", output.status);
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
 
     // delete the zip file
-    info!("  Deleting zip file {}", archive_path.to_string_lossy());
+    debug!("  Deleting zip file {}", archive_path.to_string_lossy());
     if let Err(e) = fs::remove_file(archive_path) {
-        error!("Failed to remove archive. {}", e)
+        error!("Problem in Mac postprocessing: failed to remove archive. {}", e)
     };
 
-    info!("Mac zip postprocessing done...");
+    debug!("Mac zip postprocessing done...");
 }
 
 fn mac_process_dmg(archive_path: &PathBuf) {
-    info!("Mac dmg postprocessing starting...");
+    debug!("Mac dmg postprocessing starting...");
     
     // Mount the disk image file
-    info!("  Mounting dmg file {}", archive_path.to_string_lossy());
-    let attach_info = Attach::new(archive_path).attach().expect("Mounting of dmg file failed");
-    println!("Device node {:?}", attach_info.device);
+    debug!("  Mounting dmg file {}", archive_path.to_string_lossy());
+    let attach_info = Attach::new(archive_path).attach().expect("Problem in Mac post-processing: mounting of dmg file failed");
 
-    // we need the stem of the archive name, because this is the name under which MacOS mounts
-    // and the target is the instance location
-    let mount_name = Path::new(&archive_path).file_stem().unwrap().to_str().unwrap();
-    let archive_parent = Path::new(&archive_path).parent().unwrap().to_str().unwrap();
-
-    // Now create a script, becase it's not possible to do this from the rust runtime directly (MacOS security)
-    let buffer = "#!/bin/sh\n\nsource=\"$1\"\ntarget=\"$2\"\n\ncp -r \"$source\" \"$target\"\n";
-    let script_path = format!("{}/ESLauncher2.sh", archive_parent.clone());
-    let mut script_file = File::create(script_path.clone()).expect("Creation of script failed!");
-    if let Err(e) = script_file.write_all(buffer.as_bytes()) {
-        error!("Failed to write script. {}", e)
-    };
+    // Copy the application (which is in fact a directory)
+    let mut app_source_path = PathBuf::from("/Volumes");
+    app_source_path.push(archive_path.file_stem().unwrap());
+    debug!("  Copy-Source: {}", app_source_path.to_string_lossy());
     
-    // Call the script
-    let app_source_path = format!("/Volumes/{}/Endless Sky.app", mount_name);
-    let app_target_path = format!("{}/", archive_parent);
-    info!("  Calling copy script with parameters:");
-    info!("    {}", app_source_path.clone());
-    info!("    {}", app_target_path.clone());
-    let output = Command::new("./ESLauncher2_copy.sh")
-                            .arg(app_source_path.clone())
-                            .arg(app_target_path.clone())
-                            .output()
-                            .expect("Copy failed");
-    info!("  Result of copy: {}", output.status);
-    io::stdout().write_all(&output.stdout).unwrap();
-    io::stderr().write_all(&output.stderr).unwrap();
+    let app_target_path = PathBuf::from(archive_path.parent().unwrap());
+    debug!("  Copy-Target: {}", app_target_path.to_string_lossy());
 
-    // detach the drive
-    attach_info.detach().expect("could not detach");
+    let mut options = CopyOptions::new();
+    options.overwrite = true;
+    if let Err(e) = copy(app_source_path, app_target_path, &options) {
+        error!("Problem in Mac postprocessing: copy of the application failed. {}", e);
+    }
 
-    // delete the dmg file and the script
-    info!("  Deleting dmg file {}", archive_path.to_string_lossy());
+    // detach and delete the dmg file
+    attach_info.detach().expect("Problem in Mac post-processing: could not detach dmg file");
     if let Err(e) = fs::remove_file(archive_path) {
-        error!("Failed to remove archive. {}", e)
-    };
-    info!("  Deleting script file {}", script_path.clone());
-    if let Err(e) = fs::remove_file(script_path) {
-        error!("Failed to remove archive. {}", e)
+        error!("Problem in Mac post-processing: failed to delete dmg file. {}", e)
     };
 
     info!("Mac dmg postprocessing done...");
