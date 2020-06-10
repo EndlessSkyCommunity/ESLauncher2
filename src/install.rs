@@ -62,7 +62,8 @@ pub fn install(
     if cfg!(target_os = "macos") {
         debug!("Initiating mac treatment for: {}", archive_file.to_string_lossy());
         if archive_file.to_string_lossy().contains("zip") {
-			archive::unpack(&archive_file, &destination, false)?;
+            archive::unpack(&archive_file, &destination, false)?;
+            chmod_x(&executable_path);
         } else {
             mac_process_dmg(&archive_file);
         }
