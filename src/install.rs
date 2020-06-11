@@ -2,7 +2,7 @@ use crate::github::{get_workflow_run_artifacts, Artifact};
 use crate::install_frame::{InstanceSource, InstanceSourceType};
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use dmg;
 use fs_extra::dir::{copy, CopyOptions};
 use std::path::PathBuf;
@@ -61,10 +61,12 @@ pub fn install(
 
     if cfg!(target_os = "macos") {
         if archive_file.to_string_lossy().contains("zip") {
-            mac_process_zip(&archive_file);
+            if let Err(e) = mac_process_zip(&archive_file) {
+                return Err(anyhow!("Mac ZIP postprocessing failed! {}", e));
+            }
         } else {
             if let Err(e) = mac_process_dmg(&archive_file) {
-                error!("Mac DMG postprocessing failed. {}", e);
+                return Err(anyhow!("Mac DMG postprocessing failed! {}", e));
             }
         }
     }
@@ -153,40 +155,75 @@ fn chmod_x(file: &PathBuf) {
     };
 }
 
-fn mac_process_zip(archive_path: &PathBuf) {
+fn mac_process_zip(archive_path: &PathBuf) -> Result<()> {
     // Using Mac unzip because it keeps the execution flags intact.
-    let archive_parent = archive_path.parent().unwrap();
-    let _output = Command::new("/usr/bin/unzip")
+    let archive_parent = archive_path.parent().with_context(|| {
+        format!(
+            "Unable to determine parent from {}",
+            archive_path.to_string_lossy()
+        )
+    })?;
+    if let Err(e) = Command::new("/usr/bin/unzip")
         .arg(archive_path.to_string_lossy().to_string())
         .arg("-d")
         .arg(archive_parent.to_string_lossy().to_string())
         .output()
-        .expect("Problem in Mac postprocessing: Unzip failed");
-
-    // delete the zip file
-    if let Err(e) = fs::remove_file(archive_path) {
-        error!(
-            "Problem in Mac postprocessing: failed to remove archive. {}",
+    {
+        return Err(anyhow!(
+            "Unzip of {} to {} failed! {}",
+            archive_path.to_string_lossy(),
+            archive_parent.to_string_lossy(),
             e
-        )
-    };
+        ));
+    }
+
+    // delete the zip file - in this case the version is usuable, therefore only log message
+    if let Err(e) = fs::remove_file(archive_path) {
+        error!("Deletion of archive file failed! {}", e);
+    }
+    Ok(())
 }
 
 fn mac_process_dmg(archive_path: &PathBuf) -> Result<()> {
     // Mount the disk image file
-    let attach_info = dmg::Attach::new(archive_path).attach()?;
+    let attach_info = dmg::Attach::new(archive_path)
+        .attach()
+        .with_context(|| format!("Mounting the dmg file failed"))?;
 
     // Copy the application (which is in fact a directory)
     let mut app_source_path = PathBuf::from("/Volumes");
-    app_source_path.push(archive_path.file_stem().unwrap());
+    let stem = archive_path.file_stem().with_context(|| {
+        format!(
+            "Unable to determine stem from {}",
+            archive_path.to_string_lossy()
+        )
+    })?;
+    app_source_path.push(stem);
     app_source_path.push("Endless Sky.app");
-    let app_target_path = PathBuf::from(archive_path.parent().unwrap());
+    let parent = archive_path.parent().with_context(|| {
+        format!(
+            "Unable to determine parent from {}",
+            archive_path.to_string_lossy()
+        )
+    })?;
+    let app_target_path = PathBuf::from(parent);
     let mut options = CopyOptions::new();
     options.overwrite = true;
-    copy(app_source_path, app_target_path, &options)?;
+    if let Err(e) = copy(app_source_path.clone(), app_target_path.clone(), &options) {
+        return Err(anyhow!(
+            "Copy from {} to {} failed! {}",
+            app_source_path.to_string_lossy(),
+            app_target_path.to_string_lossy(),
+            e
+        ));
+    }
 
-    // detach and delete the dmg file
-    attach_info.detach()?;
-    fs::remove_file(archive_path)?;
+    // detach and delete the dmg file - in both cases the version should be there and usuable, therefore only log messages
+    if let Err(e) = attach_info.detach() {
+        error!("Detaching of dmg file failed! {}", e);
+    }
+    if let Err(e) = fs::remove_file(archive_path) {
+        error!("Deletion of archive file failed! {}", e);
+    }
     Ok(())
 }
