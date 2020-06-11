@@ -3,7 +3,7 @@ use crate::install_frame::{InstanceSource, InstanceSourceType};
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
 use anyhow::Result;
-use dmg::Attach;
+use dmg;
 use fs_extra::dir::{copy, CopyOptions};
 use std::path::PathBuf;
 use std::process::Command;
@@ -55,15 +55,17 @@ pub fn install(
         fs::rename(&archive_file, &executable_path)?;
     } else {
         if !cfg!(target_os = "macos") {
-			archive::unpack(&archive_file, &destination, true)?;
-        }            
+            archive::unpack(&archive_file, &destination, true)?;
+        }
     }
 
     if cfg!(target_os = "macos") {
         if archive_file.to_string_lossy().contains("zip") {
             mac_process_zip(&archive_file);
         } else {
-            mac_process_dmg(&archive_file);
+            if let Err(e) = mac_process_dmg(&archive_file) {
+                error!("Mac DMG postprocessing failed. {}", e);
+            }
         }
     }
 
@@ -152,24 +154,27 @@ fn chmod_x(file: &PathBuf) {
 }
 
 fn mac_process_zip(archive_path: &PathBuf) {
-    // Using Mac unzip because it keeps the execution flags intact. 
+    // Using Mac unzip because it keeps the execution flags intact.
     let archive_parent = archive_path.parent().unwrap();
     let _output = Command::new("/usr/bin/unzip")
-                            .arg(archive_path.to_string_lossy().to_string())
-                            .arg("-d")
-                            .arg(archive_parent.to_string_lossy().to_string())
-                            .output()
-                            .expect("Problem in Mac postprocessing: Unzip failed");
+        .arg(archive_path.to_string_lossy().to_string())
+        .arg("-d")
+        .arg(archive_parent.to_string_lossy().to_string())
+        .output()
+        .expect("Problem in Mac postprocessing: Unzip failed");
 
     // delete the zip file
     if let Err(e) = fs::remove_file(archive_path) {
-        error!("Problem in Mac postprocessing: failed to remove archive. {}", e)
+        error!(
+            "Problem in Mac postprocessing: failed to remove archive. {}",
+            e
+        )
     };
 }
 
-fn mac_process_dmg(archive_path: &PathBuf) {
+fn mac_process_dmg(archive_path: &PathBuf) -> Result<()> {
     // Mount the disk image file
-    let attach_info = Attach::new(archive_path).attach().expect("Problem in Mac post-processing: mounting of dmg file failed");
+    let attach_info = dmg::Attach::new(archive_path).attach()?;
 
     // Copy the application (which is in fact a directory)
     let mut app_source_path = PathBuf::from("/Volumes");
@@ -178,13 +183,10 @@ fn mac_process_dmg(archive_path: &PathBuf) {
     let app_target_path = PathBuf::from(archive_path.parent().unwrap());
     let mut options = CopyOptions::new();
     options.overwrite = true;
-    if let Err(e) = copy(app_source_path, app_target_path, &options) {
-        error!("Problem in Mac postprocessing: copy of the application failed. {}", e);
-    }
+    copy(app_source_path, app_target_path, &options)?;
 
     // detach and delete the dmg file
-    attach_info.detach().expect("Problem in Mac post-processing: could not detach dmg file");
-    if let Err(e) = fs::remove_file(archive_path) {
-        error!("Problem in Mac post-processing: failed to delete dmg file. {}", e)
-    };
+    attach_info.detach()?;
+    fs::remove_file(archive_path)?;
+    Ok(())
 }

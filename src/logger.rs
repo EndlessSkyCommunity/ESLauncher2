@@ -1,4 +1,4 @@
-use crate::instance::{get_instances_dir};
+use crate::instance::get_instances_dir;
 use log::{Level, Log, Metadata, Record};
 use simplelog::{
     CombinedLogger, Config, LevelFilter, SharedLogger, TermLogger, TerminalMode, WriteLogger,
