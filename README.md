@@ -32,8 +32,8 @@ We are working on a solution to overcome this.
 - Scroll down to the item *Full Disk Access*
 - If *Terminal* is not present or not ticked, add it or activate the tick box
 - To add Terminal:
-⋅⋅* Unlock the settings by clicking on the lock symbol
-⋅⋅* If *Terminal* is not there, click on the plus
-⋅⋅* Navigate to *Applications* -> *Utilities* -> *Terminal*
-⋅⋅* Select it and click *Open*
-⋅⋅* It should now appear in the list, make sure the box before it is ticked
+  * Unlock the settings by clicking on the lock symbol
+  * If *Terminal* is not there, click on the plus
+  * Navigate to *Applications* -> *Utilities* -> *Terminal*
+  * Select it and click *Open*
+  * It should now appear in the list, make sure the box before it is ticked
