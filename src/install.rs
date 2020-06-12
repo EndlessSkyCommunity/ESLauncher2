@@ -53,13 +53,7 @@ pub fn install(
 
     if let InstanceType::AppImage = instance_type {
         fs::rename(&archive_file, &executable_path)?;
-    } else {
-        if !cfg!(target_os = "macos") {
-            archive::unpack(&archive_file, &destination, true)?;
-        }
-    }
-
-    if cfg!(target_os = "macos") {
+    } else if cfg!(target_os = "macos") {
         if archive_file.to_string_lossy().contains("zip") {
             if let Err(e) = mac_process_zip(&archive_file) {
                 return Err(anyhow!("Mac ZIP postprocessing failed! {}", e));
@@ -69,6 +63,8 @@ pub fn install(
                 return Err(anyhow!("Mac DMG postprocessing failed! {}", e));
             }
         }
+    } else {
+        archive::unpack(&archive_file, &destination, true)?;
     }
 
     if cfg!(target_os = "linux") {
@@ -163,19 +159,20 @@ fn mac_process_zip(archive_path: &PathBuf) -> Result<()> {
             archive_path.to_string_lossy()
         )
     })?;
-    if let Err(e) = Command::new("/usr/bin/unzip")
+
+    let _output = Command::new("/usr/bin/unzip")
         .arg(archive_path.to_string_lossy().to_string())
         .arg("-d")
         .arg(archive_parent.to_string_lossy().to_string())
         .output()
-    {
-        return Err(anyhow!(
-            "Unzip of {} to {} failed! {}",
-            archive_path.to_string_lossy(),
-            archive_parent.to_string_lossy(),
-            e
-        ));
-    }
+        .map_err(|my_error| {
+            anyhow!(
+                "Unzip of {} to {} failed! {}",
+                archive_path.to_string_lossy(),
+                archive_parent.to_string_lossy(),
+                my_error
+            )
+        });
 
     // delete the zip file - in this case the version is usuable, therefore only log message
     if let Err(e) = fs::remove_file(archive_path) {
@@ -209,14 +206,15 @@ fn mac_process_dmg(archive_path: &PathBuf) -> Result<()> {
     let app_target_path = PathBuf::from(parent);
     let mut options = CopyOptions::new();
     options.overwrite = true;
-    if let Err(e) = copy(app_source_path.clone(), app_target_path.clone(), &options) {
-        return Err(anyhow!(
-            "Copy from {} to {} failed! {}",
-            app_source_path.to_string_lossy(),
-            app_target_path.to_string_lossy(),
-            e
-        ));
-    }
+    let _result =
+        copy(&app_source_path, &app_target_path, &options).map_err(|my_error| {
+            anyhow!(
+                "Copy from {} to {} failed! {}",
+                app_source_path.to_string_lossy(),
+                app_target_path.to_string_lossy(),
+                my_error
+            )
+        });
 
     // detach and delete the dmg file - in both cases the version should be there and usuable, therefore only log messages
     if let Err(e) = attach_info.detach() {
