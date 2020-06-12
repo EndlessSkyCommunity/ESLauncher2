@@ -59,7 +59,15 @@ pub fn install(
             return Err(anyhow!("Mac DMG postprocessing failed! {}", e));
         }
     } else {
-        archive::unpack(&archive_file, &destination, true)?;
+        archive::unpack(
+            &archive_file,
+            &destination,
+            if cfg!(target_os = "macos") {
+                false
+            } else {
+                true
+            },
+        )?;
     }
 
     // upload-artifact doesn't preserve permissions, so we need to set the executable bit here
