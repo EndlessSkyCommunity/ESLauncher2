@@ -54,15 +54,9 @@ pub fn install(
 
     if let InstanceType::AppImage = instance_type {
         fs::rename(&archive_file, &executable_path)?;
-    } else if cfg!(target_os = "macos") {
-        if archive_file.to_string_lossy().contains("zip") {
-            if let Err(e) = mac_process_zip(&archive_file) {
-                return Err(anyhow!("Mac ZIP postprocessing failed! {}", e));
-            }
-        } else {
-            if let Err(e) = mac_process_dmg(&archive_file) {
-                return Err(anyhow!("Mac DMG postprocessing failed! {}", e));
-            }
+    } else if cfg!(target_os = "macos") && archive_file.to_string_lossy().contains("dmg") {
+        if let Err(e) = mac_process_dmg(&archive_file) {
+            return Err(anyhow!("Mac DMG postprocessing failed! {}", e));
         }
     } else {
         archive::unpack(&archive_file, &destination, true)?;
@@ -155,36 +149,6 @@ fn chmod_x(file: &PathBuf) {
             e
         )
     }
-}
-
-fn mac_process_zip(archive_path: &PathBuf) -> Result<()> {
-    // Using Mac unzip because it keeps the execution flags intact.
-    let archive_parent = archive_path.parent().with_context(|| {
-        format!(
-            "Unable to determine parent from {}",
-            archive_path.to_string_lossy()
-        )
-    })?;
-
-    let _output = Command::new("/usr/bin/unzip")
-        .arg(archive_path.to_string_lossy().to_string())
-        .arg("-d")
-        .arg(archive_parent.to_string_lossy().to_string())
-        .output()
-        .map_err(|my_error| {
-            anyhow!(
-                "Unzip of {} to {} failed! {}",
-                archive_path.to_string_lossy(),
-                archive_parent.to_string_lossy(),
-                my_error
-            )
-        });
-
-    // delete the zip file - in this case the version is usuable, therefore only log message
-    if let Err(e) = fs::remove_file(archive_path) {
-        error!("Deletion of archive file failed! {}", e);
-    }
-    Ok(())
 }
 
 fn mac_process_dmg(archive_path: &PathBuf) -> Result<()> {
