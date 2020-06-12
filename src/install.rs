@@ -206,15 +206,14 @@ fn mac_process_dmg(archive_path: &PathBuf) -> Result<()> {
     let app_target_path = PathBuf::from(parent);
     let mut options = CopyOptions::new();
     options.overwrite = true;
-    let _result =
-        copy(&app_source_path, &app_target_path, &options).map_err(|my_error| {
-            anyhow!(
-                "Copy from {} to {} failed! {}",
-                app_source_path.to_string_lossy(),
-                app_target_path.to_string_lossy(),
-                my_error
-            )
-        });
+    let _result = copy(&app_source_path, &app_target_path, &options).map_err(|my_error| {
+        anyhow!(
+            "Copy from {} to {} failed! {}",
+            app_source_path.to_string_lossy(),
+            app_target_path.to_string_lossy(),
+            my_error
+        )
+    });
 
     // detach and delete the dmg file - in both cases the version should be there and usuable, therefore only log messages
     if let Err(e) = attach_info.detach() {
