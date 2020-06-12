@@ -5,8 +5,8 @@ use crate::{archive, github};
 use anyhow::{Context, Result};
 use dmg;
 use fs_extra::dir::{copy, CopyOptions};
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
-use std::process::Command;
 use std::{fs, io};
 
 pub fn install(
@@ -67,8 +67,16 @@ pub fn install(
         archive::unpack(&archive_file, &destination, true)?;
     }
 
-    if cfg!(target_os = "linux") {
-        chmod_x(&executable_path);
+    // upload-artifact doesn't preserve permissions, so we need to set the executable bit here
+    // https://github.com/actions/upload-artifact/issues/38
+    if cfg!(unix) {
+        if let Err(e) = chmod_x(&executable_path) {
+            warn!(
+                "Failed to set executable bit for {}: {}",
+                executable_path.to_string_lossy(),
+                e
+            );
+        }
     }
 
     info!("Done!");
@@ -144,11 +152,12 @@ pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceTy
     ))
 }
 
-fn chmod_x(file: &PathBuf) {
-    info!("Running chmod +x {}", file.to_string_lossy());
-    if let Err(e) = Command::new("/usr/bin/chmod").arg("+x").arg(file).output() {
-        error!("Failed to run chmod +x: {}", e)
-    };
+#[cfg(unix)]
+fn chmod_x(file: &PathBuf) -> Result<()> {
+    Ok(fs::set_permissions(
+        &file,
+        PermissionsExt::from_mode(0o755),
+    )?)
 }
 
 fn mac_process_zip(archive_path: &PathBuf) -> Result<()> {

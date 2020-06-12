@@ -1,5 +1,6 @@
 use anyhow::Result;
 use std::io::{Cursor, Read};
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::{fs, io};
 
@@ -44,7 +45,7 @@ pub fn unzip(destination: &PathBuf, bytes: Vec<u8>, strip_toplevel: bool) -> Res
             }
         }
 
-        if (&*file.name()).ends_with('/') {
+        if file.name().ends_with('/') {
             debug!(
                 "File {} extracted to \"{}\"",
                 i,
@@ -65,6 +66,19 @@ pub fn unzip(destination: &PathBuf, bytes: Vec<u8>, strip_toplevel: bool) -> Res
             }
             let mut outfile = fs::File::create(&outpath).unwrap();
             io::copy(&mut file, &mut outfile).unwrap();
+        }
+
+        if cfg!(unix) && file.unix_mode().is_some() {
+            if let Err(e) = fs::set_permissions(
+                &outpath,
+                PermissionsExt::from_mode(file.unix_mode().unwrap()),
+            ) {
+                warn!(
+                    "Failed to set permissions for {}: {}",
+                    outpath.to_string_lossy(),
+                    e
+                )
+            }
         }
     }
     Ok(())
