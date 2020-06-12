@@ -3,8 +3,8 @@ use crate::install_frame::{InstanceSource, InstanceSourceType};
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
 use anyhow::Result;
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
-use std::process::Command;
 use std::{fs, io};
 
 pub fn install(
@@ -55,9 +55,18 @@ pub fn install(
         archive::unpack(&archive_file, &destination, true)?;
     }
 
+    // upload-artifact doesn't preserve permissions, so we need to set the executable bit here
+    // https://github.com/actions/upload-artifact/issues/38
     if cfg!(unix) {
-        chmod_x(&executable_path);
+        if let Err(e) = chmod_x(&executable_path) {
+            warn!(
+                "Failed to set executable bit for {}: {}",
+                executable_path.to_string_lossy(),
+                e
+            );
+        }
     }
+
     info!("Done!");
     Ok(Instance::new(
         destination,
@@ -130,9 +139,10 @@ pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceTy
     ))
 }
 
-fn chmod_x(file: &PathBuf) {
-    info!("Running chmod +x {}", file.to_string_lossy());
-    if let Err(e) = Command::new("/usr/bin/chmod").arg("+x").arg(file).output() {
-        error!("Failed to run chmod +x: {}", e)
-    };
+#[cfg(unix)]
+fn chmod_x(file: &PathBuf) -> Result<()> {
+    Ok(fs::set_permissions(
+        &file,
+        PermissionsExt::from_mode(0o755),
+    )?)
 }
