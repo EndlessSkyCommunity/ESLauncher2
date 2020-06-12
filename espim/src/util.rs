@@ -1,5 +1,6 @@
 use anyhow::Result;
 use std::io::{Cursor, Read};
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::{fs, io};
@@ -68,20 +69,23 @@ pub fn unzip(destination: &PathBuf, bytes: Vec<u8>, strip_toplevel: bool) -> Res
             io::copy(&mut file, &mut outfile).unwrap();
         }
 
-        if cfg!(unix) && file.unix_mode().is_some() {
-            if let Err(e) = fs::set_permissions(
-                &outpath,
-                PermissionsExt::from_mode(file.unix_mode().unwrap()),
-            ) {
-                warn!(
-                    "Failed to set permissions for {}: {}",
-                    outpath.to_string_lossy(),
-                    e
-                )
-            }
-        }
+        #[cfg(unix)]
+        set_unix_mode(&file, &outpath)
     }
     Ok(())
+}
+
+#[cfg(unix)]
+fn set_unix_mode(file: &zip::read::ZipFile, outpath: &PathBuf) {
+    if let Some(m) = file.unix_mode() {
+        if let Err(e) = fs::set_permissions(&outpath, PermissionsExt::from_mode(m)) {
+            warn!(
+                "Failed to set permissions for {}: {}",
+                outpath.to_string_lossy(),
+                e
+            )
+        }
+    }
 }
 
 fn has_toplevel(archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>) -> bool {
