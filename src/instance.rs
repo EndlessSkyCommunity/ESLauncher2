@@ -25,7 +25,7 @@ pub enum InstanceType {
 impl InstanceType {
     pub fn archive(self) -> Option<&'static str> {
         match self {
-            InstanceType::MacOS => Some("EndlessSky-macOS"),
+            InstanceType::MacOS => Some("mac"),
             InstanceType::Windows => Some("win64"),
             InstanceType::Linux => Some(".tar.gz"),
             InstanceType::AppImage => Some(".AppImage"),
@@ -35,7 +35,7 @@ impl InstanceType {
 
     pub fn executable(self) -> Option<&'static str> {
         match self {
-            InstanceType::MacOS => Some("Endless Sky.app/Content/MacOS/Endless Sky"),
+            InstanceType::MacOS => Some("Endless Sky.app/Contents/MacOS/Endless Sky"),
             InstanceType::Windows => Some("EndlessSky.exe"),
             InstanceType::Linux => Some("endless-sky"),
             InstanceType::AppImage => Some("endless-sky.AppImage"),
@@ -234,7 +234,11 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String) -> Result<()
     err_path.push(format!("{}.err", time));
     let mut err = File::create(err_path)?;
 
-    info!("Launching {}", name);
+    info!(
+        "Launching {} via executable {}",
+        name,
+        executable.to_string_lossy()
+    );
     match Command::new(&executable).output() {
         Ok(output) => {
             info!("{} exited with {}", name, output.status);

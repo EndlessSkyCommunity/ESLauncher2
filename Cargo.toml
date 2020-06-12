@@ -9,8 +9,10 @@ build = "build.rs"
 anyhow = "1.0"
 bitar = { version="0.7.0", features=["rustls-tls"] }
 chrono = { version = "0.4", features = ["serde"] }
+dmg = "0.1.1"
 espim = { path="espim" }
 flate2 = "1.0"
+fs_extra = "1.1.0"
 futures = "0.3"
 log = { version="0.4.8", features=["std"] }
 open = "1"

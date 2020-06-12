@@ -2,7 +2,9 @@ use crate::github::{get_workflow_run_artifacts, Artifact};
 use crate::install_frame::{InstanceSource, InstanceSourceType};
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
-use anyhow::Result;
+use anyhow::{Context, Result};
+use dmg;
+use fs_extra::dir::{copy, CopyOptions};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
@@ -52,8 +54,12 @@ pub fn install(
 
     if let InstanceType::AppImage = instance_type {
         fs::rename(&archive_file, &executable_path)?;
+    } else if cfg!(target_os = "macos") && archive_file.to_string_lossy().contains("dmg") {
+        if let Err(e) = mac_process_dmg(&archive_file) {
+            return Err(anyhow!("Mac DMG postprocessing failed! {}", e));
+        }
     } else {
-        archive::unpack(&archive_file, &destination, true)?;
+        archive::unpack(&archive_file, &destination, !cfg!(target_os = "macos"))?;
     }
 
     // upload-artifact doesn't preserve permissions, so we need to set the executable bit here
@@ -80,6 +86,7 @@ fn download_release_asset(
     let release = github::get_release_by_tag(tag)?;
     let assets = github::get_release_assets(release.id)?;
     let asset = choose_artifact(assets, instance_type)?;
+    info!("Downloading artifact from {}", asset.browser_download_url);
     Ok(github::download(
         &asset.browser_download_url,
         asset.name(),
@@ -142,4 +149,48 @@ fn chmod_x(file: &PathBuf) {
             e
         )
     }
+}
+
+fn mac_process_dmg(archive_path: &PathBuf) -> Result<()> {
+    // Mount the disk image file
+    let attach_info = dmg::Attach::new(archive_path)
+        .attach()
+        .with_context(|| format!("Mounting the dmg file failed"))?;
+
+    // Copy the application (which is in fact a directory)
+    let mut app_source_path = PathBuf::from("/Volumes");
+    let stem = archive_path.file_stem().with_context(|| {
+        format!(
+            "Unable to determine stem from {}",
+            archive_path.to_string_lossy()
+        )
+    })?;
+    app_source_path.push(stem);
+    app_source_path.push("Endless Sky.app");
+    let parent = archive_path.parent().with_context(|| {
+        format!(
+            "Unable to determine parent from {}",
+            archive_path.to_string_lossy()
+        )
+    })?;
+    let app_target_path = PathBuf::from(parent);
+    let mut options = CopyOptions::new();
+    options.overwrite = true;
+    let _result = copy(&app_source_path, &app_target_path, &options).map_err(|my_error| {
+        anyhow!(
+            "Copy from {} to {} failed! {}",
+            app_source_path.to_string_lossy(),
+            app_target_path.to_string_lossy(),
+            my_error
+        )
+    });
+
+    // detach and delete the dmg file - in both cases the version should be there and usuable, therefore only log messages
+    if let Err(e) = attach_info.detach() {
+        error!("Detaching of dmg file failed! {}", e);
+    }
+    if let Err(e) = fs::remove_file(archive_path) {
+        error!("Deletion of archive file failed! {}", e);
+    }
+    Ok(())
 }

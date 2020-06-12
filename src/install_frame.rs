@@ -131,7 +131,7 @@ impl InstallFrame {
             install_button =
                 install_button.on_press(InstallFrameMessage::StartInstallation(if cfg!(windows) {
                     InstanceType::Windows
-                } else if cfg!(unix) {
+                } else if cfg!(target_os = "linux") {
                     InstanceType::AppImage
                 } else {
                     InstanceType::MacOS
