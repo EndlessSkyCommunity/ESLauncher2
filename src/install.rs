@@ -155,7 +155,7 @@ fn mac_process_dmg(archive_path: &PathBuf) -> Result<()> {
     // Mount the disk image file
     let attach_info = dmg::Attach::new(archive_path)
         .attach()
-        .with_context(|| format!("Mounting the dmg file failed"))?;
+        .with_context(|| "Mounting the dmg file failed")?;
 
     // Copy the application (which is in fact a directory)
     let mut app_source_path = PathBuf::from("/Volumes");
