@@ -9,7 +9,7 @@ anyhow = "1.0"
 dirs = "2.0"
 log = "0.4"
 serde = { version = "1.0", default_features = false, features = ["derive"] }
-ureq = { version = "1.1", default_features = false, features = ["json", "tls"] }
+ureq = { version = "1.2", default_features = false, features = ["json", "tls"] }
 zip = {version = "0.5.6", default_features = false, features=["deflate"] }
 
 [profile.release]
