@@ -81,8 +81,8 @@ pub fn init() -> mpsc::Receiver<String> {
     };
     CombinedLogger::init(vec![
         Box::new(channeled),
-        TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed),
-        WriteLogger::new(LevelFilter::Info, Config::default(), open_logfile()),
+        TermLogger::new(LevelFilter::Debug, Config::default(), TerminalMode::Mixed),
+        WriteLogger::new(LevelFilter::Info, Config::default(), open_logfile()), // Once OpenGL rendering is in iced, we also set this to Debug (the current wgpu-backend is spammy on Debug)
     ])
     .unwrap();
 
