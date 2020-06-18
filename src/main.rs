@@ -30,6 +30,7 @@ use iced::{
     button, scrollable, Align, Application, Button, Column, Command, Container, Element,
     HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Text,
 };
+use platform_dirs;
 use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
@@ -284,4 +285,10 @@ fn check_for_update() {
             Err(e) => error!("Failed to fetch latest ESLauncher2 release: {}", e),
         },
     );
+}
+
+fn get_data_dir() -> Option<PathBuf> {
+    Some(
+        platform_dirs::AppDirs::new(Some("ESLauncher2"), platform_dirs::AppUI::Graphical)?.data_dir,
+    )
 }

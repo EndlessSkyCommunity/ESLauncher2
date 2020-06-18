@@ -1,10 +1,9 @@
 use crate::install_frame::InstanceSource;
 use crate::music::MusicCommand;
-use crate::{install, style, update, Message};
+use crate::{get_data_dir, install, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
 use iced::{button, Align, Button, Column, Element, Length, Row, Space, Text};
-use platform_dirs::{AppDirs, AppUI};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
@@ -261,7 +260,7 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String) -> Result<()
 }
 
 pub fn get_instances_dir() -> Option<PathBuf> {
-    let mut dir = AppDirs::new(Some("ESLauncher2"), AppUI::Graphical)?.data_dir;
+    let mut dir = get_data_dir()?;
     dir.push("instances");
     Some(dir)
 }

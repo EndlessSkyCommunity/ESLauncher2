@@ -1,4 +1,4 @@
-use crate::instance::get_instances_dir;
+use crate::get_data_dir;
 use log::{Level, Log, Metadata, Record};
 use simplelog::{
     CombinedLogger, Config, LevelFilter, SharedLogger, TermLogger, TerminalMode, WriteLogger,
@@ -61,16 +61,30 @@ fn should_log(record: &Record) -> bool {
     }
 }
 
-fn open_logfile() -> File {
+fn open_logfile() -> Option<File> {
     let mut path = std::env::current_dir().unwrap();
-    if cfg!(target_os = "macos") {
-        if let Some(instance_path) = get_instances_dir() {
-            path = instance_path;
-            fs::create_dir_all(path.clone()).expect("Creation of instance directories failed.");
-        }
+    if let Some(data_dir) = get_data_dir() {
+        match fs::create_dir_all(&data_dir) {
+                Ok(_) => path = data_dir,
+                Err(e) => eprintln!(
+                    "Creation of data dir ({}) failed due to {}! Falling back to logging to the PWD ({})",
+                    data_dir.to_string_lossy(), e,
+                    path.to_string_lossy()
+                ),
+            }
     }
     path.push("ESLauncher2.log");
-    File::create(path).unwrap()
+    match File::create(&path) {
+        Err(e) => {
+            eprintln!(
+                "Failed to create logfile at {}: {}",
+                path.to_string_lossy(),
+                e
+            );
+            None
+        }
+        Ok(f) => Some(f),
+    }
 }
 
 pub fn init() -> mpsc::Receiver<String> {
@@ -79,12 +93,21 @@ pub fn init() -> mpsc::Receiver<String> {
     let channeled = ChanneledLogger {
         channel: log_writer,
     };
-    CombinedLogger::init(vec![
+
+    let mut loggers: Vec<Box<dyn SharedLogger>> = vec![
         Box::new(channeled),
         TermLogger::new(LevelFilter::Debug, Config::default(), TerminalMode::Mixed),
-        WriteLogger::new(LevelFilter::Info, Config::default(), open_logfile()), // Once OpenGL rendering is in iced, we also set this to Debug (the current wgpu-backend is spammy on Debug)
-    ])
-    .unwrap();
+    ];
+
+    if let Some(file) = open_logfile() {
+        loggers.push(WriteLogger::new(
+            LevelFilter::Info, // Once OpenGL rendering is in iced, we also set this to Debug (the current wgpu-backend is spammy on Debug))
+            Config::default(),
+            file,
+        ));
+    }
+
+    CombinedLogger::init(loggers).unwrap();
 
     log::info!("Initialized logger");
     log_reader
