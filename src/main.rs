@@ -72,6 +72,7 @@ pub enum Message {
     Dummy(()),
     MusicMessage(MusicCommand),
     ViewChanged(MainView),
+    PluginFrameLoaded(Vec<plugins_frame::Plugin>),
 }
 
 impl Application for ESLauncher {
@@ -96,6 +97,7 @@ impl Application for ESLauncher {
 
         check_for_update();
 
+        let (plugins_frame_state, command) = plugins_frame::PluginsFrameState::new();
         (
             ESLauncher {
                 music_sender,
@@ -103,7 +105,7 @@ impl Application for ESLauncher {
                 music_state: MusicState::Playing,
                 install_frame: install_frame::InstallFrame::default(),
                 instances_frame: instances_frame::InstancesFrame::default(),
-                plugins_frame: plugins_frame::PluginsFrameState::new(),
+                plugins_frame: plugins_frame_state,
                 log_scrollable: scrollable::State::default(),
                 log_reader,
                 log_buffer: vec![],
@@ -111,7 +113,7 @@ impl Application for ESLauncher {
                 instances_view_button: button::State::default(),
                 plugins_view_button: button::State::default(),
             },
-            Command::none(),
+            command,
         )
     }
 
@@ -127,14 +129,13 @@ impl Application for ESLauncher {
                 Some(i) => return i.update(msg),
             },
             Message::PluginMessage(name, msg) => {
-                match self
-                    .plugins_frame
-                    .plugins
-                    .iter_mut()
-                    .find(|p| p.name == name)
+                if let plugins_frame::PluginsFrameState::Ready { plugins, .. } =
+                    &mut self.plugins_frame
                 {
-                    None => error!("Failed to find internal Plug-In with name {}", name),
-                    Some(p) => return p.update(msg),
+                    match plugins.iter_mut().find(|p| p.name == name) {
+                        None => error!("Failed to find internal Plug-In with name {}", name),
+                        Some(p) => return p.update(msg),
+                    }
                 }
             }
             Message::Installed(option) => {
@@ -166,6 +167,9 @@ impl Application for ESLauncher {
                 }
             }
             Message::ViewChanged(view) => self.view = view,
+            Message::PluginFrameLoaded(plugins) => {
+                self.plugins_frame = plugins_frame::PluginsFrameState::from(plugins);
+            }
             Message::Dummy(_) => (),
         }
         Command::none()

@@ -2,70 +2,73 @@ use crate::{style, Message};
 
 use espim::Plugin as EspimPlugin;
 use iced::{
-    button, image, scrollable, Align, Color, Column, Command, Container, Element, Image, Length,
-    Row, Scrollable, Space, Text, VerticalAlignment,
+    button, image, scrollable, Align, Color, Column, Command, Container, Element,
+    HorizontalAlignment, Image, Length, Row, Scrollable, Space, Text, VerticalAlignment,
 };
 
 #[derive(Debug, Clone)]
-pub struct PluginsFrameState {
-    pub plugins: Vec<Plugin>,
-    plugin_scrollable: scrollable::State,
+pub enum PluginsFrameState {
+    Loading,
+    Ready {
+        plugins: Vec<Plugin>,
+        plugin_scrollable: scrollable::State,
+    },
 }
 
 impl PluginsFrameState {
-    pub fn new() -> Self {
-        let mut plugins = vec![];
-        match espim::retrieve_plugins() {
-            Ok(retrieved) => {
-                for p in retrieved {
-                    let name = String::from(p.name());
-                    let icon_bytes = p.retrieve_icon();
-                    plugins.push(Plugin {
-                        state: PluginState::Idle { espim_plugin: p },
-                        name,
-                        icon_bytes,
-                        install_button: button::State::default(),
-                        remove_button: button::State::default(),
-                    })
-                }
-            }
-            Err(e) => {
-                error!(
-                    "Failed to initialize ESPIM, Plug-Ins will be unavailable: {}",
-                    e
-                );
-            }
-        }
-        Self {
+    pub fn new() -> (Self, Command<Message>) {
+        (
+            PluginsFrameState::Loading,
+            Command::perform(load_plugins(), Message::PluginFrameLoaded),
+        )
+    }
+
+    pub fn from(plugins: Vec<Plugin>) -> Self {
+        PluginsFrameState::Ready {
             plugins,
             plugin_scrollable: scrollable::State::default(),
         }
     }
 
     pub fn view(&mut self) -> Container<Message> {
-        let plugin_list = self.plugins.iter_mut().fold(
-            Column::new()
-                .padding(20)
-                .spacing(20)
-                .align_items(Align::Center),
-            |column, plugin| {
-                let name = plugin.name.clone();
-                column.push(
-                    plugin
-                        .view()
-                        .map(move |msg| Message::PluginMessage(name.clone(), msg)),
-                )
-            },
-        );
+        match self {
+            PluginsFrameState::Loading => Container::new(
+                Column::new().align_items(Align::Center).push(
+                    Text::new("Loading...")
+                        .width(Length::Fill)
+                        .color(Color::from_rgb(0.7, 0.7, 0.7))
+                        .horizontal_alignment(HorizontalAlignment::Center),
+                ),
+            ),
+            PluginsFrameState::Ready {
+                plugins,
+                plugin_scrollable,
+            } => {
+                let plugin_list = plugins.iter_mut().fold(
+                    Column::new()
+                        .padding(20)
+                        .spacing(20)
+                        .align_items(Align::Center),
+                    |column, plugin| {
+                        let name = plugin.name.clone();
+                        column.push(
+                            plugin
+                                .view()
+                                .map(move |msg| Message::PluginMessage(name.clone(), msg)),
+                        )
+                    },
+                );
 
-        Container::new(
-            Column::new()
-                .push(Scrollable::new(&mut self.plugin_scrollable).push(plugin_list))
-                .spacing(20)
-                .width(Length::Fill),
-        )
-        .width(Length::Fill)
-        .padding(30)
+                Container::new(
+                    Column::new()
+                        .push(Scrollable::new(plugin_scrollable).push(plugin_list))
+                        .spacing(20)
+                        .width(Length::Fill),
+                )
+                .width(Length::Fill)
+                .padding(30)
+            }
+        }
     }
 }
 
@@ -194,6 +197,32 @@ impl Plugin {
             .push(controls)
             .into()
     }
+}
+
+pub async fn load_plugins() -> Vec<Plugin> {
+    let mut plugins = vec![];
+    match espim::retrieve_plugins() {
+        Ok(retrieved) => {
+            for p in retrieved {
+                let name = String::from(p.name());
+                let icon_bytes = p.retrieve_icon();
+                plugins.push(Plugin {
+                    state: PluginState::Idle { espim_plugin: p },
+                    name,
+                    icon_bytes,
+                    install_button: button::State::default(),
+                    remove_button: button::State::default(),
+                })
+            }
+        }
+        Err(e) => {
+            error!(
+                "Failed to initialize ESPIM, Plug-Ins will be unavailable: {}",
+                e
+            );
+        }
+    }
+    plugins
 }
 
 pub async fn perform_install(mut plugin: EspimPlugin) -> EspimPlugin {
