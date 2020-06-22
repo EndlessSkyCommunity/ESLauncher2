@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-dirs = "2.0"
+dirs = "3.0"
 log = "0.4"
 serde = { version = "1.0", default_features = false, features = ["derive"] }
 ureq = { version = "1.2", default_features = false, features = ["json", "tls"] }
