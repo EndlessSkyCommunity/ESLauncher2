@@ -269,6 +269,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "130aac562c0dd69c56b3b1cc8ffd2e17be31d0b6c25b61c96b76231aa23e39e1"
 
 [[package]]
+name = "bzip2"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42b7c3cbf0fa9c1b82308d57191728ca0256cb821220f4e2fd410a72ade26e3b"
+dependencies = [
+ "bzip2-sys",
+ "libc",
+]
+
+[[package]]
+name = "bzip2-sys"
+version = "0.1.9+1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad3b39a260062fca31f7b0b12f207e8f2590a67d32ec7d59c20484b07ea7285e"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
 name = "calloop"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -787,6 +808,7 @@ dependencies = [
  "ureq",
  "version",
  "winres",
+ "zip-extract",
 ]
 
 [[package]]
@@ -798,7 +820,7 @@ dependencies = [
  "log 0.4.8",
  "serde",
  "ureq",
- "zip",
+ "zip-extract",
 ]
 
 [[package]]
@@ -3686,7 +3708,20 @@ version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58287c28d78507f5f91f2a4cf1e8310e2c76fd4c6932f93ac60fd1ceb402db7d"
 dependencies = [
+ "bzip2",
  "crc32fast",
  "flate2",
  "podio",
+ "time",
+]
+
+[[package]]
+name = "zip-extract"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b12ca34b71744bada9c140395a48f094db1e2ed8787fe3d19e5bb48e179e8cae"
+dependencies = [
+ "log 0.4.8",
+ "thiserror",
+ "zip",
 ]

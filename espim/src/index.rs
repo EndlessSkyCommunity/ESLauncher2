@@ -30,7 +30,7 @@ impl AvailablePlugin {
         fs::create_dir_all(&destination)?;
 
         let bytes = util::download(&self.download_url())?;
-        util::unzip(&destination, bytes, true)?;
+        util::unzip(&destination, bytes)?;
 
         let mut version_file_path = destination;
         version_file_path.push(".version");
