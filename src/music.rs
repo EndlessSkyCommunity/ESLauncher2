@@ -5,6 +5,7 @@ use std::io::{BufReader, Cursor};
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
+use std::time::Duration;
 
 const SONG: &[u8] = include_bytes!("../assets/endless-prototype.ogg");
 
@@ -53,6 +54,8 @@ fn play(rx: Receiver<MusicCommand>) -> Result<()> {
         if state == MusicState::Playing && sink.empty() {
             sink = play_once(&device)?;
         }
+
+        thread::sleep(Duration::from_millis(100));
     }
 }
 
