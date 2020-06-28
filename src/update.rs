@@ -98,7 +98,7 @@ async fn update_continuous_instance(
         .to_string_lossy()
         .ends_with(InstanceType::AppImage.archive().unwrap())
     {
-        archive::unpack(&archive_path, &instance.path, true)?;
+        archive::unpack(&archive_path, &instance.path, !cfg!(target_os = "macos"))?;
     }
 
     let mut new_instance = instance.clone();
