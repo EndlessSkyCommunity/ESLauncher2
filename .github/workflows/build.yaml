@@ -70,6 +70,7 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: 10.14
         run: |
           cargo build --verbose --release
+          cargo install cargo-bundle
           cargo bundle --release
       - name: Archive binary
         uses: actions/upload-artifact@v1
