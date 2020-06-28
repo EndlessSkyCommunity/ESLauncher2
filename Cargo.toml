@@ -4,6 +4,15 @@ version = "0.4.5"
 authors = ["M*C*O <mcofficer@gmx.de>"]
 edition = "2018"
 build = "build.rs"
+description = "Endless Sky Launcher"
+
+[package.metadata.bundle]
+name = "ESLauncher2"
+identifier = "me.mcofficer.eslauncher2"
+icon = ["icon.ico"]
+resources = ["assets"]
+short_description = "Endless Sky Launcher"
+osx_minimum_system_version = "10.7"
 
 [dependencies]
 anyhow = "1.0"
