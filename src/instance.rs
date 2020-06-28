@@ -237,7 +237,7 @@ pub async fn perform_update(instance: Instance) -> Option<Instance> {
 }
 
 pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String) {
-    if let Err(e) = play(path, executable, name).await {
+    if let Err(e) = debug(path, executable, name).await {
         error!("Failed to run game: {}", e);
     }
 }
