@@ -71,10 +71,11 @@ jobs:
         run: |
           cargo install cargo-bundle
           cargo build --verbose --release
-          chmod 775 target/release/eslauncher2
+          chmod 755 target/release/eslauncher2
+          ls -al target/release
           cargo bundle --release
-      - name: Archive binary
-        uses: actions/upload-artifact@v1
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
           name: ESLauncher2.app
           path: target/release/bundle/osx
