@@ -76,11 +76,11 @@ jobs:
         run: |
           cargo install cargo-bundle
           cargo bundle --release
-          chmod 755 target/release/bundle/osx/ESLauncher2.app/Contents/MacOS/eslauncher2
           ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
       - name: Strip binary
         run: |
           strip target/release/bundle/osx/ESLauncher2.app/Contents/MacOS/eslauncher2
+          chmod 755 target/release/bundle/osx/ESLauncher2.app/Contents/MacOS/eslauncher2
           ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
       - name: Upload artifact
         uses: actions/upload-artifact@v2
