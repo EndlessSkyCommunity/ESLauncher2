@@ -69,21 +69,16 @@ jobs:
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.14
         run: |
-          cargo install cargo-bundle
           cargo build --verbose --release
           chmod 755 target/release/eslauncher2
           ls -al target/release
-          cargo bundle --release
-          ls -al target/release/bundle/osx
-          ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
-          chmod 755 target/release/bundle/osx/ESLauncher2.app/Contents/MacOS/eslauncher2
-          ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
       - name: Strip binary
         run: |
           strip target/release/eslauncher2
           ls -al target/release
       - name: Package binary
         run: |
+          cargo install cargo-bundle
           cargo bundle --release
           chmod 755 target/release/bundle/osx/ESLauncher2.app/Contents/MacOS/eslauncher2
           ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
