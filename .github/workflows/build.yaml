@@ -76,7 +76,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: ESLauncher2.app
-          path: target/release/bundle/osx/ESLauncher2.app
+          path: target/release/bundle/osx
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
