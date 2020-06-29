@@ -78,6 +78,15 @@ jobs:
           ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
           chmod 755 target/release/bundle/osx/ESLauncher2.app/Contents/MacOS/eslauncher2
           ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
+      - name: Strip binary
+        run: |
+          strip target/release/eslauncher2
+          ls -al target/release
+      - name: Package binary
+        run: |
+          cargo bundle --release
+          chmod 755 target/release/bundle/osx/ESLauncher2.app/Contents/MacOS/eslauncher2
+          ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
