@@ -74,6 +74,8 @@ jobs:
           chmod 755 target/release/eslauncher2
           ls -al target/release
           cargo bundle --release
+          ls -al target/release/bundle/osx
+          ls -al target/release/bundle/osx/ESLauncer2.app/Contents/MacOS
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
