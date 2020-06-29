@@ -69,8 +69,9 @@ jobs:
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.14
         run: |
-          cargo build --verbose --release
           cargo install cargo-bundle
+          cargo build --verbose --release
+          chmod 775 target/release/eslauncher2
           cargo bundle --release
       - name: Archive binary
         uses: actions/upload-artifact@v1
