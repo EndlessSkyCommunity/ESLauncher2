@@ -8,7 +8,7 @@ description = "Endless Sky Launcher"
 
 [package.metadata.bundle]
 name = "ESLauncher2"
-identifier = "com.github.EndlessSkyCommunity"
+identifier = "com.github.EndlessSkyCommunity.ESLauncher2"
 icon = ["icons/ESLauncher2.icns"]
 resources = ["assets", "icons/**/*.png"]
 short_description = "Endless Sky Launcher"
