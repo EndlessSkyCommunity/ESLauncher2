@@ -98,6 +98,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ESLauncher2.app
+            ESLauncher2.app.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
