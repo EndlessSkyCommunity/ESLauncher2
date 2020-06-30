@@ -21,7 +21,7 @@ We are working on a solution to overcome this.
 #### Instructions ####
 - Download the zip to a location of your choice
 - Open a Terminal session and navigate to the zip file
-- Unzip the launcher (`unzip eslauncher2-x86_64-apple-darwin.zip`)
+- *Only if you downloaded from the actions page:* Unzip the launcher (`unzip eslauncher2-x86_64-apple-darwin.zip`)
 - mark it as executable (`chmod 755 eslauncher2-x86_64-apple-darwin`)
 - run the launcher (`./eslauncher2-x86_64-apple-darwin`)
 
