@@ -1,14 +1,14 @@
 [package]
 name = "eslauncher2"
 version = "0.4.5"
-authors = ["M*C*O <mcofficer@gmx.de>"]
+authors = ["EndlessSkyCommunity"]
 edition = "2018"
 build = "build.rs"
 description = "Endless Sky Launcher"
 
 [package.metadata.bundle]
 name = "ESLauncher2"
-identifier = "me.mcofficer.eslauncher2"
+identifier = "com.github.EndlessSkyCommunity"
 icon = ["icons/ESLauncher2.icns"]
 resources = ["assets", "icons/**/*.png"]
 short_description = "Endless Sky Launcher"
