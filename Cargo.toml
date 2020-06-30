@@ -9,8 +9,8 @@ description = "Endless Sky Launcher"
 [package.metadata.bundle]
 name = "ESLauncher2"
 identifier = "me.mcofficer.eslauncher2"
-icon = ["32x32.png", "128x128.png"]
-resources = ["assets", "images/**/*.png"]
+icon = ["icons/ESLauncher2.icns"]
+resources = ["assets", "icons/**/*.png"]
 short_description = "Endless Sky Launcher"
 osx_minimum_system_version = "10.7"
 
