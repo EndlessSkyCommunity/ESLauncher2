@@ -27,14 +27,20 @@ you run the launcher on MacOS.
 - Open Finder and navigate to that location
 - Unzip the file (usually double clicking on it is enough)
 - Right click on the extracted ESLauncher2.app and select "Open"
+
 ![Screenshot 1](doc/mac_screenshot_0.png?raw=true)
+
 
 - If you get presented with a dialogue with 2 options, click cancel and repeat
 above step
+
 ![Screenshot 2](doc/mac_screenshot_1.png?raw=true)
 
+
 - Once you see the dialogue with 3 options, select "Open"
+
 ![Screenshot 3](doc/mac_screenshot_2.png?raw=true)
+
 
 - The Launcher should open and from now on you can run it by just double-clicking
 on it.
