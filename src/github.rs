@@ -12,41 +12,12 @@ use std::thread;
 use std::time::Duration;
 
 #[derive(Deserialize, Debug)]
-pub struct GitRef {
-    pub object: GitObject,
+pub struct Repo {
+    pub(crate) id: u32,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct GitObject {
-    pub sha: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Release {
-    pub id: i64,
-    pub tag_name: String,
-    assets_url: String,
-}
-
-#[derive(Deserialize, Debug)]
-struct ReleaseAssets(Vec<ReleaseAsset>);
-
-#[derive(Deserialize, Debug)]
-pub struct ReleaseAsset {
-    pub id: i64,
-    name: String,
-    pub browser_download_url: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct WorkflowRunArtifact {
-    pub id: u32,
-    name: String,
-}
-
-#[derive(Deserialize, Debug)]
-struct WorkflowRunArtifacts {
-    artifacts: Vec<WorkflowRunArtifact>,
+pub trait Artifact {
+    fn name(&self) -> &str;
 }
 
 #[derive(Deserialize, Debug)]
@@ -61,14 +32,24 @@ pub struct PRHead {
     pub repo: Repo,
     pub sha: String,
 }
-#[derive(Deserialize, Debug)]
-pub struct Repo {
-    pub(crate) id: u32,
+
+pub fn get_pr(id: u16) -> Result<PR> {
+    make_request(&format!(
+        "https://api.github.com/repos/endless-sky/endless-sky/pulls/{}",
+        id
+    ))
 }
 
 #[derive(Deserialize, Debug)]
 pub struct UnblockedArtifact {
     pub url: String,
+}
+
+pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact> {
+    make_request(&format!(
+        "https://endlesssky.mcofficer.me/actions-artifacts/artifact/{}",
+        artifact_id
+    ))
 }
 
 #[derive(Deserialize, Debug)]
@@ -82,47 +63,6 @@ pub struct Workflow {
     pub(crate) id: u32,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct WorkflowRuns {
-    workflow_runs: Vec<WorkflowRun>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct WorkflowRun {
-    pub(crate) id: u32,
-    run_number: u32,
-    head_repository: Option<Repo>,
-}
-
-pub trait Artifact {
-    fn name(&self) -> &str;
-}
-
-impl Artifact for ReleaseAsset {
-    fn name(&self) -> &str {
-        &self.name
-    }
-}
-
-impl Artifact for WorkflowRunArtifact {
-    fn name(&self) -> &str {
-        &self.name
-    }
-}
-
-pub fn get_pr(id: u16) -> Result<PR> {
-    make_request(&format!(
-        "https://api.github.com/repos/endless-sky/endless-sky/pulls/{}",
-        id
-    ))
-}
-
-pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact> {
-    make_request(&format!(
-        "https://endlesssky.mcofficer.me/actions-artifacts/artifact/{}",
-        artifact_id
-    ))
-}
 pub fn get_cd_workflow() -> Result<Workflow> {
     let workflows: Workflows =
         make_request("https://api.github.com/repos/endless-sky/endless-sky/actions/workflows")?;
@@ -133,6 +73,18 @@ pub fn get_cd_workflow() -> Result<Workflow> {
         }
     }
     Err(anyhow!("Failed to find artifact with name 'CD'",))
+}
+
+#[derive(Deserialize, Debug)]
+pub struct WorkflowRuns {
+    workflow_runs: Vec<WorkflowRun>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct WorkflowRun {
+    pub(crate) id: u32,
+    run_number: u32,
+    head_repository: Option<Repo>,
 }
 
 pub fn get_latest_workflow_run(
@@ -161,6 +113,22 @@ pub fn get_latest_workflow_run(
         .max_by_key(|run| run.run_number)
         .ok_or_else(|| anyhow!("Found no suitable workflow runs! This can happen if the PR doesn't have the changes that produce usable builds."))
 }
+#[derive(Deserialize, Debug)]
+struct WorkflowRunArtifacts {
+    artifacts: Vec<WorkflowRunArtifact>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct WorkflowRunArtifact {
+    pub id: u32,
+    name: String,
+}
+
+impl Artifact for WorkflowRunArtifact {
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
 
 pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact>> {
     let artifacts: WorkflowRunArtifacts = make_request(&format!(
@@ -174,12 +142,14 @@ pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact
     );
     Ok(artifacts.artifacts)
 }
+#[derive(Deserialize, Debug)]
+pub struct GitRef {
+    pub object: GitObject,
+}
 
-pub fn get_release_by_tag(tag: &str) -> Result<Release> {
-    make_request(&format!(
-        "https://api.github.com/repos/endless-sky/endless-sky/releases/tags/{}",
-        tag
-    ))
+#[derive(Deserialize, Debug)]
+pub struct GitObject {
+    pub sha: String,
 }
 
 pub fn get_git_ref(name: &str) -> Result<GitRef> {
@@ -189,11 +159,41 @@ pub fn get_git_ref(name: &str) -> Result<GitRef> {
     ))
 }
 
+#[derive(Deserialize, Debug)]
+pub struct Release {
+    pub id: i64,
+    pub tag_name: String,
+    assets_url: String,
+}
+
+pub fn get_release_by_tag(tag: &str) -> Result<Release> {
+    make_request(&format!(
+        "https://api.github.com/repos/endless-sky/endless-sky/releases/tags/{}",
+        tag
+    ))
+}
+
 pub fn get_latest_release(repo_slug: &str) -> Result<Release> {
     make_request(&format!(
         "https://api.github.com/repos/{}/releases/latest",
         repo_slug
     ))
+}
+
+#[derive(Deserialize, Debug)]
+struct ReleaseAssets(Vec<ReleaseAsset>);
+
+#[derive(Deserialize, Debug)]
+pub struct ReleaseAsset {
+    pub id: i64,
+    name: String,
+    pub browser_download_url: String,
+}
+
+impl Artifact for ReleaseAsset {
+    fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 pub fn get_release_assets(release_id: i64) -> Result<Vec<ReleaseAsset>> {
