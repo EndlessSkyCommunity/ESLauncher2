@@ -2,7 +2,7 @@
 name = "eslauncher2"
 version = "0.4.5"
 authors = ["M*C*O <mcofficer@gmx.de>", "EndlessSkyCommunity"]
-edition = "2020"
+edition = "2018"
 build = "build.rs"
 description = "A plugin and game resource manager for Endless Sky"
 
