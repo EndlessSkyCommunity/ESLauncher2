@@ -111,22 +111,21 @@ impl Artifact for WorkflowRunArtifact {
 }
 
 pub fn get_pr(id: u16) -> Result<PR> {
-    make_json_request(&format!(
+    make_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/pulls/{}",
         id
     ))
 }
 
 pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact> {
-    make_json_request(&format!(
+    make_request(&format!(
         "https://endlesssky.mcofficer.me/actions-artifacts/artifact/{}",
         artifact_id
     ))
 }
 pub fn get_cd_workflow() -> Result<Workflow> {
-    let workflows: Workflows = make_json_request(
-        "https://api.github.com/repos/endless-sky/endless-sky/actions/workflows",
-    )?;
+    let workflows: Workflows =
+        make_request("https://api.github.com/repos/endless-sky/endless-sky/actions/workflows")?;
     for workflow in workflows.workflows {
         if workflow.name.eq("CD") {
             info!("Found workflow with name 'CD', id {}", workflow.id);
@@ -141,16 +140,19 @@ pub fn get_latest_workflow_run(
     branch: String,
     head_repo_id: u32,
 ) -> Result<WorkflowRun> {
-    let runs: WorkflowRuns = make_json_request(&format!(
+    let mut pages: Vec<WorkflowRuns> = make_paginated_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/workflows/{}/runs?branch={}",
         workflow_id, branch
     ))?;
-    info!(
-        "Got {} runs for workflow {}",
-        runs.workflow_runs.len(),
-        workflow_id
-    );
-    runs.workflow_runs
+
+    let runs: Vec<WorkflowRun> = pages
+        .drain(..)
+        .map(|runs| runs.workflow_runs)
+        .flatten()
+        .collect();
+
+    info!("Got {} runs for workflow {}", runs.len(), workflow_id);
+    runs
         .into_iter()
         .filter(|run| {
             run.head_repository.is_some()
@@ -161,7 +163,7 @@ pub fn get_latest_workflow_run(
 }
 
 pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact>> {
-    let artifacts: WorkflowRunArtifacts = make_json_request(&format!(
+    let artifacts: WorkflowRunArtifacts = make_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/runs/{}/artifacts",
         run_id
     ))?;
@@ -174,28 +176,28 @@ pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact
 }
 
 pub fn get_release_by_tag(tag: &str) -> Result<Release> {
-    make_json_request(&format!(
+    make_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/releases/tags/{}",
         tag
     ))
 }
 
 pub fn get_git_ref(name: &str) -> Result<GitRef> {
-    make_json_request(&format!(
+    make_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/git/ref/{}",
         name
     ))
 }
 
 pub fn get_latest_release(repo_slug: &str) -> Result<Release> {
-    make_json_request(&format!(
+    make_request(&format!(
         "https://api.github.com/repos/{}/releases/latest",
         repo_slug
     ))
 }
 
 pub fn get_release_assets(release_id: i64) -> Result<Vec<ReleaseAsset>> {
-    let assets: ReleaseAssets = make_json_request(&format!(
+    let assets: ReleaseAssets = make_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/releases/{}/assets",
         release_id
     ))?;
@@ -203,9 +205,42 @@ pub fn get_release_assets(release_id: i64) -> Result<Vec<ReleaseAsset>> {
     Ok(assets.0)
 }
 
-fn make_json_request<T: DeserializeOwned>(url: &str) -> Result<T> {
+fn make_request<T: DeserializeOwned>(url: &str) -> Result<T> {
     let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
+    check_ratelimit(&res);
+    Ok(res.into_json_deserialize()?)
+}
 
+fn make_paginated_request<T: DeserializeOwned>(url: &str) -> Result<Vec<T>> {
+    let mut next_url = Some(url.to_string());
+    let mut results = vec![];
+
+    while next_url.is_some() {
+        let url = next_url.clone().unwrap();
+        let res = ureq::get(&url).set("User-Agent", "ESLauncher2").call();
+        check_ratelimit(&res);
+
+        if let Some(link_header) = res.header("link") {
+            match parse_link_header::parse(link_header) {
+                Ok(rels) => {
+                    next_url = rels
+                        .get(&Some("next".to_string()))
+                        .map(|l| l.uri.to_string());
+                }
+                Err(_) => {
+                    warn!("Failed to parse link header!");
+                    next_url = None;
+                }
+            }
+        }
+
+        results.push(res.into_json_deserialize()?);
+    }
+
+    Ok(results)
+}
+
+fn check_ratelimit(res: &ureq::Response) {
     if let Some(remaining) = res.header("X-RateLimit-Remaining") {
         match remaining.parse::<u32>() {
             Ok(remaining) => {
@@ -227,8 +262,6 @@ fn make_json_request<T: DeserializeOwned>(url: &str) -> Result<T> {
             Err(e) => warn!("Failed to parse X-RateLimit-Remaining Header: {}", e),
         }
     }
-
-    Ok(res.into_json_deserialize()?)
 }
 
 pub fn download(url: &str, name: &str, folder: &PathBuf) -> Result<PathBuf> {
