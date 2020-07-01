@@ -1,10 +1,10 @@
 [package]
 name = "eslauncher2"
 version = "0.4.5"
-authors = ["EndlessSkyCommunity"]
-edition = "2018"
+authors = ["M*C*O <mcofficer@gmx.de>", "EndlessSkyCommunity"]
+edition = "2020"
 build = "build.rs"
-description = "Endless Sky Launcher"
+description = "A plugin and game resource manager for Endless Sky"
 
 [package.metadata.bundle]
 name = "ESLauncher2"
