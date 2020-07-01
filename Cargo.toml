@@ -25,6 +25,7 @@ fs_extra = "1.1.0"
 futures = "0.3"
 log = { version="0.4.8", features=["std"] }
 open = "1"
+parse_link_header = "0.2"
 platform-dirs = "0.2.0"
 progress-streams = "1.1.0"
 rodio = { version="0.11", default_features = false, features=["vorbis"] }
