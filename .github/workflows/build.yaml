@@ -70,19 +70,32 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: 10.14
         run: |
           cargo build --verbose --release
-          mv target/release/eslauncher2 eslauncher2-x86_64-apple-darwin
-      - name: Strip binary
-        run: strip eslauncher2-x86_64-apple-darwin
-      - name: Archive binary
-        uses: actions/upload-artifact@v1
+          chmod 755 target/release/eslauncher2
+          ls -al target/release
+      - name: Package binary
+        run: |
+          cargo install cargo-bundle
+          cargo bundle --release
+          ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
+      - name: Strip binary and mark as executable
+        run: |
+          strip target/release/bundle/osx/ESLauncher2.app/Contents/MacOS/eslauncher2
+          chmod 755 target/release/bundle/osx/ESLauncher2.app/Contents/MacOS/eslauncher2
+          ls -al target/release/bundle/osx/ESLauncher2.app/Contents/MacOS
+      - name: Package ourselves to prevent execution flag creep
+        run: |
+          cd target/release/bundle/osx
+          zip -r ESLauncher2.app.zip ESLauncher2.app
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
-          name: eslauncher2-x86_64-apple-darwin
-          path: eslauncher2-x86_64-apple-darwin
+          name: ESLauncher2.app.zip
+          path: target/release/bundle/osx
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            eslauncher2-x86_64-apple-darwin
+            target/release/bundle/osx/ESLauncher2.app.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -3,3 +3,4 @@ target/
 .idea
 /*.iml
 ESLauncher2.log
+.DS_Store

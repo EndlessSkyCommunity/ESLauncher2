@@ -1,9 +1,18 @@
 [package]
 name = "eslauncher2"
 version = "0.4.5"
-authors = ["M*C*O <mcofficer@gmx.de>"]
+authors = ["M*C*O <mcofficer@gmx.de>", "EndlessSkyCommunity"]
 edition = "2018"
 build = "build.rs"
+description = "A plugin and game resource manager for Endless Sky"
+
+[package.metadata.bundle]
+name = "ESLauncher2"
+identifier = "com.github.EndlessSkyCommunity.ESLauncher2"
+icon = ["icons/ESLauncher2.icns"]
+resources = ["assets", "icons/**/*.png"]
+short_description = "Endless Sky Launcher"
+osx_minimum_system_version = "10.7"
 
 [dependencies]
 anyhow = "1.0"
