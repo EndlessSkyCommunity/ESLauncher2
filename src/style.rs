@@ -24,6 +24,10 @@ pub fn pause_icon() -> Text {
     icon('\u{EA1D}')
 }
 
+pub fn debug_icon() -> Text {
+    icon('\u{E999}')
+}
+
 pub fn play_icon() -> Text {
     icon('\u{EA1C}')
 }

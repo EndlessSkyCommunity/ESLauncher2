@@ -160,7 +160,7 @@ impl Instance {
                 Row::new()
                     .spacing(10)
                     .push(
-                        Button::new(&mut self.debug_button, style::play_icon())
+                        Button::new(&mut self.debug_button, style::debug_icon())
                             .style(style::Button::Icon)
                             .on_press(InstanceMessage::Debug),
                     )
