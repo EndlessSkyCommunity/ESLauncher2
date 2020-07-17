@@ -206,6 +206,7 @@ pub fn get_release_assets(release_id: i64) -> Result<Vec<ReleaseAsset>> {
 }
 
 fn make_request<T: DeserializeOwned>(url: &str) -> Result<T> {
+    debug!("Requesting {}", url);
     let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
     check_ratelimit(&res);
     Ok(res.into_json_deserialize()?)
@@ -217,6 +218,7 @@ fn make_paginated_request<T: DeserializeOwned>(url: &str) -> Result<Vec<T>> {
 
     while next_url.is_some() {
         let url = next_url.clone().unwrap();
+        debug!("Requesting {}", url);
         let res = ureq::get(&url).set("User-Agent", "ESLauncher2").call();
         check_ratelimit(&res);
 
@@ -232,6 +234,8 @@ fn make_paginated_request<T: DeserializeOwned>(url: &str) -> Result<Vec<T>> {
                     next_url = None;
                 }
             }
+        } else {
+            next_url = None;
         }
 
         results.push(res.into_json_deserialize()?);
