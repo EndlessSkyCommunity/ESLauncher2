@@ -127,7 +127,7 @@ impl InstallFrame {
         }
 
         let mut install_button = Button::new(&mut self.install_button, Text::new("Install"));
-        if !self.name.is_empty() {
+        if !self.name.trim().is_empty() {
             install_button =
                 install_button.on_press(InstallFrameMessage::StartInstallation(if cfg!(windows) {
                     InstanceType::Windows
@@ -151,7 +151,7 @@ impl InstallFrame {
                     .push(
                         TextInput::new(
                             &mut self.name_chooser,
-                            "Choose Name",
+                            "Name (required)",
                             &self.name,
                             InstallFrameMessage::NameChanged,
                         )

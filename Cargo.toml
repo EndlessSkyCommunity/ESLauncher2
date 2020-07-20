@@ -1,21 +1,31 @@
 [package]
 name = "eslauncher2"
-version = "0.4.5"
-authors = ["M*C*O <mcofficer@gmx.de>"]
+version = "0.5.2"
+authors = ["M*C*O <mcofficer@gmx.de>", "EndlessSkyCommunity"]
 edition = "2018"
 build = "build.rs"
+description = "A plugin and game resource manager for Endless Sky"
+
+[package.metadata.bundle]
+name = "ESLauncher2"
+identifier = "com.github.EndlessSkyCommunity.ESLauncher2"
+icon = ["icons/ESLauncher2.icns"]
+resources = ["assets", "icons/**/*.png"]
+short_description = "Endless Sky Launcher"
+osx_minimum_system_version = "10.7"
 
 [dependencies]
 anyhow = "1.0"
-bitar = { version="0.7.0", features=["rustls-tls"] }
+bitar = { version="0.7.1", features=["rustls-tls"] }
 chrono = { version = "0.4", features = ["serde"] }
 dmg = "0.1.1"
 espim = "0.1"
 flate2 = "1.0"
 fs_extra = "1.1.0"
 futures = "0.3"
-log = { version="0.4.8", features=["std"] }
+log = { version="0.4.11", features=["std"] }
 open = "1"
+parse_link_header = "0.2"
 platform-dirs = "0.2.0"
 progress-streams = "1.1.0"
 rodio = { version="0.11", default_features = false, features=["vorbis"] }
