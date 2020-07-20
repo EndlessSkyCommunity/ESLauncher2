@@ -248,47 +248,31 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
         executable.to_string_lossy()
     );
 
-    if do_debug {
-        match Command::new(&executable).arg("-d").output() {
-            Ok(output) => {
-                info!("{} exited with {}", name, output.status);
-                out.write_all(&output.stdout)?;
-                err.write_all(&output.stderr)?;
-                info!(
-                    "Logfiles have been written to {}",
-                    log_path.to_string_lossy()
-                );
-                if !output.status.success() {
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    error!("Stdout was: {}", stdout);
-                    error!("Stderr was: {}", stderr);
-                }
-            }
-
-            Err(e) => error!("Error starting process: {}", e),
-        };
+    let mut cmd = Command::new(&executable);
+    let output = if do_debug {
+        cmd.arg("-d").output()
     } else {
-        match Command::new(&executable).output() {
-            Ok(output) => {
-                info!("{} exited with {}", name, output.status);
-                out.write_all(&output.stdout)?;
-                err.write_all(&output.stderr)?;
-                info!(
-                    "Logfiles have been written to {}",
-                    log_path.to_string_lossy()
-                );
-                if !output.status.success() {
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    error!("Stdout was: {}", stdout);
-                    error!("Stderr was: {}", stderr);
-                }
+        cmd.output()
+    };
+    match output {
+        Ok(output) => {
+            info!("{} exited with {}", name, output.status);
+            out.write_all(&output.stdout)?;
+            err.write_all(&output.stderr)?;
+            info!(
+                "Logfiles have been written to {}",
+                log_path.to_string_lossy()
+            );
+            if !output.status.success() {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                error!("Stdout was: {}", stdout);
+                error!("Stderr was: {}", stderr);
             }
+        }
 
-            Err(e) => error!("Error starting process: {}", e),
-        };
-    }
+        Err(e) => error!("Error starting process: {}", e),
+    };
     Ok(())
 }
 
