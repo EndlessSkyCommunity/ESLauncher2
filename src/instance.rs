@@ -46,6 +46,8 @@ impl InstanceType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Instance {
     #[serde(skip)]
+    debug_button: button::State,
+    #[serde(skip)]
     play_button: button::State,
     #[serde(skip)]
     update_button: button::State,
@@ -63,7 +65,7 @@ pub struct Instance {
 
 #[derive(Debug, Clone, Copy)]
 pub enum InstanceMessage {
-    Play,
+    Play(bool),
     Update,
     Folder,
     Delete,
@@ -79,6 +81,7 @@ impl Instance {
         source: InstanceSource,
     ) -> Self {
         Instance {
+            debug_button: button::State::default(),
             play_button: button::State::default(),
             update_button: button::State::default(),
             folder_button: button::State::default(),
@@ -94,13 +97,14 @@ impl Instance {
 
     pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
         match message {
-            InstanceMessage::Play => iced::Command::batch(vec![
+            InstanceMessage::Play(do_debug) => iced::Command::batch(vec![
                 iced::Command::perform(dummy(), |()| Message::MusicMessage(MusicCommand::Pause)),
                 iced::Command::perform(
                     perform_play(
                         self.path.clone(),
                         self.executable.clone(),
                         self.name.clone(),
+                        do_debug,
                     ),
                     |()| Message::MusicMessage(MusicCommand::Play),
                 ),
@@ -126,7 +130,7 @@ impl Instance {
             .push(
                 Column::new()
                     .push(Text::new(&self.name).size(24))
-                    .push(Text::new(format!("Version: {}", self.version)).size(10))
+                    .push(Text::new(format!("Version: {:.*}", 32, self.version)).size(10))
                     .push(
                         Text::new(format!(
                             "Source: {} {}",
@@ -140,9 +144,14 @@ impl Instance {
                 Row::new()
                     .spacing(10)
                     .push(
+                        Button::new(&mut self.debug_button, style::debug_icon())
+                            .style(style::Button::Icon)
+                            .on_press(InstanceMessage::Play(true)),
+                    )
+                    .push(
                         Button::new(&mut self.play_button, style::play_icon())
                             .style(style::Button::Icon)
-                            .on_press(InstanceMessage::Play),
+                            .on_press(InstanceMessage::Play(false)),
                     )
                     .push(
                         Button::new(&mut self.update_button, style::update_icon())
@@ -211,13 +220,13 @@ pub async fn perform_update(instance: Instance) -> Option<Instance> {
     }
 }
 
-pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String) {
-    if let Err(e) = play(path, executable, name).await {
+pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) {
+    if let Err(e) = play(path, executable, name, do_debug).await {
         error!("Failed to run game: {}", e);
     }
 }
 
-pub async fn play(path: PathBuf, executable: PathBuf, name: String) -> Result<()> {
+pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) -> Result<()> {
     let mut log_path = path;
     log_path.push("logs");
     fs::create_dir_all(&log_path)?;
@@ -238,7 +247,14 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String) -> Result<()
         name,
         executable.to_string_lossy()
     );
-    match Command::new(&executable).output() {
+
+    let mut cmd = Command::new(&executable);
+    let output = if do_debug {
+        cmd.arg("-d").output()
+    } else {
+        cmd.output()
+    };
+    match output {
         Ok(output) => {
             info!("{} exited with {}", name, output.status);
             out.write_all(&output.stdout)?;
@@ -254,6 +270,7 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String) -> Result<()
                 error!("Stderr was: {}", stderr);
             }
         }
+
         Err(e) => error!("Error starting process: {}", e),
     };
     Ok(())
