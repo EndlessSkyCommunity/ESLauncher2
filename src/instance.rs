@@ -130,7 +130,7 @@ impl Instance {
             .push(
                 Column::new()
                     .push(Text::new(&self.name).size(24))
-                    .push(Text::new(format!("Version: {}", self.version)).size(10))
+                    .push(Text::new(format!("Version: {:.*}", 32, self.version)).size(10))
                     .push(
                         Text::new(format!(
                             "Source: {} {}",
