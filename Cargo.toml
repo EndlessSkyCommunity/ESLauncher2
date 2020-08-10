@@ -42,13 +42,12 @@ zip-extract = { version = "0.1.0", default_features = false, features = ["deflat
 [dependencies.iced]
 version = "0.1.1"
 default_features = false
-features = ["image"]
-# TODO: consider features = ["async-std"]
+features = ["image", "tokio"]
 
 [dev-dependencies.iced]
 version = "0.1.1"
 default_features = false
-features = ["debug", "image"]
+features = ["debug", "image", "tokio"]
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"

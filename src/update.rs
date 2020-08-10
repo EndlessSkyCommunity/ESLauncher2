@@ -83,16 +83,9 @@ async fn update_continuous_instance(
         artifact.name()
     );
 
-    // We need a tokio Runtime because, apparently, OpenOptions and friends are doing some tokio-specific stuff
-    // under the hood. This isn't actually blocking in that it doesn't block the application thread.
-    match tokio::runtime::Runtime::new() {
-        Ok(mut runtime) => {
-            if let Err(e) = runtime.block_on(bitar_update_archive(&archive_path, url)) {
-                error!("Failed to update instance: {:#}", e)
-            }
-        }
-        Err(e) => error!("Failed to spawn tokio runtime: {}", e),
-    };
+    if let Err(e) = bitar_update_archive(&archive_path, url).await {
+        error!("Failed to update instance: {:#}", e)
+    }
 
     if !archive_path
         .to_string_lossy()
