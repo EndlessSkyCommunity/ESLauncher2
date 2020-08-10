@@ -98,6 +98,7 @@ pub fn init() -> mpsc::Receiver<String> {
         .add_filter_ignore_str("iced_wgpu::renderer") // STOP
         .add_filter_ignore_str("wgpu_native::device") // SPAMMING
         .add_filter_ignore_str("wgpu_native::command") // AAAAAH
+        .add_filter_ignore_str("hyper::proto")
         .build();
 
     let mut loggers: Vec<Box<dyn SharedLogger>> = vec![
