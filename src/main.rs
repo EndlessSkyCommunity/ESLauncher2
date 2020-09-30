@@ -292,7 +292,5 @@ fn check_for_update() {
 }
 
 fn get_data_dir() -> Option<PathBuf> {
-    Some(
-        platform_dirs::AppDirs::new(Some("ESLauncher2"), platform_dirs::AppUI::Graphical)?.data_dir,
-    )
+    Some(platform_dirs::AppDirs::new(Some("ESLauncher2"), true)?.data_dir)
 }
