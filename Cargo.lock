@@ -157,6 +157,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
+name = "base64"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
+
+[[package]]
 name = "bindgen"
 version = "0.53.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3297,14 +3303,14 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "ureq"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bbc0597304482f1aa82e296abe382e868c934f0e45ebfe720735990a10e8f5d"
+checksum = "ed21e32e4e3ff89891022affaa7091c3a164d5049cb3872f1cf0fd6ccd9fc8f7"
 dependencies = [
- "base64 0.12.3",
+ "base64 0.13.0",
  "chunked_transfer",
- "lazy_static",
  "log 0.4.11",
+ "once_cell",
  "qstring",
  "rustls 0.18.1",
  "serde",
