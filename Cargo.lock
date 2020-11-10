@@ -200,7 +200,7 @@ dependencies = [
  "prost-build",
  "reqwest",
  "smallvec 1.4.0",
- "tokio",
+ "tokio 0.2.22",
 ]
 
 [[package]]
@@ -859,7 +859,7 @@ dependencies = [
  "serde_json",
  "simplelog",
  "tar",
- "tokio",
+ "tokio 0.3.3",
  "ureq",
  "version",
  "winres",
@@ -1368,7 +1368,7 @@ dependencies = [
  "indexmap",
  "log 0.4.11",
  "slab",
- "tokio",
+ "tokio 0.2.22",
  "tokio-util",
 ]
 
@@ -1445,7 +1445,7 @@ dependencies = [
  "pin-project 0.4.22",
  "socket2",
  "time",
- "tokio",
+ "tokio 0.2.22",
  "tower-service",
  "want",
 ]
@@ -1461,7 +1461,7 @@ dependencies = [
  "hyper",
  "log 0.4.11",
  "rustls 0.17.0",
- "tokio",
+ "tokio 0.2.22",
  "tokio-rustls",
  "webpki",
 ]
@@ -1492,7 +1492,7 @@ checksum = "dd2d8494c0b2a1e1977421b4c094fdcd32d79c27fb9b3bbf1021c62de9eb6986"
 dependencies = [
  "futures 0.3.8",
  "log 0.4.11",
- "tokio",
+ "tokio 0.2.22",
  "wasm-bindgen-futures 0.4.14",
 ]
 
@@ -2667,7 +2667,7 @@ dependencies = [
  "rustls 0.17.0",
  "serde",
  "serde_urlencoded",
- "tokio",
+ "tokio 0.2.22",
  "tokio-rustls",
  "url",
  "wasm-bindgen",
@@ -3215,6 +3215,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5ca08accbcb46f11fd8d2d1c6158c348b7888009a1f39260bcad66f6a454250"
+dependencies = [
+ "autocfg",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "tokio-rustls"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3222,7 +3232,7 @@ checksum = "15cb62a0d2770787abc96e99c1cd98fcf17f94959f3af63ca85bdfb203f051b4"
 dependencies = [
  "futures-core",
  "rustls 0.17.0",
- "tokio",
+ "tokio 0.2.22",
  "webpki",
 ]
 
@@ -3237,7 +3247,7 @@ dependencies = [
  "futures-sink",
  "log 0.4.11",
  "pin-project-lite",
- "tokio",
+ "tokio 0.2.22",
 ]
 
 [[package]]
