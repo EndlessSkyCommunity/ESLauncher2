@@ -3,7 +3,7 @@ use crate::{style, Message};
 use espim::Plugin as EspimPlugin;
 use iced::{
     button, scrollable, Align, Color, Column, Command, Container, Element, HorizontalAlignment,
-    Image, Length, Row, Scrollable, Space, Text, VerticalAlignment,
+    Length, Row, Scrollable, Space, Text, VerticalAlignment,
 };
 
 #[derive(Debug, Clone)]
