@@ -30,12 +30,11 @@ use iced::{
     button, scrollable, Align, Application, Button, Column, Command, Container, Element,
     HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Text,
 };
-use platform_dirs;
 use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 
-pub fn main() {
+pub fn main() -> iced::Result {
     ESLauncher::run(Settings::default())
 }
 

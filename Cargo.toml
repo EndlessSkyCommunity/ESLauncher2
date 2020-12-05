@@ -40,14 +40,14 @@ version = "3"
 zip-extract = { version = "0.1.0", default_features = false, features = ["deflate"] }
 
 [dependencies.iced]
-version = "0.1.1"
+version = "0.2"
 default_features = false
-features = ["image", "tokio"]
+features = ["glow", "image", "tokio_old"]
 
 [dev-dependencies.iced]
-version = "0.1.1"
+version = "0.2"
 default_features = false
-features = ["debug", "image", "tokio"]
+features = ["glow", "debug", "image", "tokio_old"]
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"

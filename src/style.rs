@@ -59,7 +59,7 @@ impl button::StyleSheet for Button {
             },
             Button::Destructive => button::Style {
                 background: Some(Background::Color(Color::from_rgb(0.8, 0.2, 0.2))),
-                border_radius: 5,
+                border_radius: 5.0,
                 text_color: Color::WHITE,
                 shadow_offset: Vector::new(1.0, 1.0),
                 ..button::Style::default()
@@ -69,8 +69,8 @@ impl button::StyleSheet for Button {
                     button::Style {
                         background: Some(Background::Color(Color::WHITE)),
                         border_color: Color::from_rgb(0.5, 0.5, 0.5),
-                        border_width: 1,
-                        border_radius: 3,
+                        border_width: 1.0,
+                        border_radius: 3.0,
                         ..button::Style::default()
                     }
                 } else {

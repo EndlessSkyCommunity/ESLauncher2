@@ -2,8 +2,8 @@ use crate::{style, Message};
 
 use espim::Plugin as EspimPlugin;
 use iced::{
-    button, image, scrollable, Align, Color, Column, Command, Container, Element,
-    HorizontalAlignment, Image, Length, Row, Scrollable, Space, Text, VerticalAlignment,
+    button, scrollable, Align, Color, Column, Command, Container, Element, HorizontalAlignment,
+    Image, Length, Row, Scrollable, Space, Text, VerticalAlignment,
 };
 
 #[derive(Debug, Clone)]
@@ -125,17 +125,18 @@ impl Plugin {
 
     fn view(&mut self) -> Element<PluginMessage> {
         let mut content = Row::new().spacing(10).padding(10);
-        if let Some(bytes) = &self.icon_bytes {
+        if let Some(_bytes) = &self.icon_bytes {
             const ICON_DIMENSION: u16 = 48;
             content = content.push(
                 Row::new()
                     .width(Length::Units(ICON_DIMENSION))
                     .align_items(Align::Center)
-                    .push(
-                        Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
-                            .height(Length::Units(ICON_DIMENSION))
-                            .width(Length::Units(ICON_DIMENSION)),
-                    ),
+                    // TODO: Re-enable when iced supports Image widgets with OpenGL
+                    // .push(
+                    //     Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
+                    //         .height(Length::Units(ICON_DIMENSION))
+                    //         .width(Length::Units(ICON_DIMENSION)),
+                    // ),
             );
         }
 
