@@ -32,10 +32,11 @@ pub fn spawn() -> Sender<MusicCommand> {
 }
 
 fn play(rx: Receiver<MusicCommand>) -> Result<()> {
-    let device =
-        rodio::default_output_device().ok_or_else(|| anyhow!("Failed to find default output"))?;
+    let (_stream, stream_handle) =
+        rodio::OutputStream::try_default().context("Failed to get output stream")?;
 
-    let mut sink = play_once(&device)?;
+    let sink = Sink::try_new(&stream_handle).context("Failed to create Sink")?;
+
     let mut state = MusicState::Playing;
     loop {
         if let Ok(cmd) = rx.try_recv() {
@@ -52,14 +53,10 @@ fn play(rx: Receiver<MusicCommand>) -> Result<()> {
         }
 
         if state == MusicState::Playing && sink.empty() {
-            sink = play_once(&device)?;
+            let source = rodio::Decoder::new(BufReader::new(Cursor::new(SONG)))?;
+            sink.append(source);
         }
 
         thread::sleep(Duration::from_millis(100));
     }
-}
-
-fn play_once(device: &Device) -> Result<Sink, DecoderError> {
-    let reader = BufReader::new(Cursor::new(SONG));
-    rodio::play_once(&device, reader)
 }
