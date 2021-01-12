@@ -16,7 +16,7 @@ impl Default for InstancesFrame {
         let instances = match load_instances() {
             Ok(i) => i,
             Err(e) => {
-                error!("Failed to load instances: {}", e);
+                error!("Failed to load instances: {:#}", e);
                 vec![]
             }
         };

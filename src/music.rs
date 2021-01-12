@@ -1,6 +1,5 @@
-use anyhow::Result;
-use rodio::decoder::DecoderError;
-use rodio::{Device, Sink};
+use anyhow::{Context, Result};
+use rodio::Sink;
 use std::io::{BufReader, Cursor};
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -25,7 +24,7 @@ pub fn spawn() -> Sender<MusicCommand> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         if let Err(e) = play(rx) {
-            error!("Music thread crashed: {}", e)
+            error!("Music thread crashed: {:#}", e)
         }
     });
     tx

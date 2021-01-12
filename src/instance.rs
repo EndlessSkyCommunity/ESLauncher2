@@ -204,7 +204,7 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
             Some(path)
         }
         Err(_) => {
-            error!("Failed to remove {:#}", path.to_string_lossy());
+            error!("Failed to remove {}", path.to_string_lossy());
             None
         }
     }
@@ -222,7 +222,7 @@ pub async fn perform_update(instance: Instance) -> Option<Instance> {
 
 pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) {
     if let Err(e) = play(path, executable, name, do_debug).await {
-        error!("Failed to run game: {}", e);
+        error!("Failed to run game: {:#}", e);
     }
 }
 
@@ -287,7 +287,7 @@ struct InstancesContainer(Vec<Instance>);
 
 pub fn perform_save_instances(instances: Vec<Instance>) {
     if let Err(e) = save_instances(instances) {
-        error!("Failed to save instances: {}", e);
+        error!("Failed to save instances: {:#}", e);
     };
 }
 

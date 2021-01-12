@@ -218,7 +218,7 @@ pub async fn load_plugins() -> Vec<Plugin> {
         }
         Err(e) => {
             error!(
-                "Failed to initialize ESPIM, Plug-Ins will be unavailable: {}",
+                "Failed to initialize ESPIM, Plug-Ins will be unavailable: {:#}",
                 e
             );
         }
@@ -228,7 +228,7 @@ pub async fn load_plugins() -> Vec<Plugin> {
 
 pub async fn perform_install(mut plugin: EspimPlugin) -> EspimPlugin {
     if let Err(e) = plugin.download() {
-        error!("Install failed: {}", e)
+        error!("Install failed: {:#}", e)
     }
     plugin
 }
