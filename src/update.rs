@@ -22,7 +22,19 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
     }
 
     let new_instance = if InstanceSourceType::Continuous == instance.source.r#type {
-        update_continuous_instance(&instance, &mut archive_path).await?
+        match update_continuous_instance(&instance, &mut archive_path).await {
+            Ok(i) => i,
+            Err(e) => {
+                error!("Failed to perform incremental update: {}", e);
+                info!("falling back to reinstall");
+                install::install(
+                    instance.path.clone(),
+                    instance.name,
+                    instance.instance_type,
+                    instance.source,
+                )?
+            }
+        }
     } else {
         let version = if InstanceSourceType::PR == instance.source.r#type {
             github::get_pr(instance.source.identifier.parse()?)?
@@ -72,7 +84,8 @@ async fn update_continuous_instance(
 ) -> Result<Instance> {
     let version = jenkins::get_latest_sha()?;
     if version.eq(&instance.version) {
-        return Err(anyhow!("Latest version is already installed"));
+        error!("Latest version is already installed");
+        return Ok(instance.clone());
     }
 
     let artifacts = jenkins::get_latest_artifacts()?;
@@ -83,9 +96,7 @@ async fn update_continuous_instance(
         artifact.name()
     );
 
-    if let Err(e) = bitar_update_archive(&archive_path, url).await {
-        error!("Failed to update instance: {:#}", e)
-    }
+    bitar_update_archive(&archive_path, url).await?;
 
     if !archive_path
         .to_string_lossy()
