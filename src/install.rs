@@ -31,7 +31,9 @@ pub fn install(
         instance_source.identifier.insert(0, 'v');
     }
 
-    fs::remove_dir_all(&destination)?;
+    if destination.exists() {
+        fs::remove_dir_all(&destination)?;
+    }
     fs::create_dir_all(&destination)?;
 
     let (archive_file, version) = match instance_source.r#type {
