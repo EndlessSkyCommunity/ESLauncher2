@@ -296,8 +296,10 @@ pub fn download(url: &str, name: &str, folder: &PathBuf) -> Result<PathBuf> {
         thread::sleep(Duration::from_secs(2));
     });
 
-    copy(&mut reader, &mut output_file)?;
+    let res = copy(&mut reader, &mut output_file);
+    // Make sure we end the logging thread before potentially erroring out
     done.store(true, Ordering::SeqCst);
+    res?;
 
     info!("Download finished");
     Ok(output_path)
