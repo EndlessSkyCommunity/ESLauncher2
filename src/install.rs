@@ -3,7 +3,6 @@ use crate::install_frame::{InstanceSource, InstanceSourceType};
 use crate::instance::{Instance, InstanceType};
 use crate::{archive, github};
 use anyhow::{Context, Result};
-use dmg;
 use fs_extra::dir::{copy, CopyOptions};
 use regex::Regex;
 #[cfg(unix)]
