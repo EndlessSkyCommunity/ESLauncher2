@@ -5,6 +5,7 @@ use crate::{archive, github};
 use anyhow::{Context, Result};
 use dmg;
 use fs_extra::dir::{copy, CopyOptions};
+use regex::Regex;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
@@ -21,12 +22,16 @@ pub fn install(
         return Err(anyhow!("Cannot install InstanceType::Unknown",));
     }
 
+    // If it's a PR, try to strip the leading `#`
     if InstanceSourceType::PR == instance_source.r#type
         && instance_source.identifier.starts_with('#')
     {
         instance_source.identifier.remove(0);
-    } else if InstanceSourceType::Release == instance_source.r#type
-        && !instance_source.identifier.starts_with('v')
+    }
+    // If it's a version number, add a `v` prefix
+    // Limited to 10 characters so we don't match commit hashes containing nothing but numbers
+    else if InstanceSourceType::Release == instance_source.r#type
+        && Regex::new(r"^[\d.]{6,10}$")?.is_match(&instance_source.identifier)
     {
         instance_source.identifier.insert(0, 'v');
     }

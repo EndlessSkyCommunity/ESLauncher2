@@ -1045,6 +1045,7 @@ dependencies = [
  "parse_link_header",
  "platform-dirs",
  "progress-streams",
+ "regex",
  "rodio",
  "serde",
  "serde-xml-rs",
