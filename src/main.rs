@@ -28,10 +28,10 @@ use crate::plugins_frame::PluginMessage;
 
 use iced::{
     button, scrollable, Align, Application, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Text,
+    HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Subscription, Text,
 };
 use std::path::PathBuf;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Sender;
 use std::thread;
 
 pub fn main() -> iced::Result {
@@ -47,7 +47,7 @@ struct ESLauncher {
     instances_frame: instances_frame::InstancesFrame,
     plugins_frame: plugins_frame::PluginsFrameState,
     log_scrollable: scrollable::State,
-    log_reader: Receiver<String>,
+    log_receiver: logger::LogReceiver,
     log_buffer: Vec<String>,
     view: MainView,
     instances_view_button: button::State,
@@ -72,6 +72,7 @@ pub enum Message {
     MusicMessage(MusicCommand),
     ViewChanged(MainView),
     PluginFrameLoaded(Vec<plugins_frame::Plugin>),
+    Log(String),
 }
 
 impl Application for ESLauncher {
@@ -80,7 +81,7 @@ impl Application for ESLauncher {
     type Flags = ();
 
     fn new(_flag: ()) -> (ESLauncher, Command<Message>) {
-        let log_reader = logger::init();
+        let log_receiver = logger::init();
         info!("Starting ESLauncher2 v{}", version!());
         if cfg!(target_os = "macos") {
             info!("  running on target environment macos");
@@ -106,7 +107,7 @@ impl Application for ESLauncher {
                 instances_frame: instances_frame::InstancesFrame::default(),
                 plugins_frame: plugins_frame_state,
                 log_scrollable: scrollable::State::default(),
-                log_reader,
+                log_receiver,
                 log_buffer: vec![],
                 view: MainView::Instances,
                 instances_view_button: button::State::default(),
@@ -169,17 +170,27 @@ impl Application for ESLauncher {
             Message::PluginFrameLoaded(plugins) => {
                 self.plugins_frame = plugins_frame::PluginsFrameState::from(plugins);
             }
+            Message::Log(line) => self.log_buffer.push(line),
             Message::Dummy(_) => (),
         }
         Command::none()
     }
 
-    fn view(&mut self) -> Element<'_, Self::Message> {
-        // Update logs
-        while let Ok(line) = self.log_reader.try_recv() {
-            self.log_buffer.push(line);
-        }
+    /// Subscriptions are created from Recipes.
+    /// Each Recipe has a hash function, which is used to identify it.
+    ///
+    /// This function is called on each event loop;
+    /// if a Recipe already has a running Subscription (as identified by the hash),
+    /// the old Subscription will keep running, otherwise a new one will be created.
+    ///
+    /// Having to clone the receiver is unfortunate, but there aren't actually multiple receivers being used:
+    /// since first the Subscription never stops returning values (unless something catastrophic happens),
+    /// so the cloned Recipe just gets dropped.
+    fn subscription(&self) -> Subscription<Message> {
+        Subscription::from_recipe(self.log_receiver.clone())
+    }
 
+    fn view(&mut self) -> Element<'_, Self::Message> {
         let view_chooser = Row::new()
             .spacing(100)
             .padding(30)

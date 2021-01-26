@@ -1040,6 +1040,8 @@ dependencies = [
  "fs_extra",
  "futures",
  "iced",
+ "iced_native",
+ "lazy_static",
  "log 0.4.13",
  "open",
  "parse_link_header",
