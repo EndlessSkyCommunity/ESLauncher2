@@ -1,0 +1,4 @@
+sign-commit = true
+sign-tag = true
+disable-publish = true
+no-dev-version = true
