@@ -38,7 +38,7 @@ serde-xml-rs = "0.4"
 simplelog = "0.9.0"
 tar = "0.4"
 tokio = { version="0.2", default_features = false, features=["fs"] }
-ureq = { version = "1.5", default_features = false, features = ["json", "tls"] }
+ureq = { version = "2.0", default_features = false, features = ["json", "tls"] }
 version = "3"
 zip-extract = { version = "0.1.0", default_features = false, features = ["deflate"] }
 
