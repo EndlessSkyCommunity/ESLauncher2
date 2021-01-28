@@ -12,7 +12,7 @@ use std::hash::Hash;
 use std::sync::Mutex;
 use std::time::Duration;
 
-const BLACKLIST: [&str; 4] = ["gfx_backend_", "winit", "wgpu_", "iced_"];
+const BLACKLIST: [&str; 5] = ["gfx_backend_", "winit", "wgpu_", "iced_", "ureq::unit"];
 
 lazy_static! {
     static ref LOG_QUEUE: Mutex<VecDeque<String>> = Mutex::new(VecDeque::new());
