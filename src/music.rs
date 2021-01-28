@@ -23,14 +23,14 @@ pub enum MusicState {
 pub fn spawn() -> Sender<MusicCommand> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
-        if let Err(e) = play(rx) {
+        if let Err(e) = play(&rx) {
             error!("Music thread crashed: {:#}", e)
         }
     });
     tx
 }
 
-fn play(rx: Receiver<MusicCommand>) -> Result<()> {
+fn play(rx: &Receiver<MusicCommand>) -> Result<()> {
     let (_stream, stream_handle) =
         rodio::OutputStream::try_default().context("Failed to get output stream")?;
 

@@ -108,7 +108,7 @@ fn download_pr_asset(
 ) -> Result<(PathBuf, String)> {
     let pr = github::get_pr(pr_id)?;
     let workflow = github::get_cd_workflow()?;
-    let run = github::get_latest_workflow_run(workflow.id, pr.head.branch, pr.head.repo.id)?;
+    let run = github::get_latest_workflow_run(workflow.id, &pr.head.branch, pr.head.repo.id)?;
     let artifacts = get_workflow_run_artifacts(run.id)?;
     let artifact = choose_artifact(artifacts, instance_type)?;
     let unblocked = github::unblock_artifact_download(artifact.id)?;

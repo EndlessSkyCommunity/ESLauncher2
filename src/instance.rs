@@ -24,21 +24,21 @@ pub enum InstanceType {
 impl InstanceType {
     pub fn archive(self) -> Option<&'static str> {
         match self {
-            InstanceType::MacOS => Some("mac"),
-            InstanceType::Windows => Some("win64"),
-            InstanceType::Linux => Some(".tar.gz"),
-            InstanceType::AppImage => Some(".AppImage"),
-            InstanceType::Unknown => None,
+            Self::MacOS => Some("mac"),
+            Self::Windows => Some("win64"),
+            Self::Linux => Some(".tar.gz"),
+            Self::AppImage => Some(".AppImage"),
+            Self::Unknown => None,
         }
     }
 
     pub fn executable(self) -> Option<&'static str> {
         match self {
-            InstanceType::MacOS => Some("Endless Sky.app/Contents/MacOS/Endless Sky"),
-            InstanceType::Windows => Some("EndlessSky.exe"),
-            InstanceType::Linux => Some("endless-sky"),
-            InstanceType::AppImage => Some("endless-sky.AppImage"),
-            InstanceType::Unknown => None,
+            Self::MacOS => Some("Endless Sky.app/Contents/MacOS/Endless Sky"),
+            Self::Windows => Some("EndlessSky.exe"),
+            Self::Linux => Some("endless-sky"),
+            Self::AppImage => Some("endless-sky.AppImage"),
+            Self::Unknown => None,
         }
     }
 }
@@ -80,7 +80,7 @@ impl Instance {
         instance_type: InstanceType,
         source: InstanceSource,
     ) -> Self {
-        Instance {
+        Self {
             debug_button: button::State::default(),
             play_button: button::State::default(),
             update_button: button::State::default(),
@@ -198,15 +198,12 @@ pub async fn open_folder(path: PathBuf) {
 }
 
 pub async fn delete(path: PathBuf) -> Option<PathBuf> {
-    match std::fs::remove_dir_all(&path) {
-        Ok(_) => {
-            info!("Removed {}", path.to_string_lossy());
-            Some(path)
-        }
-        Err(_) => {
-            error!("Failed to remove {}", path.to_string_lossy());
-            None
-        }
+    if std::fs::remove_dir_all(&path).is_ok() {
+        info!("Removed {}", path.to_string_lossy());
+        Some(path)
+    } else {
+        error!("Failed to remove {}", path.to_string_lossy());
+        None
     }
 }
 

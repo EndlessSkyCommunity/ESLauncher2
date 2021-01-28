@@ -80,7 +80,7 @@ impl Application for ESLauncher {
     type Message = Message;
     type Flags = ();
 
-    fn new(_flag: ()) -> (ESLauncher, Command<Message>) {
+    fn new(_flag: ()) -> (Self, Command<Message>) {
         let log_receiver = logger::init();
         info!("Starting ESLauncher2 v{}", version!());
         if cfg!(target_os = "macos") {
@@ -99,7 +99,7 @@ impl Application for ESLauncher {
 
         let (plugins_frame_state, command) = plugins_frame::PluginsFrameState::new();
         (
-            ESLauncher {
+            Self {
                 music_sender,
                 music_button: button::State::default(),
                 music_state: MusicState::Playing,

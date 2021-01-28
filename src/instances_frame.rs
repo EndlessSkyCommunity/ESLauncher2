@@ -20,7 +20,7 @@ impl Default for InstancesFrame {
                 vec![]
             }
         };
-        InstancesFrame {
+        Self {
             instances,
             scrollable: scrollable::State::default(),
         }

@@ -48,11 +48,7 @@ impl Default for InstanceSource {
 }
 
 impl InstanceSourceType {
-    pub const ALL: [InstanceSourceType; 3] = [
-        InstanceSourceType::Continuous,
-        InstanceSourceType::Release,
-        InstanceSourceType::PR,
-    ];
+    pub const ALL: [Self; 3] = [Self::Continuous, Self::Release, Self::PR];
 }
 
 impl fmt::Display for InstanceSourceType {
@@ -63,7 +59,7 @@ impl fmt::Display for InstanceSourceType {
 
 impl Default for InstallFrame {
     fn default() -> Self {
-        InstallFrame {
+        Self {
             name: String::default(),
             name_chooser: text_input::State::default(),
             install_button: button::State::default(),
@@ -77,8 +73,8 @@ impl Default for InstallFrame {
 impl InstallFrame {
     pub fn update(&mut self, message: InstallFrameMessage) -> iced::Command<Message> {
         match message {
-            InstallFrameMessage::StartInstallation(instance_type) => match get_instances_dir() {
-                Some(mut destination) => {
+            InstallFrameMessage::StartInstallation(instance_type) => {
+                if let Some(mut destination) = get_instances_dir() {
                     destination.push(&self.name);
                     let name = String::from(destination.file_name().unwrap().to_string_lossy());
                     return Command::perform(
@@ -90,9 +86,10 @@ impl InstallFrame {
                         ),
                         Message::Installed,
                     );
+                } else {
+                    error!("Could not get instances directory from AppDirs")
                 }
-                None => error!("Could not get instances directory from AppDirs"),
-            },
+            }
             InstallFrameMessage::SourceTypeChanged(source_type) => self.source.r#type = source_type,
             InstallFrameMessage::NameChanged(name) => self.name = name,
             InstallFrameMessage::SourceIdentifierChanged(identifier) => {

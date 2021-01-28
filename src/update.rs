@@ -96,13 +96,13 @@ async fn update_continuous_instance(
         artifact.name()
     );
 
-    bitar_update_archive(&archive_path, url).await?;
+    bitar_update_archive(archive_path, url).await?;
 
     if !archive_path
         .to_string_lossy()
         .ends_with(InstanceType::AppImage.archive().unwrap())
     {
-        archive::unpack(&archive_path, &instance.path, !cfg!(target_os = "macos"))?;
+        archive::unpack(archive_path, &instance.path, !cfg!(target_os = "macos"))?;
     }
 
     let mut new_instance = instance.clone();

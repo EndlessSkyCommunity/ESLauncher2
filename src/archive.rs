@@ -25,7 +25,7 @@ pub fn unpack(archive_file: &PathBuf, destination: &PathBuf, strip_toplevel: boo
             if !destination.exists() {
                 create_dir(destination)?;
             }
-            zip_extract::extract(File::open(archive_file)?, &destination, strip_toplevel)?;
+            zip_extract::extract(File::open(archive_file)?, destination, strip_toplevel)?;
         }
         _ => panic!("Unsupported archive!"),
     };

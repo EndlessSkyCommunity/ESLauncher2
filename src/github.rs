@@ -89,7 +89,7 @@ pub struct WorkflowRun {
 
 pub fn get_latest_workflow_run(
     workflow_id: u32,
-    branch: String,
+    branch: &str,
     head_repo_id: u32,
 ) -> Result<WorkflowRun> {
     let mut pages: Vec<WorkflowRuns> = make_paginated_request(&format!(
@@ -99,8 +99,7 @@ pub fn get_latest_workflow_run(
 
     let runs: Vec<WorkflowRun> = pages
         .drain(..)
-        .map(|runs| runs.workflow_runs)
-        .flatten()
+        .flat_map(|runs| runs.workflow_runs)
         .collect();
 
     info!("Got {} runs for workflow {}", runs.len(), workflow_id);
@@ -223,16 +222,13 @@ fn make_paginated_request<T: DeserializeOwned>(url: &str) -> Result<Vec<T>> {
         check_ratelimit(&res);
 
         if let Some(link_header) = res.header("link") {
-            match parse_link_header::parse(link_header) {
-                Ok(rels) => {
-                    next_url = rels
-                        .get(&Some("next".to_string()))
-                        .map(|l| l.uri.to_string());
-                }
-                Err(_) => {
-                    warn!("Failed to parse link header!");
-                    next_url = None;
-                }
+            if let Ok(rels) = parse_link_header::parse(link_header) {
+                next_url = rels
+                    .get(&Some("next".to_string()))
+                    .map(|l| l.uri.to_string());
+            } else {
+                warn!("Failed to parse link header!");
+                next_url = None;
             }
         } else {
             next_url = None;

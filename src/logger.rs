@@ -80,12 +80,7 @@ where
         Box::pin(futures::stream::unfold(0, |state| async move {
             loop {
                 tokio::time::delay_for(Duration::from_millis(10)).await;
-                if let Some(msg) = LOG_QUEUE
-                    .try_lock()
-                    .ok()
-                    .map(|mut q| q.pop_front())
-                    .flatten()
-                {
+                if let Some(msg) = LOG_QUEUE.try_lock().ok().and_then(|mut q| q.pop_front()) {
                     return Some((Message::Log(msg), state));
                 }
             }
@@ -96,7 +91,7 @@ where
 fn should_log(record: &Record) -> bool {
     match record.module_path() {
         Some(path) => {
-            for x in BLACKLIST.iter() {
+            for x in &BLACKLIST {
                 if path.contains(x) {
                     return false;
                 }

@@ -53,18 +53,18 @@ pub enum Button {
 impl button::StyleSheet for Button {
     fn active(&self) -> button::Style {
         match self {
-            Button::Icon => button::Style {
+            Self::Icon => button::Style {
                 text_color: Color::from_rgb(0.5, 0.5, 0.5),
                 ..button::Style::default()
             },
-            Button::Destructive => button::Style {
+            Self::Destructive => button::Style {
                 background: Some(Background::Color(Color::from_rgb(0.8, 0.2, 0.2))),
                 border_radius: 5.0,
                 text_color: Color::WHITE,
                 shadow_offset: Vector::new(1.0, 1.0),
                 ..button::Style::default()
             },
-            Button::Tab(active) => {
+            Self::Tab(active) => {
                 if *active {
                     button::Style {
                         background: Some(Background::Color(Color::WHITE)),
@@ -87,7 +87,7 @@ impl button::StyleSheet for Button {
 
         button::Style {
             text_color: match self {
-                Button::Icon => Color::from_rgb(0.2, 0.2, 0.7),
+                Self::Icon => Color::from_rgb(0.2, 0.2, 0.7),
                 _ => active.text_color,
             },
             shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),

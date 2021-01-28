@@ -18,13 +18,13 @@ pub enum PluginsFrameState {
 impl PluginsFrameState {
     pub fn new() -> (Self, Command<Message>) {
         (
-            PluginsFrameState::Loading,
+            Self::Loading,
             Command::perform(load_plugins(), Message::PluginFrameLoaded),
         )
     }
 
     pub fn from(plugins: Vec<Plugin>) -> Self {
-        PluginsFrameState::Ready {
+        Self::Ready {
             plugins,
             plugin_scrollable: scrollable::State::default(),
         }
@@ -32,7 +32,7 @@ impl PluginsFrameState {
 
     pub fn view(&mut self) -> Container<Message> {
         match self {
-            PluginsFrameState::Loading => Container::new(
+            Self::Loading => Container::new(
                 Column::new().align_items(Align::Center).push(
                     Text::new("Loading...")
                         .width(Length::Fill)
@@ -40,7 +40,7 @@ impl PluginsFrameState {
                         .horizontal_alignment(HorizontalAlignment::Center),
                 ),
             ),
-            PluginsFrameState::Ready {
+            Self::Ready {
                 plugins,
                 plugin_scrollable,
             } => {
