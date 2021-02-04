@@ -7,6 +7,10 @@ use iced::{
 };
 use serde::{Deserialize, Serialize};
 
+// Characters that shall not be allowed to enter. This does not cover all cases!
+// One should expect the install process to fail on particularly exotic characters.
+const BLACKLISTED_CHARS: [char; 10] = ['/', '\\', ':', '*', '?', '"', '<', '>', '|', '%'];
+
 #[derive(Debug, Clone)]
 pub struct InstallFrame {
     pub(crate) name: String,
@@ -74,13 +78,11 @@ impl InstallFrame {
     pub fn update(&mut self, message: InstallFrameMessage) -> iced::Command<Message> {
         match message {
             InstallFrameMessage::StartInstallation(instance_type) => {
-                if let Some(mut destination) = get_instances_dir() {
-                    destination.push(&self.name);
-                    let name = String::from(destination.file_name().unwrap().to_string_lossy());
+                if let Some(destination) = get_instances_dir() {
                     return Command::perform(
                         instance::perform_install(
-                            destination,
-                            name,
+                            destination.with_file_name(&self.name),
+                            self.name.clone(),
                             instance_type,
                             self.source.clone(),
                         ),
@@ -91,7 +93,13 @@ impl InstallFrame {
                 }
             }
             InstallFrameMessage::SourceTypeChanged(source_type) => self.source.r#type = source_type,
-            InstallFrameMessage::NameChanged(name) => self.name = name,
+            InstallFrameMessage::NameChanged(name) => {
+                if let Some(invalid) = name.chars().rfind(|c| BLACKLISTED_CHARS.contains(&c)) {
+                    error!("Invalid character: '{}'", invalid)
+                } else {
+                    self.name = name
+                }
+            }
             InstallFrameMessage::SourceIdentifierChanged(identifier) => {
                 self.source.identifier = identifier
             }
