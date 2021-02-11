@@ -2681,9 +2681,9 @@ dependencies = [
 
 [[package]]
 name = "parse_link_header"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b09f37bc2b55b5237baf3139b9e6304aea937baf38e8f43207b41cc3934b3a1"
+checksum = "9b4f88f9547da526c2670628a21a1749599b79b65ffc2b8609c874fe012f58a0"
 dependencies = [
  "http",
  "regex",
