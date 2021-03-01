@@ -184,8 +184,8 @@ impl Application for ESLauncher {
     /// the old Subscription will keep running, otherwise a new one will be created.
     ///
     /// Having to clone the receiver is unfortunate, but there aren't actually multiple receivers being used:
-    /// since first the Subscription never stops returning values (unless something catastrophic happens),
-    /// so the cloned Recipe just gets dropped.
+    /// the first the Subscription never stops returning values (unless something catastrophic happens),
+    /// so the cloned Recipe just gets dropped without being turned into a Subscription.
     fn subscription(&self) -> Subscription<Message> {
         Subscription::from_recipe(self.log_receiver.clone())
     }

@@ -63,7 +63,7 @@ impl SharedLogger for ChanneledLogger {
 #[derive(Debug, Clone)]
 pub struct LogReceiver {}
 
-impl<H, I> iced_native::subscription::Recipe<H, I> for LogReceiver
+impl<H, I> iced_futures::subscription::Recipe<H, I> for LogReceiver
 where
     H: std::hash::Hasher,
 {
@@ -78,8 +78,9 @@ where
         _input: futures::stream::BoxStream<'static, I>,
     ) -> futures::stream::BoxStream<'static, Self::Output> {
         Box::pin(futures::stream::unfold(0, |state| async move {
+            let mut interval = tokio::time::interval(Duration::from_millis(10));
             loop {
-                tokio::time::delay_for(Duration::from_millis(10)).await;
+                interval.tick().await;
                 if let Some(msg) = LOG_QUEUE.try_lock().ok().and_then(|mut q| q.pop_front()) {
                     return Some((Message::Log(msg), state));
                 }
