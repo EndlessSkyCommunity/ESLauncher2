@@ -78,10 +78,11 @@ impl InstallFrame {
     pub fn update(&mut self, message: InstallFrameMessage) -> iced::Command<Message> {
         match message {
             InstallFrameMessage::StartInstallation(instance_type) => {
-                if let Some(destination) = get_instances_dir() {
+                if let Some(mut destination) = get_instances_dir() {
+                    destination.push(&self.name);
                     return Command::perform(
                         instance::perform_install(
-                            destination.with_file_name(&self.name),
+                            destination,
                             self.name.clone(),
                             instance_type,
                             self.source.clone(),
