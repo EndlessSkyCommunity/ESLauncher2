@@ -292,6 +292,7 @@ fn save_instances(instances: Vec<Instance>) -> Result<()> {
     let mut instances_file =
         get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
     instances_file.push("instances.json");
+    debug!("Saving to {}", instances_file.to_string_lossy());
 
     let file = fs::File::create(instances_file)?;
 
@@ -303,6 +304,7 @@ pub fn load_instances() -> Result<Vec<Instance>> {
     let mut instances_file =
         get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
     instances_file.push("instances.json");
+    debug!("Loading from {}", instances_file.to_string_lossy());
 
     if instances_file.exists() {
         let file = fs::File::open(instances_file)?;
