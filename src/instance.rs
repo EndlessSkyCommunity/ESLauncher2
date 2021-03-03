@@ -1,5 +1,4 @@
 use crate::install_frame::InstanceSource;
-use crate::music::MusicCommand;
 use crate::{get_data_dir, install, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
@@ -55,6 +54,10 @@ pub struct Instance {
     folder_button: button::State,
     #[serde(skip)]
     delete_button: button::State,
+
+    #[serde(skip)]
+    pub state: InstanceState,
+
     pub path: PathBuf,
     pub executable: PathBuf,
     pub name: String,
@@ -64,11 +67,37 @@ pub struct Instance {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub enum InstanceState {
+    Playing,
+    Working,
+    Ready,
+}
+
+impl InstanceState {
+    pub fn is_playing(&self) -> bool {
+        matches!(self, InstanceState::Playing)
+    }
+    pub fn is_working(&self) -> bool {
+        matches!(self, InstanceState::Working)
+    }
+    pub fn is_ready(&self) -> bool {
+        matches!(self, InstanceState::Ready)
+    }
+}
+
+impl Default for InstanceState {
+    fn default() -> Self {
+        InstanceState::Ready
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum InstanceMessage {
     Play(bool),
     Update,
     Folder,
     Delete,
+    StateChanged(InstanceState),
 }
 
 impl Instance {
@@ -86,6 +115,7 @@ impl Instance {
             update_button: button::State::default(),
             folder_button: button::State::default(),
             delete_button: button::State::default(),
+            state: InstanceState::default(),
             path,
             executable,
             name,
@@ -97,20 +127,44 @@ impl Instance {
 
     pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
         match message {
-            InstanceMessage::Play(do_debug) => iced::Command::batch(vec![
-                iced::Command::perform(dummy(), |()| Message::MusicMessage(MusicCommand::Pause)),
-                iced::Command::perform(
-                    perform_play(
-                        self.path.clone(),
-                        self.executable.clone(),
-                        self.name.clone(),
-                        do_debug,
+            InstanceMessage::Play(do_debug) => {
+                let name1 = self.name.clone(); // (Jett voice)
+                let name2 = self.name.clone(); // "Yikes!"
+
+                iced::Command::batch(vec![
+                    iced::Command::perform(dummy(), move |()| {
+                        Message::InstanceMessage(
+                            name1.to_string(),
+                            InstanceMessage::StateChanged(InstanceState::Playing),
+                        )
+                    }),
+                    iced::Command::perform(
+                        perform_play(
+                            self.path.clone(),
+                            self.executable.clone(),
+                            self.name.clone(),
+                            do_debug,
+                        ),
+                        move |()| {
+                            Message::InstanceMessage(
+                                name2.to_string(),
+                                InstanceMessage::StateChanged(InstanceState::Ready),
+                            )
+                        },
                     ),
-                    |()| Message::MusicMessage(MusicCommand::Play),
-                ),
-            ]),
+                ])
+            }
             InstanceMessage::Update => {
-                iced::Command::perform(perform_update(self.clone()), Message::Updated)
+                let name = self.name.clone();
+                iced::Command::batch(vec![
+                    iced::Command::perform(dummy(), move |()| {
+                        Message::InstanceMessage(
+                            name.clone(),
+                            InstanceMessage::StateChanged(InstanceState::Working),
+                        )
+                    }),
+                    iced::Command::perform(perform_update(self.clone()), Message::Updated),
+                ])
             }
             InstanceMessage::Folder => {
                 iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
@@ -118,10 +172,35 @@ impl Instance {
             InstanceMessage::Delete => {
                 iced::Command::perform(delete(self.path.clone()), Message::Deleted)
             }
+            InstanceMessage::StateChanged(state) => {
+                self.state = state;
+                iced::Command::none()
+            }
         }
     }
 
     pub fn view(&mut self) -> Element<InstanceMessage> {
+        // Buttons
+        let mut debug_button =
+            Button::new(&mut self.debug_button, style::debug_icon()).style(style::Button::Icon);
+        let mut play_button =
+            Button::new(&mut self.play_button, style::play_icon()).style(style::Button::Icon);
+        let mut update_button =
+            Button::new(&mut self.update_button, style::update_icon()).style(style::Button::Icon);
+        let folder_button = Button::new(&mut self.folder_button, style::folder_icon())
+            .style(style::Button::Icon)
+            .on_press(InstanceMessage::Folder);
+        let mut delete_button = Button::new(&mut self.delete_button, style::delete_icon())
+            .style(style::Button::Destructive);
+
+        if self.state.is_ready() {
+            debug_button = debug_button.on_press(InstanceMessage::Play(true));
+            play_button = play_button.on_press(InstanceMessage::Play(false));
+            update_button = update_button.on_press(InstanceMessage::Update);
+            delete_button = delete_button.on_press(InstanceMessage::Delete);
+        }
+
+        // Layout
         Row::new()
             .spacing(10)
             .padding(10)
@@ -143,31 +222,11 @@ impl Instance {
             .push(
                 Row::new()
                     .spacing(10)
-                    .push(
-                        Button::new(&mut self.debug_button, style::debug_icon())
-                            .style(style::Button::Icon)
-                            .on_press(InstanceMessage::Play(true)),
-                    )
-                    .push(
-                        Button::new(&mut self.play_button, style::play_icon())
-                            .style(style::Button::Icon)
-                            .on_press(InstanceMessage::Play(false)),
-                    )
-                    .push(
-                        Button::new(&mut self.update_button, style::update_icon())
-                            .style(style::Button::Icon)
-                            .on_press(InstanceMessage::Update),
-                    )
-                    .push(
-                        Button::new(&mut self.folder_button, style::folder_icon())
-                            .style(style::Button::Icon)
-                            .on_press(InstanceMessage::Folder),
-                    )
-                    .push(
-                        Button::new(&mut self.delete_button, style::delete_icon())
-                            .style(style::Button::Destructive)
-                            .on_press(InstanceMessage::Delete),
-                    ),
+                    .push(debug_button)
+                    .push(play_button)
+                    .push(update_button)
+                    .push(folder_button)
+                    .push(delete_button),
             )
             .into()
     }

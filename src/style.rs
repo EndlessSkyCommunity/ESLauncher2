@@ -46,6 +46,7 @@ pub fn folder_icon() -> Text {
 
 pub enum Button {
     Icon,
+    IconDisabled,
     Destructive,
     Tab(bool),
 }
@@ -55,6 +56,10 @@ impl button::StyleSheet for Button {
         match self {
             Self::Icon => button::Style {
                 text_color: Color::from_rgb(0.5, 0.5, 0.5),
+                ..button::Style::default()
+            },
+            Self::IconDisabled => button::Style {
+                text_color: Color::from_rgb(0.2, 0.2, 0.2),
                 ..button::Style::default()
             },
             Self::Destructive => button::Style {

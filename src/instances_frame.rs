@@ -41,12 +41,12 @@ impl InstancesFrame {
         } else {
             self.instances
                 .iter_mut()
-                .enumerate()
-                .fold(instances_column, |column, (i, instance)| {
+                .fold(instances_column, |column, instance| {
+                    let name = instance.name.clone();
                     column.push(
                         instance
                             .view()
-                            .map(move |message| Message::InstanceMessage(i, message)),
+                            .map(move |message| Message::InstanceMessage(name.clone(), message)),
                     )
                 })
                 .into()
@@ -68,5 +68,9 @@ impl InstancesFrame {
         .width(Length::FillPortion(3))
         .padding(30)
         .into()
+    }
+
+    pub fn find_instance(&mut self, name: &str) -> Option<&mut Instance> {
+        self.instances.iter_mut().find(|i| i.name.eq(name))
     }
 }

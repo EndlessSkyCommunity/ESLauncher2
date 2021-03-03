@@ -91,7 +91,7 @@ pub enum MainView {
 #[derive(Debug, Clone)]
 pub enum Message {
     InstallFrameMessage(InstallFrameMessage),
-    InstanceMessage(usize, InstanceMessage),
+    InstanceMessage(String, InstanceMessage),
     PluginMessage(String, PluginMessage),
     Installed(Option<Instance>),
     Deleted(Option<PathBuf>),
@@ -152,10 +152,12 @@ impl Application for ESLauncher {
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
-            Message::InstanceMessage(i, msg) => match self.instances_frame.instances.get_mut(i) {
-                None => error!("Failed to find internal Instance with position {}", i),
-                Some(i) => return i.update(msg),
-            },
+            Message::InstanceMessage(name, msg) => {
+                match self.instances_frame.find_instance(&name) {
+                    None => error!("Failed to find internal Instance with name {}", &name),
+                    Some(instance) => return instance.update(msg),
+                }
+            }
             Message::PluginMessage(name, msg) => {
                 if let plugins_frame::PluginsFrameState::Ready { plugins, .. } =
                     &mut self.plugins_frame
