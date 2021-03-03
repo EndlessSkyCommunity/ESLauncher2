@@ -367,3 +367,16 @@ where
         }))
     }
 }
+
+pub fn send_message(message: Message) {
+    match crate::MESSAGE_QUEUE.lock() {
+        Ok(mut queue) => queue.push_back(message),
+        Err(e) => {
+            // Don't use an error log here because that may cause an endless loop of logs
+            eprintln!(
+                "Failed to lock message queue:\n{}\nThe message was as follows:\n{:#?}",
+                e, message
+            );
+        }
+    }
+}

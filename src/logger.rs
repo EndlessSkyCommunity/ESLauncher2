@@ -26,13 +26,7 @@ impl Log for ChanneledLogger {
                 record.module_path().unwrap_or("unknown"),
                 record.args()
             );
-            match crate::MESSAGE_QUEUE.lock() {
-                Ok(mut logs) => logs.push_back(Message::Log(line)),
-                Err(e) => {
-                    // Don't use an error log here because that will likely cause an endless loop of logs
-                    eprintln!("Failed to lock log vector:\n{}\nThis message will should have been logged in the UI:\n{}", e, line)
-                }
-            }
+            crate::send_message(Message::Log(line));
         }
     }
 
