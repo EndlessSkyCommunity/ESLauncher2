@@ -1019,7 +1019,7 @@ dependencies = [
 
 [[package]]
 name = "eslauncher2"
-version = "0.7.2"
+version = "0.7.4"
 dependencies = [
  "anyhow",
  "bitar",
