@@ -1,5 +1,6 @@
 use crate::install_frame::InstanceSource;
-use crate::{get_data_dir, install, style, update, Message};
+use crate::music::MusicCommand;
+use crate::{get_data_dir, install, send_message, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
 use iced::{button, Align, Button, Column, Element, Length, Row, Space, Text};
@@ -66,10 +67,10 @@ pub struct Instance {
     pub source: InstanceSource,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum InstanceState {
     Playing,
-    Working,
+    Working { status: String },
     Ready,
 }
 
@@ -78,7 +79,7 @@ impl InstanceState {
         matches!(self, InstanceState::Playing)
     }
     pub fn is_working(&self) -> bool {
-        matches!(self, InstanceState::Working)
+        matches!(self, InstanceState::Working { .. })
     }
     pub fn is_ready(&self) -> bool {
         matches!(self, InstanceState::Ready)
@@ -91,7 +92,7 @@ impl Default for InstanceState {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum InstanceMessage {
     Play(bool),
     Update,
@@ -160,7 +161,9 @@ impl Instance {
                     iced::Command::perform(dummy(), move |()| {
                         Message::InstanceMessage(
                             name.clone(),
-                            InstanceMessage::StateChanged(InstanceState::Working),
+                            InstanceMessage::StateChanged(InstanceState::Working {
+                                status: "Updating".into(),
+                            }),
                         )
                     }),
                     iced::Command::perform(perform_update(self.clone()), Message::Updated),
@@ -219,15 +222,17 @@ impl Instance {
                     ),
             )
             .push(Space::new(Length::Fill, Length::Shrink))
-            .push(
+            .push(if let InstanceState::Working { status } = &self.state {
+                Row::new().push(Text::new(status))
+            } else {
                 Row::new()
                     .spacing(10)
                     .push(debug_button)
                     .push(play_button)
                     .push(update_button)
                     .push(folder_button)
-                    .push(delete_button),
-            )
+                    .push(delete_button)
+            })
             .into()
     }
 }
@@ -267,19 +272,26 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
 }
 
 pub async fn perform_update(instance: Instance) -> Option<Instance> {
+    let name = instance.name.clone();
     match update::update_instance(instance).await {
         Ok(instance) => Some(instance),
         Err(e) => {
             error!("Failed to update instance: {:#}", e);
+            send_message(Message::InstanceMessage(
+                name,
+                InstanceMessage::StateChanged(InstanceState::Ready),
+            ));
             None
         }
     }
 }
 
 pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) {
+    send_message(Message::MusicMessage(MusicCommand::Pause));
     if let Err(e) = play(path, executable, name, do_debug).await {
         error!("Failed to run game: {:#}", e);
     }
+    send_message(Message::MusicMessage(MusicCommand::Play));
 }
 
 pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) -> Result<()> {
