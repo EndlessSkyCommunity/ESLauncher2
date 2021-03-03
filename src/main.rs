@@ -8,6 +8,25 @@ extern crate anyhow;
 #[macro_use]
 extern crate version;
 
+use std::hash::Hash;
+use std::path::PathBuf;
+use std::sync::mpsc::Sender;
+use std::thread;
+use std::time::Duration;
+
+use iced::{
+    button, scrollable, Align, Application, Button, Column, Command, Container, Element,
+    HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Subscription, Text,
+};
+use std::collections::VecDeque;
+use std::sync::Mutex;
+
+use crate::install_frame::InstallFrameMessage;
+use crate::instance::{Instance, InstanceMessage};
+use crate::music::{MusicCommand, MusicState};
+use crate::plugins_frame::PluginMessage;
+use lazy_static::lazy_static;
+
 mod archive;
 mod github;
 mod install;
@@ -21,18 +40,27 @@ mod plugins_frame;
 mod style;
 mod update;
 
-use crate::install_frame::InstallFrameMessage;
-use crate::instance::{Instance, InstanceMessage};
-use crate::music::{MusicCommand, MusicState};
-use crate::plugins_frame::PluginMessage;
-
-use iced::{
-    button, scrollable, Align, Application, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Subscription, Text,
-};
-use std::path::PathBuf;
-use std::sync::mpsc::Sender;
-use std::thread;
+lazy_static! {
+    // Yes, this is terrible abuse of globals.
+    // I spent hours and hours trying to find a better solution:
+    // - async_channel
+    //      Somehow blocks during long operations, so all progress logs arrive after the installation has completed.
+    //      The messages are sent in time, and the receiving end is a future, so this makes no sense.
+    // - crossbeam_channel and std::sync::mpsc
+    //      When receiving in a blocking fashion, closing the window doesn't work; instead, it turns unresponsive.
+    //      When trying to use try_recv() repeatedly inside futures::stream::poll(),
+    //      the first non-log that is returned seems to end the stream (no matter what Poll variant it's wrapped in).
+    // - futures::channel::mpsc
+    //      send() is async and thus can't be used in the logger.
+    //      try_send() requires the sender to be mutable (??) and thus can't be used inside log().
+    //
+    // Bottom line, this is terrible design with comparatively bad performance, but also the only solution that
+    // - delivers messages immediately
+    // - Doesn't block the receiving thread and thus screws over iced's internals
+    // - Doesn't randomly break after some messages
+    // so here it will stay.
+    static ref MESSAGE_QUEUE: Mutex<VecDeque<Message>> = Mutex::new(VecDeque::new());
+}
 
 pub fn main() -> iced::Result {
     ESLauncher::run(Settings::default())
@@ -47,7 +75,7 @@ struct ESLauncher {
     instances_frame: instances_frame::InstancesFrame,
     plugins_frame: plugins_frame::PluginsFrameState,
     log_scrollable: scrollable::State,
-    log_receiver: logger::LogReceiver,
+    message_receiver: MessageReceiver,
     log_buffer: Vec<String>,
     view: MainView,
     instances_view_button: button::State,
@@ -81,7 +109,7 @@ impl Application for ESLauncher {
     type Flags = ();
 
     fn new(_flag: ()) -> (Self, Command<Message>) {
-        let log_receiver = logger::init();
+        logger::init();
         info!("Starting ESLauncher2 v{}", version!());
         if cfg!(target_os = "macos") {
             info!("  running on target environment macos");
@@ -107,7 +135,7 @@ impl Application for ESLauncher {
                 instances_frame: instances_frame::InstancesFrame::default(),
                 plugins_frame: plugins_frame_state,
                 log_scrollable: scrollable::State::default(),
-                log_receiver,
+                message_receiver: MessageReceiver {},
                 log_buffer: vec![],
                 view: MainView::Instances,
                 instances_view_button: button::State::default(),
@@ -187,7 +215,7 @@ impl Application for ESLauncher {
     /// the first the Subscription never stops returning values (unless something catastrophic happens),
     /// so the cloned Recipe just gets dropped without being turned into a Subscription.
     fn subscription(&self) -> Subscription<Message> {
-        Subscription::from_recipe(self.log_receiver.clone())
+        Subscription::from_recipe(self.message_receiver.clone())
     }
 
     fn view(&mut self) -> Element<'_, Self::Message> {
@@ -303,4 +331,37 @@ fn check_for_update() {
 
 fn get_data_dir() -> Option<PathBuf> {
     Some(platform_dirs::AppDirs::new(Some("ESLauncher2"), false)?.data_dir)
+}
+
+#[derive(Debug, Clone)]
+pub struct MessageReceiver {}
+
+impl<H, I> iced_futures::subscription::Recipe<H, I> for MessageReceiver
+where
+    H: std::hash::Hasher,
+{
+    type Output = Message;
+
+    fn hash(&self, state: &mut H) {
+        std::any::TypeId::of::<Self>().hash(state);
+    }
+
+    fn stream(
+        self: Box<Self>,
+        _input: futures::stream::BoxStream<'static, I>,
+    ) -> futures::stream::BoxStream<'static, Self::Output> {
+        Box::pin(futures::stream::unfold(0, |state| async move {
+            let mut interval = tokio::time::interval(Duration::from_millis(10));
+            loop {
+                interval.tick().await;
+                if let Some(msg) = MESSAGE_QUEUE
+                    .try_lock()
+                    .ok()
+                    .and_then(|mut q| q.pop_front())
+                {
+                    return Some((msg, state));
+                }
+            }
+        }))
+    }
 }
