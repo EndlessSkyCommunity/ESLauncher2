@@ -39,6 +39,7 @@ impl InstancesFrame {
                 .width(Length::Fill)
                 .into()
         } else {
+            self.instances.sort_by(|a, b| Ord::cmp(&a.name, &b.name));
             self.instances
                 .iter_mut()
                 .fold(instances_column, |column, instance| {
