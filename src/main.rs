@@ -254,13 +254,17 @@ impl Application for ESLauncher {
         };
 
         let logbox = self.log_buffer.iter().fold(
-            Column::new().padding(20).align_items(Align::Start),
+            Column::new().spacing(1).align_items(Align::Start),
             |column, log| {
                 column.push(
-                    Text::new(log)
-                        .size(15)
-                        .font(style::LOG_FONT)
-                        .horizontal_alignment(HorizontalAlignment::Left),
+                    Container::new(
+                        Text::new(log)
+                            .size(13)
+                            .font(style::LOG_FONT)
+                            .horizontal_alignment(HorizontalAlignment::Left),
+                    )
+                    .style(style::Container::for_log(log))
+                    .width(Length::Fill),
                 )
             },
         );

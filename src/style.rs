@@ -1,5 +1,7 @@
+use iced::container::Style;
 use iced::{
-    button, Background, Color, Font, HorizontalAlignment, Length, Text, Vector, VerticalAlignment,
+    button, container, Background, Color, Font, HorizontalAlignment, Length, Text, Vector,
+    VerticalAlignment,
 };
 
 pub const ICONS: Font = Font::External {
@@ -97,6 +99,33 @@ impl button::StyleSheet for Button {
             },
             shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
             ..active
+        }
+    }
+}
+
+pub struct Container {
+    background: Option<iced::Color>,
+}
+
+impl Container {
+    pub fn for_log(log: &str) -> Self {
+        Self {
+            background: if log.starts_with("WARN") {
+                Some(iced::Color::new(1., 1., 0.5, 0.5))
+            } else if log.starts_with("ERROR") {
+                Some(iced::Color::new(1., 0.5, 0.5, 0.5))
+            } else {
+                None
+            },
+        }
+    }
+}
+
+impl container::StyleSheet for Container {
+    fn style(&self) -> Style {
+        iced::container::Style {
+            background: self.background.map(Background::Color),
+            ..iced::container::Style::default()
         }
     }
 }
