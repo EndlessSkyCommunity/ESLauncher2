@@ -3,7 +3,10 @@ use crate::music::MusicCommand;
 use crate::{get_data_dir, install, send_message, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
-use iced::{button, Align, Button, Column, Element, Length, ProgressBar, Row, Space, Text};
+use iced::{
+    button, Align, Button, Column, Element, HorizontalAlignment, Length, ProgressBar, Row, Space,
+    Text,
+};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
@@ -228,11 +231,18 @@ impl Instance {
             .push(Space::new(Length::Fill, Length::Shrink))
             .push(
                 if let InstanceState::Working { status, progress } = &self.state {
-                    let mut status_field = Column::new().push(Text::new(status));
+                    let mut status_field = Column::new().align_items(Align::Center).push(
+                        Text::new(status)
+                            .size(16)
+                            .horizontal_alignment(HorizontalAlignment::Center),
+                    );
                     if let Some((done, total)) = progress {
-                        status_field = status_field.push(ProgressBar::new(0.0..=*total, *done));
+                        status_field = status_field
+                            .push(ProgressBar::new(0.0..=*total, *done).height(Length::Units(10)));
                     }
-                    Row::new().push(status_field)
+                    Row::new()
+                        .push(Space::with_width(Length::FillPortion(1)))
+                        .push(status_field.width(Length::FillPortion(1)))
                 } else {
                     Row::new()
                         .spacing(10)
