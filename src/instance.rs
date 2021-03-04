@@ -3,7 +3,7 @@ use crate::music::MusicCommand;
 use crate::{get_data_dir, install, send_message, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
-use iced::{button, Align, Button, Column, Element, Length, Row, Space, Text};
+use iced::{button, Align, Button, Column, Element, Length, ProgressBar, Row, Space, Text};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
@@ -70,7 +70,10 @@ pub struct Instance {
 #[derive(Debug, Clone)]
 pub enum InstanceState {
     Playing,
-    Working { status: String },
+    Working {
+        status: String,
+        progress: Option<(f32, f32)>,
+    },
     Ready,
 }
 
@@ -163,6 +166,7 @@ impl Instance {
                             name.clone(),
                             InstanceMessage::StateChanged(InstanceState::Working {
                                 status: "Updating".into(),
+                                progress: None,
                             }),
                         )
                     }),
@@ -222,17 +226,23 @@ impl Instance {
                     ),
             )
             .push(Space::new(Length::Fill, Length::Shrink))
-            .push(if let InstanceState::Working { status } = &self.state {
-                Row::new().push(Text::new(status))
-            } else {
-                Row::new()
-                    .spacing(10)
-                    .push(debug_button)
-                    .push(play_button)
-                    .push(update_button)
-                    .push(folder_button)
-                    .push(delete_button)
-            })
+            .push(
+                if let InstanceState::Working { status, progress } = &self.state {
+                    let mut status_field = Column::new().push(Text::new(status));
+                    if let Some((done, total)) = progress {
+                        status_field = status_field.push(ProgressBar::new(0.0..=*total, *done));
+                    }
+                    Row::new().push(status_field)
+                } else {
+                    Row::new()
+                        .spacing(10)
+                        .push(debug_button)
+                        .push(play_button)
+                        .push(update_button)
+                        .push(folder_button)
+                        .push(delete_button)
+                },
+            )
             .into()
     }
 }
