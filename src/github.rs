@@ -210,6 +210,14 @@ fn make_request<T: DeserializeOwned>(url: &str) -> Result<T> {
     debug!("Requesting {}", url);
     let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
     check_ratelimit(&res);
+    if !res.ok() {
+        warn!(
+            "Got unexpected status code '{} {}' for {}",
+            res.status(),
+            res.status_text(),
+            url,
+        )
+    }
     Ok(res.into_json_deserialize()?)
 }
 
