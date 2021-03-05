@@ -22,7 +22,7 @@ use std::collections::VecDeque;
 use std::sync::Mutex;
 
 use crate::install_frame::InstallFrameMessage;
-use crate::instance::{Instance, InstanceMessage, InstanceState};
+use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
 use lazy_static::lazy_static;
@@ -385,12 +385,9 @@ pub fn send_message(message: Message) {
     }
 }
 
-pub fn send_progress_message(instance_name: &str, status: &str, progress: Option<(f32, f32)>) {
+pub fn send_progress_message(instance_name: &str, progress: Progress) {
     send_message(Message::InstanceMessage(
         instance_name.into(),
-        InstanceMessage::StateChanged(InstanceState::Working {
-            status: status.into(),
-            progress,
-        }),
+        InstanceMessage::StateChanged(InstanceState::Working(progress)),
     ));
 }

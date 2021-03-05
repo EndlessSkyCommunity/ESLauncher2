@@ -1,6 +1,6 @@
 use crate::github::Artifact;
 use crate::install_frame::InstanceSourceType;
-use crate::instance::{Instance, InstanceType};
+use crate::instance::{Instance, InstanceType, Progress};
 use crate::{archive, github, install, jenkins, send_progress_message};
 use anyhow::Result;
 use futures::{StreamExt, TryStreamExt};
@@ -102,7 +102,7 @@ async fn update_continuous_instance(
         .to_string_lossy()
         .ends_with(InstanceType::AppImage.archive().unwrap())
     {
-        send_progress_message(&instance.name, "Extracting archive", None);
+        send_progress_message(&instance.name, "Extracting archive".into());
         archive::unpack(archive_path, &instance.path, !cfg!(target_os = "macos"))?;
     }
 
@@ -134,7 +134,7 @@ async fn bitar_update_archive(
         .open(&target_path)
         .await?;
 
-    send_progress_message(instance_name, "Scanning local chunks", None);
+    send_progress_message(instance_name, "Scanning local chunks".into());
     // Scan the target file for chunks and build a chunk index
     let chunker = bitar::chunker::Chunker::new(source_archive.chunker_config(), &mut target);
     let mut chunk_stream = chunker.map_ok(|(offset, chunk)| (offset, chunk.verify()));
@@ -142,15 +142,10 @@ async fn bitar_update_archive(
     while let Some(r) = chunk_stream.next().await {
         send_progress_message(
             instance_name,
-            &format!(
-                "Scanning local chunks ({}/~{})",
-                output_index.len(),
-                source_archive.total_chunks()
-            ),
-            Some((
-                output_index.len() as f32,
-                source_archive.total_chunks() as f32,
-            )),
+            Progress::from("Scanning local chunks")
+                .done(output_index.len() as u32)
+                .total(source_archive.total_chunks() as u32)
+                .total_approx(true),
         );
         let (offset, verified) = r?;
         let (hash, chunk) = verified.into_parts();
@@ -161,7 +156,7 @@ async fn bitar_update_archive(
     let mut output = bitar::CloneOutput::new(target, source_archive.build_source_index());
 
     // Reorder chunks in the output
-    send_progress_message(instance_name, "Reordering chunks", None);
+    send_progress_message(instance_name, "Reordering chunks".into());
     let reused_bytes = output.reorder_in_place(output_index).await?;
     info!("Used {}b from existing file", reused_bytes);
 
@@ -171,8 +166,9 @@ async fn bitar_update_archive(
     while let Some(result) = chunk_stream.next().await {
         send_progress_message(
             instance_name,
-            &format!("Fetching remote chunks({}b)", read_from_remote),
-            None,
+            Progress::from("Fetching remote chunks")
+                .done(read_from_remote as u32)
+                .units("b"),
         );
         let compressed = result?;
         read_from_remote += compressed.len();

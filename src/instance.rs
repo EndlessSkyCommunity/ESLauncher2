@@ -73,11 +73,57 @@ pub struct Instance {
 #[derive(Debug, Clone)]
 pub enum InstanceState {
     Playing,
-    Working {
-        status: String,
-        progress: Option<(f32, f32)>,
-    },
+    Working(Progress),
     Ready,
+}
+
+#[derive(Debug, Clone)]
+pub struct Progress {
+    status: String,
+    done: Option<u32>,
+    total: Option<u32>,
+    units: Option<String>,
+    total_approx: bool,
+}
+
+impl Default for Progress {
+    fn default() -> Self {
+        Self {
+            status: "".into(),
+            done: None,
+            total: None,
+            units: None,
+            total_approx: false,
+        }
+    }
+}
+
+impl Progress {
+    pub fn total(mut self, total: impl Into<Option<u32>>) -> Self {
+        self.total = total.into();
+        self
+    }
+    pub fn done(mut self, done: impl Into<Option<u32>>) -> Self {
+        self.done = done.into();
+        self
+    }
+    pub fn units<T: AsRef<str>>(mut self, units: T) -> Self {
+        self.units = Some(units.as_ref().into());
+        self
+    }
+    pub fn total_approx(mut self, total_approx: bool) -> Self {
+        self.total_approx = total_approx;
+        self
+    }
+}
+
+impl<T: AsRef<str>> From<T> for Progress {
+    fn from(status: T) -> Self {
+        Self {
+            status: status.as_ref().into(),
+            ..Default::default()
+        }
+    }
 }
 
 impl InstanceState {
@@ -167,10 +213,9 @@ impl Instance {
                     iced::Command::perform(dummy(), move |()| {
                         Message::InstanceMessage(
                             name.clone(),
-                            InstanceMessage::StateChanged(InstanceState::Working {
-                                status: "Updating".into(),
-                                progress: None,
-                            }),
+                            InstanceMessage::StateChanged(InstanceState::Working(
+                                "Updating".into(),
+                            )),
                         )
                     }),
                     iced::Command::perform(perform_update(self.clone()), Message::Updated),
@@ -229,30 +274,45 @@ impl Instance {
                     ),
             )
             .push(Space::new(Length::Fill, Length::Shrink))
-            .push(
-                if let InstanceState::Working { status, progress } = &self.state {
-                    let mut status_field = Column::new().align_items(Align::Center).push(
-                        Text::new(status)
-                            .size(16)
-                            .horizontal_alignment(HorizontalAlignment::Center),
+            .push(if let InstanceState::Working(progress) = &self.state {
+                let mut status_field = Column::new().align_items(Align::Center).push(
+                    Text::new(&progress.status)
+                        .size(16)
+                        .horizontal_alignment(HorizontalAlignment::Center),
+                );
+                if let (Some(done), Some(total)) = (progress.done, progress.total) {
+                    status_field = status_field.push(
+                        ProgressBar::new(0.0..=total as f32, done as f32).height(Length::Units(5)),
                     );
-                    if let Some((done, total)) = progress {
-                        status_field = status_field
-                            .push(ProgressBar::new(0.0..=*total, *done).height(Length::Units(10)));
-                    }
-                    Row::new()
-                        .push(Space::with_width(Length::FillPortion(1)))
-                        .push(status_field.width(Length::FillPortion(1)))
-                } else {
-                    Row::new()
-                        .spacing(10)
-                        .push(debug_button)
-                        .push(play_button)
-                        .push(update_button)
-                        .push(folder_button)
-                        .push(delete_button)
-                },
-            )
+                }
+                if let Some(done) = progress.done {
+                    status_field = status_field.push(
+                        Text::new(format!(
+                            "{}/{}{}{}",
+                            done,
+                            progress.total_approx.then(|| "~").unwrap_or(""),
+                            progress
+                                .total
+                                .map(|u| u.to_string())
+                                .unwrap_or_else(|| "?".into()),
+                            progress.units.as_ref().unwrap_or(&"".into())
+                        ))
+                        .size(12)
+                        .horizontal_alignment(HorizontalAlignment::Center),
+                    )
+                }
+                Row::new()
+                    .push(Space::with_width(Length::FillPortion(1)))
+                    .push(status_field.width(Length::FillPortion(2)))
+            } else {
+                Row::new()
+                    .spacing(10)
+                    .push(debug_button)
+                    .push(play_button)
+                    .push(update_button)
+                    .push(folder_button)
+                    .push(delete_button)
+            })
             .into()
     }
 }

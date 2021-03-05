@@ -1,3 +1,4 @@
+use crate::instance::Progress;
 use crate::send_progress_message;
 use anyhow::Result;
 use chrono::Utc;
@@ -271,10 +272,10 @@ pub fn download(instance_name: &str, url: &str, name: &str, folder: &PathBuf) ->
     let mut output_file = File::create(&output_path)?;
 
     info!("Downloading {} to {}", url, name);
-    send_progress_message(instance_name, "Downloading", None);
+    send_progress_message(instance_name, "Downloading".into());
 
     let res = ureq::get(url).call();
-    let total: Option<usize> = res
+    let total: Option<u32> = res
         .header("Content-Length")
         .map(|s| s.parse().ok())
         .flatten();
@@ -296,14 +297,12 @@ pub fn download(instance_name: &str, url: &str, name: &str, folder: &PathBuf) ->
         let fetched = thread_fetched.load(Ordering::SeqCst);
         send_progress_message(
             &thread_instance_name,
-            &format!(
-                "Downloading ({}/{})",
-                fetched,
-                total.map(|u| u.to_string()).unwrap_or_else(|| "?".into())
-            ),
-            total.map(|t| (fetched as f32, t as f32)),
+            Progress::from("Downloading")
+                .done(fetched as u32)
+                .total(total)
+                .units("b"),
         );
-        thread::sleep(Duration::from_millis(10));
+        thread::sleep(Duration::from_millis(30));
     });
 
     let res = copy(&mut reader, &mut output_file);

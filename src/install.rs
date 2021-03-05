@@ -21,7 +21,7 @@ pub fn install(
     if let InstanceType::Unknown = instance_type {
         return Err(anyhow!("Cannot install InstanceType::Unknown",));
     }
-    send_progress_message(&name, "Preparing directories", None);
+    send_progress_message(&name, "Preparing directories".into());
 
     // If it's a PR, try to strip the leading `#`
     if InstanceSourceType::PR == instance_source.r#type
@@ -70,12 +70,12 @@ pub fn install(
     if let InstanceType::AppImage = instance_type {
         fs::rename(&archive_file, &executable_path)?;
     } else if cfg!(target_os = "macos") && archive_file.to_string_lossy().contains("dmg") {
-        send_progress_message(&name, "Processing DMG file", None);
+        send_progress_message(&name, "Processing DMG file".into());
         if let Err(e) = mac_process_dmg(&archive_file) {
             return Err(anyhow!("Mac DMG postprocessing failed! {}", e));
         }
     } else {
-        send_progress_message(&name, "Extracting archive", None);
+        send_progress_message(&name, "Extracting archive".into());
         archive::unpack(&archive_file, &destination, !cfg!(target_os = "macos"))?;
     }
 
@@ -101,7 +101,7 @@ fn download_release_asset(
     destination: &PathBuf,
     instance_type: InstanceType,
 ) -> Result<PathBuf> {
-    send_progress_message(&instance_name, "Fetching release data", None);
+    send_progress_message(&instance_name, "Fetching release data".into());
     let release = github::get_release_by_tag(tag)?;
     let assets = github::get_release_assets(release.id)?;
     let asset = choose_artifact(assets, instance_type)?;
@@ -121,13 +121,13 @@ fn download_pr_asset(
     instance_type: InstanceType,
     pr_id: u16,
 ) -> Result<(PathBuf, String)> {
-    send_progress_message(&instance_name, "Fetching PR data", None);
+    send_progress_message(&instance_name, "Fetching PR data".into());
     let pr = github::get_pr(pr_id)?;
-    send_progress_message(&instance_name, "Fetching CD workflow", None);
+    send_progress_message(&instance_name, "Fetching CD workflow".into());
     let workflow = github::get_cd_workflow()?;
-    send_progress_message(&instance_name, "Fetching CD workflow run", None);
+    send_progress_message(&instance_name, "Fetching CD workflow run".into());
     let run = github::get_latest_workflow_run(workflow.id, &pr.head.branch, pr.head.repo.id)?;
-    send_progress_message(&instance_name, "Fetching CD run artifacts", None);
+    send_progress_message(&instance_name, "Fetching CD run artifacts".into());
     let artifacts = get_workflow_run_artifacts(run.id)?;
     let artifact = choose_artifact(artifacts, instance_type)?;
 
@@ -140,7 +140,7 @@ fn download_pr_asset(
         destination,
     )?;
 
-    send_progress_message(&instance_name, "Extracting artifact", None);
+    send_progress_message(&instance_name, "Extracting artifact".into());
     archive::unpack(&archive_path, destination, true)?;
     fs::remove_file(archive_path)?;
 
