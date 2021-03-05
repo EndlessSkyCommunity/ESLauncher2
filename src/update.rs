@@ -1,7 +1,7 @@
 use crate::github::Artifact;
 use crate::install_frame::InstanceSourceType;
 use crate::instance::{Instance, InstanceType};
-use crate::{archive, github, install, jenkins};
+use crate::{archive, github, install, jenkins, send_progress_message};
 use anyhow::Result;
 use futures::{StreamExt, TryStreamExt};
 use std::path::PathBuf;
@@ -96,12 +96,13 @@ async fn update_continuous_instance(
         artifact.name()
     );
 
-    bitar_update_archive(archive_path, url).await?;
+    bitar_update_archive(&instance.name, archive_path, url).await?;
 
     if !archive_path
         .to_string_lossy()
         .ends_with(InstanceType::AppImage.archive().unwrap())
     {
+        send_progress_message(&instance.name, "Extracting archive", None);
         archive::unpack(archive_path, &instance.path, !cfg!(target_os = "macos"))?;
     }
 
@@ -110,7 +111,11 @@ async fn update_continuous_instance(
     Ok(new_instance)
 }
 
-async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> {
+async fn bitar_update_archive(
+    instance_name: &str,
+    target_path: &PathBuf,
+    url: String,
+) -> Result<()> {
     info!("Updating {} from {}", target_path.to_string_lossy(), url);
     info!(
         "Updating chunks of {} in-place",
@@ -129,11 +134,24 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
         .open(&target_path)
         .await?;
 
+    send_progress_message(instance_name, "Scanning local chunks", None);
     // Scan the target file for chunks and build a chunk index
     let chunker = bitar::chunker::Chunker::new(source_archive.chunker_config(), &mut target);
     let mut chunk_stream = chunker.map_ok(|(offset, chunk)| (offset, chunk.verify()));
     let mut output_index = bitar::ChunkIndex::new_empty();
     while let Some(r) = chunk_stream.next().await {
+        send_progress_message(
+            instance_name,
+            &format!(
+                "Scanning local chunks ({}/~{})",
+                output_index.len(),
+                source_archive.total_chunks()
+            ),
+            Some((
+                output_index.len() as f32,
+                source_archive.total_chunks() as f32,
+            )),
+        );
         let (offset, verified) = r?;
         let (hash, chunk) = verified.into_parts();
         output_index.add_chunk(hash, chunk.len(), &[offset]);
@@ -143,6 +161,7 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
     let mut output = bitar::CloneOutput::new(target, source_archive.build_source_index());
 
     // Reorder chunks in the output
+    send_progress_message(instance_name, "Reordering chunks", None);
     let reused_bytes = output.reorder_in_place(output_index).await?;
     info!("Used {}b from existing file", reused_bytes);
 
@@ -150,6 +169,11 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
     let mut chunk_stream = source_archive.chunk_stream(&output.chunks());
     let mut read_from_remote = 0;
     while let Some(result) = chunk_stream.next().await {
+        send_progress_message(
+            instance_name,
+            &format!("Fetching remote chunks({}b)", read_from_remote),
+            None,
+        );
         let compressed = result?;
         read_from_remote += compressed.len();
         let unverified = compressed.decompress()?;
@@ -158,5 +182,7 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
     }
 
     info!("Used {}b from remote", read_from_remote,);
+    // Again, sleep to avoid a race condition (otherwise the "InstanceState changed" message could arrive after the update has already finished
+    std::thread::sleep(std::time::Duration::from_millis(50));
     Ok(())
 }
