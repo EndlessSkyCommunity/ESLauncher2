@@ -87,7 +87,7 @@ impl InstallFrame {
                             instance_type,
                             self.source.clone(),
                         ),
-                        Message::Installed,
+                        Message::Dummy,
                     );
                 } else {
                     error!("Could not get instances directory from AppDirs")

@@ -1,6 +1,6 @@
 use crate::github::{get_workflow_run_artifacts, Artifact};
 use crate::install_frame::{InstanceSource, InstanceSourceType};
-use crate::instance::{Instance, InstanceType};
+use crate::instance::{Instance, InstanceState, InstanceType};
 use crate::send_progress_message;
 use crate::{archive, github};
 use anyhow::{Context, Result};
@@ -92,6 +92,7 @@ pub fn install(
         version,
         instance_type,
         instance_source,
+        InstanceState::Ready,
     ))
 }
 

@@ -4,20 +4,27 @@ use iced::{
     scrollable, Align, Color, Column, Container, Element, HorizontalAlignment, Length, Scrollable,
     Text,
 };
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub struct InstancesFrame {
-    pub instances: Vec<Instance>,
+    pub instances: BTreeMap<String, Instance>,
     scrollable: scrollable::State,
 }
 
 impl Default for InstancesFrame {
     fn default() -> Self {
         let instances = match load_instances() {
-            Ok(i) => i,
+            Ok(vec) => {
+                let mut map = BTreeMap::new();
+                for i in vec {
+                    map.insert(i.name.clone(), i);
+                }
+                map
+            }
             Err(e) => {
                 error!("Failed to load instances: {:#}", e);
-                vec![]
+                BTreeMap::new()
             }
         };
         Self {
@@ -39,9 +46,8 @@ impl InstancesFrame {
                 .width(Length::Fill)
                 .into()
         } else {
-            self.instances.sort_by(|a, b| Ord::cmp(&a.name, &b.name));
             self.instances
-                .iter_mut()
+                .values_mut()
                 .fold(instances_column, |column, instance| {
                     let name = instance.name.clone();
                     column.push(
@@ -69,9 +75,5 @@ impl InstancesFrame {
         .width(Length::FillPortion(3))
         .padding(30)
         .into()
-    }
-
-    pub fn find_instance(&mut self, name: &str) -> Option<&mut Instance> {
-        self.instances.iter_mut().find(|i| i.name.eq(name))
     }
 }

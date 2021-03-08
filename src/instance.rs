@@ -8,6 +8,7 @@ use iced::{
     Text,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -161,20 +162,21 @@ impl Instance {
         version: String,
         instance_type: InstanceType,
         source: InstanceSource,
+        state: InstanceState,
     ) -> Self {
         Self {
-            debug_button: button::State::default(),
-            play_button: button::State::default(),
-            update_button: button::State::default(),
-            folder_button: button::State::default(),
-            delete_button: button::State::default(),
-            state: InstanceState::default(),
             path,
             executable,
             name,
             version,
             instance_type,
             source,
+            state,
+            debug_button: button::State::default(),
+            play_button: button::State::default(),
+            update_button: button::State::default(),
+            folder_button: button::State::default(),
+            delete_button: button::State::default(),
         }
     }
 
@@ -218,14 +220,17 @@ impl Instance {
                             )),
                         )
                     }),
-                    iced::Command::perform(perform_update(self.clone()), Message::Updated),
+                    iced::Command::perform(perform_update(self.clone()), Message::Dummy),
                 ])
             }
             InstanceMessage::Folder => {
                 iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
             }
             InstanceMessage::Delete => {
-                iced::Command::perform(delete(self.path.clone()), Message::Deleted)
+                let name = self.name.clone();
+                iced::Command::perform(delete(self.path.clone()), move |_| {
+                    Message::RemoveInstance(Some(name.clone()))
+                })
             }
             InstanceMessage::StateChanged(state) => {
                 self.state = state;
@@ -274,44 +279,47 @@ impl Instance {
                     ),
             )
             .push(Space::new(Length::Fill, Length::Shrink))
-            .push(if let InstanceState::Working(progress) = &self.state {
-                let mut status_field = Column::new().align_items(Align::Center).push(
-                    Text::new(&progress.status)
-                        .size(16)
-                        .horizontal_alignment(HorizontalAlignment::Center),
-                );
-                if let (Some(done), Some(total)) = (progress.done, progress.total) {
-                    status_field = status_field.push(
-                        ProgressBar::new(0.0..=total as f32, done as f32).height(Length::Units(5)),
+            .push({
+                if let InstanceState::Working(progress) = &self.state {
+                    let mut status_field = Column::new().align_items(Align::Center).push(
+                        Text::new(&progress.status)
+                            .size(16)
+                            .horizontal_alignment(HorizontalAlignment::Center),
                     );
+                    if let (Some(done), Some(total)) = (progress.done, progress.total) {
+                        status_field = status_field.push(
+                            ProgressBar::new(0.0..=total as f32, done as f32)
+                                .height(Length::Units(5)),
+                        );
+                    }
+                    if let Some(done) = progress.done {
+                        status_field = status_field.push(
+                            Text::new(format!(
+                                "{}/{}{}{}",
+                                done,
+                                progress.total_approx.then(|| "~").unwrap_or(""),
+                                progress
+                                    .total
+                                    .map(|u| u.to_string())
+                                    .unwrap_or_else(|| "?".into()),
+                                progress.units.as_ref().unwrap_or(&"".into())
+                            ))
+                            .size(12)
+                            .horizontal_alignment(HorizontalAlignment::Center),
+                        )
+                    }
+                    Row::new()
+                        .push(Space::with_width(Length::FillPortion(1)))
+                        .push(status_field.width(Length::FillPortion(2)))
+                } else {
+                    Row::new()
+                        .spacing(10)
+                        .push(debug_button)
+                        .push(play_button)
+                        .push(update_button)
+                        .push(folder_button)
+                        .push(delete_button)
                 }
-                if let Some(done) = progress.done {
-                    status_field = status_field.push(
-                        Text::new(format!(
-                            "{}/{}{}{}",
-                            done,
-                            progress.total_approx.then(|| "~").unwrap_or(""),
-                            progress
-                                .total
-                                .map(|u| u.to_string())
-                                .unwrap_or_else(|| "?".into()),
-                            progress.units.as_ref().unwrap_or(&"".into())
-                        ))
-                        .size(12)
-                        .horizontal_alignment(HorizontalAlignment::Center),
-                    )
-                }
-                Row::new()
-                    .push(Space::with_width(Length::FillPortion(1)))
-                    .push(status_field.width(Length::FillPortion(2)))
-            } else {
-                Row::new()
-                    .spacing(10)
-                    .push(debug_button)
-                    .push(play_button)
-                    .push(update_button)
-                    .push(folder_button)
-                    .push(delete_button)
             })
             .into()
     }
@@ -324,12 +332,23 @@ pub async fn perform_install(
     name: String,
     instance_type: InstanceType,
     instance_source: InstanceSource,
-) -> Option<Instance> {
-    match install::install(path, name, instance_type, instance_source) {
-        Ok(instance) => Some(instance),
+) {
+    send_message(Message::AddInstance(Instance::new(
+        path.clone(),
+        "provisional".into(),
+        name.clone(),
+        instance_source.identifier.clone(),
+        instance_type,
+        instance_source.clone(),
+        InstanceState::Working(Progress::default()),
+    )));
+    match install::install(path, name.clone(), instance_type, instance_source) {
+        Ok(instance) => {
+            send_message(Message::AddInstance(instance));
+        }
         Err(e) => {
             error!("Install failed: {:#}", e);
-            None
+            send_message(Message::RemoveInstance(Some(name)));
         }
     }
 }
@@ -351,17 +370,16 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
     }
 }
 
-pub async fn perform_update(instance: Instance) -> Option<Instance> {
+pub async fn perform_update(instance: Instance) {
     let name = instance.name.clone();
     match update::update_instance(instance).await {
-        Ok(instance) => Some(instance),
+        Ok(instance) => send_message(Message::AddInstance(instance)),
         Err(e) => {
             error!("Failed to update instance: {:#}", e);
             send_message(Message::InstanceMessage(
                 name,
                 InstanceMessage::StateChanged(InstanceState::Ready),
             ));
-            None
         }
     }
 }
@@ -433,13 +451,13 @@ pub fn get_instances_dir() -> Option<PathBuf> {
 #[derive(Serialize, Deserialize)]
 struct InstancesContainer(Vec<Instance>);
 
-pub fn perform_save_instances(instances: Vec<Instance>) {
+pub fn perform_save_instances(instances: BTreeMap<String, Instance>) {
     if let Err(e) = save_instances(instances) {
         error!("Failed to save instances: {:#}", e);
     };
 }
 
-fn save_instances(instances: Vec<Instance>) -> Result<()> {
+fn save_instances(instances: BTreeMap<String, Instance>) -> Result<()> {
     let mut instances_file =
         get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
     instances_file.push("instances.json");
@@ -447,7 +465,10 @@ fn save_instances(instances: Vec<Instance>) -> Result<()> {
 
     let file = fs::File::create(instances_file)?;
 
-    serde_json::to_writer_pretty(file, &InstancesContainer(instances))?;
+    serde_json::to_writer_pretty(
+        file,
+        &InstancesContainer(instances.values().cloned().collect()),
+    )?;
     Ok(())
 }
 

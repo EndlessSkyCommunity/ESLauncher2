@@ -93,9 +93,8 @@ pub enum Message {
     InstallFrameMessage(InstallFrameMessage),
     InstanceMessage(String, InstanceMessage),
     PluginMessage(String, PluginMessage),
-    Installed(Option<Instance>),
-    Deleted(Option<PathBuf>),
-    Updated(Option<Instance>),
+    AddInstance(Instance),
+    RemoveInstance(Option<String>),
     Dummy(()),
     MusicMessage(MusicCommand),
     ViewChanged(MainView),
@@ -153,7 +152,7 @@ impl Application for ESLauncher {
         match message {
             Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
             Message::InstanceMessage(name, msg) => {
-                match self.instances_frame.find_instance(&name) {
+                match self.instances_frame.instances.get_mut(&name) {
                     None => error!("Failed to find internal Instance with name {}", &name),
                     Some(instance) => return instance.update(msg),
                 }
@@ -168,24 +167,18 @@ impl Application for ESLauncher {
                     }
                 }
             }
-            Message::Installed(option) => {
-                if let Some(instance) = option {
-                    self.instances_frame.instances.push(instance);
-                    instance::perform_save_instances(self.instances_frame.instances.clone());
-                }
+            Message::AddInstance(instance) => {
+                let is_ready = instance.state.is_ready();
+                self.instances_frame
+                    .instances
+                    .insert(instance.name.clone(), instance);
+                if is_ready {
+                    instance::perform_save_instances(self.instances_frame.instances.clone())
+                };
             }
-            Message::Deleted(option) => {
-                if let Some(path) = option {
-                    self.instances_frame.instances.retain(|i| !i.path.eq(&path));
-                    instance::perform_save_instances(self.instances_frame.instances.clone());
-                }
-            }
-            Message::Updated(option) => {
-                if let Some(instance) = option {
-                    self.instances_frame
-                        .instances
-                        .retain(|i| !i.path.eq(&instance.path));
-                    self.instances_frame.instances.push(instance);
+            Message::RemoveInstance(option) => {
+                if let Some(name) = option {
+                    self.instances_frame.instances.remove(&name);
                     instance::perform_save_instances(self.instances_frame.instances.clone());
                 }
             }
