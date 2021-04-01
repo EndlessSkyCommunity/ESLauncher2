@@ -23,7 +23,7 @@ espim = "0.1"
 flate2 = "1.0"
 fs_extra = "1.2.0"
 futures = "0.3"
-iced_native = "0.3"
+iced_native = "0.4"
 lazy_static = "1.4"
 log = { version="0.4.14", features=["std"] }
 open = "1"
