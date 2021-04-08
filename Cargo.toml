@@ -23,7 +23,7 @@ espim = "0.1"
 flate2 = "1.0"
 fs_extra = "1.2.0"
 futures = "0.3"
-iced_futures = { git = "https://github.com/hecrj/iced.git" }
+iced_futures = "0.3"
 lazy_static = "1.4"
 log = { version="0.4.14", features=["std"] }
 open = "1"
@@ -43,12 +43,12 @@ version = "3"
 zip-extract = { version = "0.1.0", default_features = false, features = ["deflate"] }
 
 [dependencies.iced]
-git = "https://github.com/hecrj/iced.git"
+version = "0.3"
 default_features = false
 features = ["glow", "image", "tokio"]
 
 [dev-dependencies.iced]
-git = "https://github.com/hecrj/iced.git"
+version = "0.3"
 default_features = false
 features = ["glow", "debug", "image", "tokio"]
 

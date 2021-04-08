@@ -15,7 +15,7 @@ use std::thread;
 use std::time::Duration;
 
 use iced::{
-    button, scrollable, Align, Application, Button, Column, Command, Container, Element,
+    button, scrollable, Align, Application, Button, Clipboard, Column, Command, Container, Element,
     HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Subscription, Text,
 };
 use std::collections::VecDeque;
@@ -148,7 +148,7 @@ impl Application for ESLauncher {
         format!("ESLauncher2 v{}", version!())
     }
 
-    fn update(&mut self, message: Self::Message) -> Command<Message> {
+    fn update(&mut self, message: Self::Message, _: &mut Clipboard) -> Command<Message> {
         match message {
             Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
             Message::InstanceMessage(name, msg) => {
