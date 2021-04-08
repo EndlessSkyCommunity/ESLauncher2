@@ -1,22 +1,15 @@
-use crate::{get_data_dir, Message};
-use lazy_static::lazy_static;
+use std::fs;
+use std::fs::File;
+
 use log::{Level, Log, Metadata, Record};
 use simplelog::{
     CombinedLogger, Config, ConfigBuilder, LevelFilter, SharedLogger, TermLogger, TerminalMode,
     WriteLogger,
 };
-use std::collections::VecDeque;
-use std::fs;
-use std::fs::File;
-use std::hash::Hash;
-use std::sync::Mutex;
-use std::time::Duration;
+
+use crate::{get_data_dir, Message};
 
 const BLACKLIST: [&str; 5] = ["gfx_backend_", "winit", "wgpu_", "iced_", "ureq::unit"];
-
-lazy_static! {
-    static ref LOG_QUEUE: Mutex<VecDeque<String>> = Mutex::new(VecDeque::new());
-}
 
 struct ChanneledLogger {}
 
@@ -33,13 +26,7 @@ impl Log for ChanneledLogger {
                 record.module_path().unwrap_or("unknown"),
                 record.args()
             );
-            match LOG_QUEUE.lock() {
-                Ok(mut logs) => logs.push_back(line),
-                Err(e) => {
-                    // Don't use an error log here because that will likely cause an endless loop of logs
-                    eprintln!("Failed to lock log vector:\n{}\nThis message will should have been logged in the UI:\n{}", e, line)
-                }
-            }
+            crate::send_message(Message::Log(line));
         }
     }
 
@@ -57,34 +44,6 @@ impl SharedLogger for ChanneledLogger {
 
     fn as_log(self: Box<Self>) -> Box<dyn Log> {
         unimplemented!()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct LogReceiver {}
-
-impl<H, I> iced_native::subscription::Recipe<H, I> for LogReceiver
-where
-    H: std::hash::Hasher,
-{
-    type Output = crate::Message;
-
-    fn hash(&self, state: &mut H) {
-        std::any::TypeId::of::<Self>().hash(state);
-    }
-
-    fn stream(
-        self: Box<Self>,
-        _input: futures::stream::BoxStream<'static, I>,
-    ) -> futures::stream::BoxStream<'static, Self::Output> {
-        Box::pin(futures::stream::unfold(0, |state| async move {
-            loop {
-                tokio::time::delay_for(Duration::from_millis(10)).await;
-                if let Some(msg) = LOG_QUEUE.try_lock().ok().and_then(|mut q| q.pop_front()) {
-                    return Some((Message::Log(msg), state));
-                }
-            }
-        }))
     }
 }
 
@@ -128,7 +87,7 @@ fn open_logfile() -> Option<File> {
     }
 }
 
-pub fn init() -> LogReceiver {
+pub fn init() {
     let channeled = ChanneledLogger {};
 
     let config = ConfigBuilder::new()
@@ -151,5 +110,4 @@ pub fn init() -> LogReceiver {
     CombinedLogger::init(loggers).unwrap();
 
     log::info!("Initialized logger");
-    LogReceiver {}
 }

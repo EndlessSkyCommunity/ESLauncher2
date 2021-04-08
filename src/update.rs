@@ -1,9 +1,9 @@
 use crate::github::Artifact;
 use crate::install_frame::InstanceSourceType;
-use crate::instance::{Instance, InstanceType};
-use crate::{archive, github, install, jenkins};
+use crate::instance::{Instance, InstanceType, Progress};
+use crate::{archive, github, install, jenkins, send_progress_message};
 use anyhow::Result;
-use bitar::{Archive, ReaderRemote};
+use futures::{StreamExt, TryStreamExt};
 use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 
@@ -96,12 +96,13 @@ async fn update_continuous_instance(
         artifact.name()
     );
 
-    bitar_update_archive(archive_path, url).await?;
+    bitar_update_archive(&instance.name, archive_path, url).await?;
 
     if !archive_path
         .to_string_lossy()
         .ends_with(InstanceType::AppImage.archive().unwrap())
     {
+        send_progress_message(&instance.name, "Extracting archive".into());
         archive::unpack(archive_path, &instance.path, !cfg!(target_os = "macos"))?;
     }
 
@@ -110,8 +111,22 @@ async fn update_continuous_instance(
     Ok(new_instance)
 }
 
-async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> {
+async fn bitar_update_archive(
+    instance_name: &str,
+    target_path: &PathBuf,
+    url: String,
+) -> Result<()> {
     info!("Updating {} from {}", target_path.to_string_lossy(), url);
+    info!(
+        "Updating chunks of {} in-place",
+        target_path.to_string_lossy()
+    );
+
+    // Open archive which source we want to clone
+    let reader = bitar::ReaderRemote::from_url(url.parse()?);
+    let mut source_archive = bitar::Archive::try_init(reader).await?;
+
+    // Open our target file
     let mut target = OpenOptions::new()
         .read(true)
         .create(true)
@@ -119,34 +134,51 @@ async fn bitar_update_archive(target_path: &PathBuf, url: String) -> Result<()> 
         .open(&target_path)
         .await?;
 
-    let mut reader = ReaderRemote::from_url(url.parse()?);
-    let archive = Archive::try_init(&mut reader).await?;
-    let mut chunks_left = archive.build_source_index();
+    send_progress_message(instance_name, "Scanning local chunks".into());
+    // Scan the target file for chunks and build a chunk index
+    let chunker = bitar::chunker::Chunker::new(source_archive.chunker_config(), &mut target);
+    let mut chunk_stream = chunker.map_ok(|(offset, chunk)| (offset, chunk.verify()));
+    let mut output_index = bitar::ChunkIndex::new_empty();
+    while let Some(r) = chunk_stream.next().await {
+        send_progress_message(
+            instance_name,
+            Progress::from("Scanning local chunks")
+                .done(output_index.len() as u32)
+                .total(source_archive.total_chunks() as u32)
+                .total_approx(true),
+        );
+        let (offset, verified) = r?;
+        let (hash, chunk) = verified.into_parts();
+        output_index.add_chunk(hash, chunk.len(), &[offset]);
+    }
 
-    // Build an index of the output file's chunks
-    info!(
-        "Updating chunks of {} in-place",
-        target_path.to_string_lossy()
-    );
-    let used_from_self = bitar::clone::in_place(
-        &bitar::clone::Options::default(),
-        &mut chunks_left,
-        &archive,
-        &mut target,
-    )
-    .await?;
-    info!("Used {}b from existing file", used_from_self);
+    // Create output to contain the clone of the archive's source
+    let mut output = bitar::CloneOutput::new(target, source_archive.build_source_index());
 
-    // Read the rest from archive
-    info!("Fetching {} chunks from {}", chunks_left.len(), url);
-    let total_read_from_remote = bitar::clone::from_archive(
-        &bitar::clone::Options::default(),
-        &mut reader,
-        &archive,
-        &mut chunks_left,
-        &mut target,
-    )
-    .await?;
-    info!("Used {}b from remote", total_read_from_remote,);
+    // Reorder chunks in the output
+    send_progress_message(instance_name, "Reordering chunks".into());
+    let reused_bytes = output.reorder_in_place(output_index).await?;
+    info!("Used {}b from existing file", reused_bytes);
+
+    // Fetch the rest of the chunks from the source archive
+    let mut chunk_stream = source_archive.chunk_stream(&output.chunks());
+    let mut read_from_remote = 0;
+    while let Some(result) = chunk_stream.next().await {
+        send_progress_message(
+            instance_name,
+            Progress::from("Fetching remote chunks")
+                .done(read_from_remote as u32)
+                .units("b"),
+        );
+        let compressed = result?;
+        read_from_remote += compressed.len();
+        let unverified = compressed.decompress()?;
+        let verified = unverified.verify()?;
+        output.feed(&verified).await?;
+    }
+
+    info!("Used {}b from remote", read_from_remote,);
+    // Again, sleep to avoid a race condition (otherwise the "InstanceState changed" message could arrive after the update has already finished
+    std::thread::sleep(std::time::Duration::from_millis(50));
     Ok(())
 }

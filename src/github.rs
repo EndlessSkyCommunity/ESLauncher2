@@ -1,3 +1,5 @@
+use crate::instance::Progress;
+use crate::send_progress_message;
 use anyhow::Result;
 use chrono::Utc;
 use progress_streams::ProgressReader;
@@ -208,6 +210,14 @@ fn make_request<T: DeserializeOwned>(url: &str) -> Result<T> {
     debug!("Requesting {}", url);
     let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
     check_ratelimit(&res);
+    if !res.ok() {
+        warn!(
+            "Got unexpected status code '{} {}' for {}",
+            res.status(),
+            res.status_text(),
+            url,
+        )
+    }
     Ok(res.into_json_deserialize()?)
 }
 
@@ -264,37 +274,50 @@ fn check_ratelimit(res: &ureq::Response) {
     }
 }
 
-pub fn download(url: &str, name: &str, folder: &PathBuf) -> Result<PathBuf> {
+pub fn download(instance_name: &str, url: &str, name: &str, folder: &PathBuf) -> Result<PathBuf> {
     let mut output_path = folder.clone();
     output_path.push(name);
+    let mut output_file = File::create(&output_path)?;
 
     info!("Downloading {} to {}", url, name);
-    let mut output_file = File::create(&output_path)?;
-    let res = ureq::get(url).call();
-    let bufreader = BufReader::with_capacity(128 * 1024, res.into_reader());
+    send_progress_message(instance_name, "Downloading".into());
 
-    let total = Arc::new(AtomicUsize::new(0));
-    let done = Arc::new(AtomicBool::new(false));
+    let res = ureq::get(url).call();
+    let total: Option<u32> = res
+        .header("Content-Length")
+        .map(|s| s.parse().ok())
+        .flatten();
+    let fetched = Arc::new(AtomicUsize::new(0));
+    let finished = Arc::new(AtomicBool::new(false));
+
+    let bufreader = BufReader::with_capacity(128 * 1024, res.into_reader());
     let mut reader = ProgressReader::new(bufreader, |progress| {
-        total.fetch_add(progress, Ordering::SeqCst);
+        fetched.fetch_add(progress, Ordering::SeqCst);
     });
 
-    let thread_total = total.clone();
-    let thread_done = done.clone();
+    let thread_fetched = fetched.clone();
+    let thread_finished = finished.clone();
+    let thread_instance_name = instance_name.to_string();
     thread::spawn(move || loop {
-        if thread_done.load(Ordering::SeqCst) {
+        if thread_finished.load(Ordering::SeqCst) {
             break;
         }
-        info!(
-            "Downloaded {} KiB",
-            thread_total.load(Ordering::SeqCst) / 1024
+        let fetched = thread_fetched.load(Ordering::SeqCst);
+        send_progress_message(
+            &thread_instance_name,
+            Progress::from("Downloading")
+                .done(fetched as u32)
+                .total(total)
+                .units("b"),
         );
-        thread::sleep(Duration::from_secs(2));
+        thread::sleep(Duration::from_millis(30));
     });
 
     let res = copy(&mut reader, &mut output_file);
     // Make sure we end the logging thread before potentially erroring out
-    done.store(true, Ordering::SeqCst);
+    finished.store(true, Ordering::SeqCst);
+    // Tiny sleep to make sure we avoid a potential race condition
+    thread::sleep(Duration::from_millis(20));
     res?;
 
     info!("Download finished");

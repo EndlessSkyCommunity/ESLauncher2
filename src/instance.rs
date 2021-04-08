@@ -1,10 +1,14 @@
 use crate::install_frame::InstanceSource;
 use crate::music::MusicCommand;
-use crate::{get_data_dir, install, style, update, Message};
+use crate::{get_data_dir, install, send_message, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
-use iced::{button, Align, Button, Column, Element, Length, Row, Space, Text};
+use iced::{
+    button, Align, Button, Column, Element, HorizontalAlignment, Length, ProgressBar, Row, Space,
+    Text,
+};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -55,6 +59,10 @@ pub struct Instance {
     folder_button: button::State,
     #[serde(skip)]
     delete_button: button::State,
+
+    #[serde(skip)]
+    pub state: InstanceState,
+
     pub path: PathBuf,
     pub executable: PathBuf,
     pub name: String,
@@ -63,12 +71,87 @@ pub struct Instance {
     pub source: InstanceSource,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
+pub enum InstanceState {
+    Playing,
+    Working(Progress),
+    Ready,
+}
+
+#[derive(Debug, Clone)]
+pub struct Progress {
+    status: String,
+    done: Option<u32>,
+    total: Option<u32>,
+    units: Option<String>,
+    total_approx: bool,
+}
+
+impl Default for Progress {
+    fn default() -> Self {
+        Self {
+            status: "".into(),
+            done: None,
+            total: None,
+            units: None,
+            total_approx: false,
+        }
+    }
+}
+
+impl Progress {
+    pub fn total(mut self, total: impl Into<Option<u32>>) -> Self {
+        self.total = total.into();
+        self
+    }
+    pub fn done(mut self, done: impl Into<Option<u32>>) -> Self {
+        self.done = done.into();
+        self
+    }
+    pub fn units<T: AsRef<str>>(mut self, units: T) -> Self {
+        self.units = Some(units.as_ref().into());
+        self
+    }
+    pub fn total_approx(mut self, total_approx: bool) -> Self {
+        self.total_approx = total_approx;
+        self
+    }
+}
+
+impl<T: AsRef<str>> From<T> for Progress {
+    fn from(status: T) -> Self {
+        Self {
+            status: status.as_ref().into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl InstanceState {
+    pub fn is_playing(&self) -> bool {
+        matches!(self, InstanceState::Playing)
+    }
+    pub fn is_working(&self) -> bool {
+        matches!(self, InstanceState::Working { .. })
+    }
+    pub fn is_ready(&self) -> bool {
+        matches!(self, InstanceState::Ready)
+    }
+}
+
+impl Default for InstanceState {
+    fn default() -> Self {
+        InstanceState::Ready
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum InstanceMessage {
     Play(bool),
     Update,
     Folder,
     Delete,
+    StateChanged(InstanceState),
 }
 
 impl Instance {
@@ -79,49 +162,105 @@ impl Instance {
         version: String,
         instance_type: InstanceType,
         source: InstanceSource,
+        state: InstanceState,
     ) -> Self {
         Self {
-            debug_button: button::State::default(),
-            play_button: button::State::default(),
-            update_button: button::State::default(),
-            folder_button: button::State::default(),
-            delete_button: button::State::default(),
             path,
             executable,
             name,
             version,
             instance_type,
             source,
+            state,
+            debug_button: button::State::default(),
+            play_button: button::State::default(),
+            update_button: button::State::default(),
+            folder_button: button::State::default(),
+            delete_button: button::State::default(),
         }
     }
 
     pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
         match message {
-            InstanceMessage::Play(do_debug) => iced::Command::batch(vec![
-                iced::Command::perform(dummy(), |()| Message::MusicMessage(MusicCommand::Pause)),
-                iced::Command::perform(
-                    perform_play(
-                        self.path.clone(),
-                        self.executable.clone(),
-                        self.name.clone(),
-                        do_debug,
+            InstanceMessage::Play(do_debug) => {
+                let name1 = self.name.clone(); // (Jett voice)
+                let name2 = self.name.clone(); // "Yikes!"
+
+                iced::Command::batch(vec![
+                    iced::Command::perform(dummy(), move |()| {
+                        Message::InstanceMessage(
+                            name1.to_string(),
+                            InstanceMessage::StateChanged(InstanceState::Playing),
+                        )
+                    }),
+                    iced::Command::perform(
+                        perform_play(
+                            self.path.clone(),
+                            self.executable.clone(),
+                            self.name.clone(),
+                            do_debug,
+                        ),
+                        move |()| {
+                            Message::InstanceMessage(
+                                name2.to_string(),
+                                InstanceMessage::StateChanged(InstanceState::Ready),
+                            )
+                        },
                     ),
-                    |()| Message::MusicMessage(MusicCommand::Play),
-                ),
-            ]),
+                ])
+            }
             InstanceMessage::Update => {
-                iced::Command::perform(perform_update(self.clone()), Message::Updated)
+                let name = self.name.clone();
+                iced::Command::batch(vec![
+                    iced::Command::perform(dummy(), move |()| {
+                        Message::InstanceMessage(
+                            name.clone(),
+                            InstanceMessage::StateChanged(InstanceState::Working(
+                                "Updating".into(),
+                            )),
+                        )
+                    }),
+                    iced::Command::perform(perform_update(self.clone()), Message::Dummy),
+                ])
             }
             InstanceMessage::Folder => {
                 iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
             }
             InstanceMessage::Delete => {
-                iced::Command::perform(delete(self.path.clone()), Message::Deleted)
+                let name = self.name.clone();
+                iced::Command::perform(delete(self.path.clone()), move |_| {
+                    Message::RemoveInstance(Some(name.clone()))
+                })
+            }
+            InstanceMessage::StateChanged(state) => {
+                self.state = state;
+                iced::Command::none()
             }
         }
     }
 
     pub fn view(&mut self) -> Element<InstanceMessage> {
+        // Buttons
+        let mut debug_button =
+            Button::new(&mut self.debug_button, style::debug_icon()).style(style::Button::Icon);
+        let mut play_button =
+            Button::new(&mut self.play_button, style::play_icon()).style(style::Button::Icon);
+        let mut update_button =
+            Button::new(&mut self.update_button, style::update_icon()).style(style::Button::Icon);
+        let folder_button = Button::new(&mut self.folder_button, style::folder_icon())
+            .style(style::Button::Icon)
+            .on_press(InstanceMessage::Folder);
+        let mut delete_button = Button::new(&mut self.delete_button, style::delete_icon())
+            .style(style::Button::Destructive);
+
+        if self.state.is_ready() {
+            debug_button = debug_button.on_press(InstanceMessage::Play(true));
+            play_button = play_button.on_press(InstanceMessage::Play(false));
+            update_button = update_button.on_press(InstanceMessage::Update);
+            delete_button = delete_button.on_press(InstanceMessage::Delete);
+        }
+
+        // Layout
         Row::new()
             .spacing(10)
             .padding(10)
@@ -140,35 +279,48 @@ impl Instance {
                     ),
             )
             .push(Space::new(Length::Fill, Length::Shrink))
-            .push(
-                Row::new()
-                    .spacing(10)
-                    .push(
-                        Button::new(&mut self.debug_button, style::debug_icon())
-                            .style(style::Button::Icon)
-                            .on_press(InstanceMessage::Play(true)),
-                    )
-                    .push(
-                        Button::new(&mut self.play_button, style::play_icon())
-                            .style(style::Button::Icon)
-                            .on_press(InstanceMessage::Play(false)),
-                    )
-                    .push(
-                        Button::new(&mut self.update_button, style::update_icon())
-                            .style(style::Button::Icon)
-                            .on_press(InstanceMessage::Update),
-                    )
-                    .push(
-                        Button::new(&mut self.folder_button, style::folder_icon())
-                            .style(style::Button::Icon)
-                            .on_press(InstanceMessage::Folder),
-                    )
-                    .push(
-                        Button::new(&mut self.delete_button, style::delete_icon())
-                            .style(style::Button::Destructive)
-                            .on_press(InstanceMessage::Delete),
-                    ),
-            )
+            .push({
+                if let InstanceState::Working(progress) = &self.state {
+                    let mut status_field = Column::new().align_items(Align::Center).push(
+                        Text::new(&progress.status)
+                            .size(16)
+                            .horizontal_alignment(HorizontalAlignment::Center),
+                    );
+                    if let (Some(done), Some(total)) = (progress.done, progress.total) {
+                        status_field = status_field.push(
+                            ProgressBar::new(0.0..=total as f32, done as f32)
+                                .height(Length::Units(5)),
+                        );
+                    }
+                    if let Some(done) = progress.done {
+                        status_field = status_field.push(
+                            Text::new(format!(
+                                "{}/{}{}{}",
+                                done,
+                                progress.total_approx.then(|| "~").unwrap_or(""),
+                                progress
+                                    .total
+                                    .map(|u| u.to_string())
+                                    .unwrap_or_else(|| "?".into()),
+                                progress.units.as_ref().unwrap_or(&"".into())
+                            ))
+                            .size(12)
+                            .horizontal_alignment(HorizontalAlignment::Center),
+                        )
+                    }
+                    Row::new()
+                        .push(Space::with_width(Length::FillPortion(1)))
+                        .push(status_field.width(Length::FillPortion(2)))
+                } else {
+                    Row::new()
+                        .spacing(10)
+                        .push(debug_button)
+                        .push(play_button)
+                        .push(update_button)
+                        .push(folder_button)
+                        .push(delete_button)
+                }
+            })
             .into()
     }
 }
@@ -180,12 +332,23 @@ pub async fn perform_install(
     name: String,
     instance_type: InstanceType,
     instance_source: InstanceSource,
-) -> Option<Instance> {
-    match install::install(path, name, instance_type, instance_source) {
-        Ok(instance) => Some(instance),
+) {
+    send_message(Message::AddInstance(Instance::new(
+        path.clone(),
+        "provisional".into(),
+        name.clone(),
+        instance_source.identifier.clone(),
+        instance_type,
+        instance_source.clone(),
+        InstanceState::Working(Progress::default()),
+    )));
+    match install::install(path, name.clone(), instance_type, instance_source) {
+        Ok(instance) => {
+            send_message(Message::AddInstance(instance));
+        }
         Err(e) => {
             error!("Install failed: {:#}", e);
-            None
+            send_message(Message::RemoveInstance(Some(name)));
         }
     }
 }
@@ -207,20 +370,26 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
     }
 }
 
-pub async fn perform_update(instance: Instance) -> Option<Instance> {
+pub async fn perform_update(instance: Instance) {
+    let name = instance.name.clone();
     match update::update_instance(instance).await {
-        Ok(instance) => Some(instance),
+        Ok(instance) => send_message(Message::AddInstance(instance)),
         Err(e) => {
             error!("Failed to update instance: {:#}", e);
-            None
+            send_message(Message::InstanceMessage(
+                name,
+                InstanceMessage::StateChanged(InstanceState::Ready),
+            ));
         }
     }
 }
 
 pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) {
+    send_message(Message::MusicMessage(MusicCommand::Pause));
     if let Err(e) = play(path, executable, name, do_debug).await {
         error!("Failed to run game: {:#}", e);
     }
+    send_message(Message::MusicMessage(MusicCommand::Play));
 }
 
 pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) -> Result<()> {
@@ -282,13 +451,13 @@ pub fn get_instances_dir() -> Option<PathBuf> {
 #[derive(Serialize, Deserialize)]
 struct InstancesContainer(Vec<Instance>);
 
-pub fn perform_save_instances(instances: Vec<Instance>) {
+pub fn perform_save_instances(instances: BTreeMap<String, Instance>) {
     if let Err(e) = save_instances(instances) {
         error!("Failed to save instances: {:#}", e);
     };
 }
 
-fn save_instances(instances: Vec<Instance>) -> Result<()> {
+fn save_instances(instances: BTreeMap<String, Instance>) -> Result<()> {
     let mut instances_file =
         get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
     instances_file.push("instances.json");
@@ -296,7 +465,10 @@ fn save_instances(instances: Vec<Instance>) -> Result<()> {
 
     let file = fs::File::create(instances_file)?;
 
-    serde_json::to_writer_pretty(file, &InstancesContainer(instances))?;
+    serde_json::to_writer_pretty(
+        file,
+        &InstancesContainer(instances.values().cloned().collect()),
+    )?;
     Ok(())
 }
 

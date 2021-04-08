@@ -1,6 +1,7 @@
 use crate::github::{get_workflow_run_artifacts, Artifact};
 use crate::install_frame::{InstanceSource, InstanceSourceType};
-use crate::instance::{Instance, InstanceType};
+use crate::instance::{Instance, InstanceState, InstanceType};
+use crate::send_progress_message;
 use crate::{archive, github};
 use anyhow::{Context, Result};
 use fs_extra::dir::{copy, CopyOptions};
@@ -20,6 +21,7 @@ pub fn install(
     if let InstanceType::Unknown = instance_type {
         return Err(anyhow!("Cannot install InstanceType::Unknown",));
     }
+    send_progress_message(&name, "Preparing directories".into());
 
     // If it's a PR, try to strip the leading `#`
     if InstanceSourceType::PR == instance_source.r#type
@@ -42,14 +44,20 @@ pub fn install(
 
     let (archive_file, version) = match instance_source.r#type {
         InstanceSourceType::Continuous => (
-            download_release_asset("continuous", &destination, instance_type)?,
+            download_release_asset(&name, "continuous", &destination, instance_type)?,
             github::get_git_ref("tags/continuous")?.object.sha,
         ),
         InstanceSourceType::Release => (
-            download_release_asset(&instance_source.identifier, &destination, instance_type)?,
+            download_release_asset(
+                &name,
+                &instance_source.identifier,
+                &destination,
+                instance_type,
+            )?,
             String::from(&instance_source.identifier),
         ),
         InstanceSourceType::PR => download_pr_asset(
+            &name,
             &destination,
             instance_type,
             instance_source.identifier.parse()?,
@@ -62,10 +70,12 @@ pub fn install(
     if let InstanceType::AppImage = instance_type {
         fs::rename(&archive_file, &executable_path)?;
     } else if cfg!(target_os = "macos") && archive_file.to_string_lossy().contains("dmg") {
+        send_progress_message(&name, "Processing DMG file".into());
         if let Err(e) = mac_process_dmg(&archive_file) {
             return Err(anyhow!("Mac DMG postprocessing failed! {}", e));
         }
     } else {
+        send_progress_message(&name, "Extracting archive".into());
         archive::unpack(&archive_file, &destination, !cfg!(target_os = "macos"))?;
     }
 
@@ -82,19 +92,24 @@ pub fn install(
         version,
         instance_type,
         instance_source,
+        InstanceState::Ready,
     ))
 }
 
 fn download_release_asset(
+    instance_name: &str,
     tag: &str,
     destination: &PathBuf,
     instance_type: InstanceType,
 ) -> Result<PathBuf> {
+    send_progress_message(&instance_name, "Fetching release data".into());
     let release = github::get_release_by_tag(tag)?;
     let assets = github::get_release_assets(release.id)?;
     let asset = choose_artifact(assets, instance_type)?;
+
     info!("Downloading artifact from {}", asset.browser_download_url);
     Ok(github::download(
+        &instance_name,
         &asset.browser_download_url,
         asset.name(),
         &destination.clone(),
@@ -102,22 +117,31 @@ fn download_release_asset(
 }
 
 fn download_pr_asset(
+    instance_name: &str,
     destination: &PathBuf,
     instance_type: InstanceType,
     pr_id: u16,
 ) -> Result<(PathBuf, String)> {
+    send_progress_message(&instance_name, "Fetching PR data".into());
     let pr = github::get_pr(pr_id)?;
+    send_progress_message(&instance_name, "Fetching CD workflow".into());
     let workflow = github::get_cd_workflow()?;
+    send_progress_message(&instance_name, "Fetching CD workflow run".into());
     let run = github::get_latest_workflow_run(workflow.id, &pr.head.branch, pr.head.repo.id)?;
+    send_progress_message(&instance_name, "Fetching CD run artifacts".into());
     let artifacts = get_workflow_run_artifacts(run.id)?;
     let artifact = choose_artifact(artifacts, instance_type)?;
+
     let unblocked = github::unblock_artifact_download(artifact.id)?;
 
     let archive_path = github::download(
+        instance_name,
         &unblocked.url,
         &format!("{}.zip", artifact.name()),
         destination,
     )?;
+
+    send_progress_message(&instance_name, "Extracting artifact".into());
     archive::unpack(&archive_path, destination, true)?;
     fs::remove_file(archive_path)?;
 
