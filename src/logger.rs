@@ -3,8 +3,8 @@ use std::fs::File;
 
 use log::{Level, Log, Metadata, Record};
 use simplelog::{
-    CombinedLogger, Config, ConfigBuilder, LevelFilter, SharedLogger, TermLogger, TerminalMode,
-    WriteLogger,
+    ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelFilter, SharedLogger, TermLogger,
+    TerminalMode, WriteLogger,
 };
 
 use crate::{get_data_dir, Message};
@@ -100,7 +100,12 @@ pub fn init() {
 
     let mut loggers: Vec<Box<dyn SharedLogger>> = vec![
         Box::new(channeled),
-        TermLogger::new(LevelFilter::Debug, config.clone(), TerminalMode::Mixed),
+        TermLogger::new(
+            LevelFilter::Debug,
+            config.clone(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ),
     ];
 
     if let Some(file) = open_logfile() {
