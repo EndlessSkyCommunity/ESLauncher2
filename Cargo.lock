@@ -961,9 +961,9 @@ dependencies = [
 
 [[package]]
 name = "espim"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffd11008269e4cb101d8956e897c5411bc4d16536345cb8e8ec0989fa5911f91"
+checksum = "f39d09bd3e8409b8244dd7b586f1210a405a4713563174b7f19e6691c5ee0b46"
 dependencies = [
  "anyhow",
  "dirs",

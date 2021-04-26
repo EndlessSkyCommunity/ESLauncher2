@@ -19,7 +19,7 @@ anyhow = "1.0"
 bitar = { version="0.8", features=["rustls-tls"] }
 chrono = { version = "0.4", features = ["serde"] }
 dmg = "0.1.1"
-espim = "0.1"
+espim = "0.2"
 flate2 = "1.0"
 fs_extra = "1.2.0"
 futures = "0.3"
