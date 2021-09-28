@@ -953,7 +953,7 @@ dependencies = [
  "simplelog",
  "tar",
  "tokio",
- "ureq",
+ "ureq 2.2.0",
  "version",
  "winres",
  "zip-extract",
@@ -969,7 +969,7 @@ dependencies = [
  "dirs",
  "log 0.4.14",
  "serde",
- "ureq",
+ "ureq 1.5.5",
  "zip-extract",
 ]
 
@@ -3690,15 +3690,33 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "ureq"
-version = "1.5.4"
+version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "294b85ef5dbc3670a72e82a89971608a1fcc4ed5c7c5a2895230d31a95f0569b"
+checksum = "2b8b063c2d59218ae09f22b53c42eaad0d53516457905f5235ca4bc9e99daa71"
 dependencies = [
  "base64 0.13.0",
  "chunked_transfer",
  "log 0.4.14",
  "once_cell",
  "qstring",
+ "rustls",
+ "serde",
+ "serde_json",
+ "url",
+ "webpki",
+ "webpki-roots",
+]
+
+[[package]]
+name = "ureq"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3131cd6cb18488da91da1d10ed31e966f453c06b65bf010d35638456976a3fd7"
+dependencies = [
+ "base64 0.13.0",
+ "chunked_transfer",
+ "log 0.4.14",
+ "once_cell",
  "rustls",
  "serde",
  "serde_json",
