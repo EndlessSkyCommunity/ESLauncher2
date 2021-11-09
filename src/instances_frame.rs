@@ -40,10 +40,20 @@ impl InstancesFrame {
             .spacing(20)
             .align_items(Align::Center);
         let instances_list: Element<_> = if self.instances.is_empty() {
-            Text::new("No Instances yet")
-                .color(Color::from_rgb8(150, 150, 150))
-                .horizontal_alignment(HorizontalAlignment::Center)
-                .width(Length::Fill)
+            instances_column
+                .push(
+                    Text::new("No Instances yet")
+                        .color(Color::from_rgb8(150, 150, 150))
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .width(Length::Fill),
+                )
+                .push(
+                    Text::new("ESLauncher allows you to install multiple instances of Endless Sky. Instances are installations which ESLauncher automatically updates. Install your first instance by typing a name like 'newest' in the box to the right and choosing which version of the game to install.")
+                        .size(16)
+                        .color(Color::from_rgb8(150, 150, 150))
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .width(Length::Fill),
+                )
                 .into()
         } else {
             self.instances
