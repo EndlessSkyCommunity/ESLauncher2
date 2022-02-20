@@ -25,7 +25,7 @@ impl Artifact for BuildArtifact {
 pub fn get_latest_sha() -> Result<String> {
     let url = "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastSuccessfulBuild/api/xml?xpath=/*/*/lastBuiltRevision/SHA1";
 
-    let res = ureq::get(url).call();
+    let res = ureq::get(url).call()?;
     let sha: SHA1 = serde_xml_rs::from_str(&res.into_string()?)?;
     info!("Got new version from Jenkins: {}", sha.0);
     Ok(sha.0)
@@ -34,7 +34,7 @@ pub fn get_latest_sha() -> Result<String> {
 pub fn get_latest_artifacts() -> Result<Vec<BuildArtifact>> {
     let url = "https://ci.mcofficer.me/job/EndlessSky-continuous-bitar/lastBuild/api/json?tree=artifacts[*]";
 
-    let res = ureq::get(url).call();
-    let build: Build = res.into_json_deserialize()?;
+    let res = ureq::get(url).call()?;
+    let build: Build = res.into_json()?;
     Ok(build.artifacts)
 }

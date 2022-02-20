@@ -208,9 +208,9 @@ pub fn get_release_assets(release_id: i64) -> Result<Vec<ReleaseAsset>> {
 
 fn make_request<T: DeserializeOwned>(url: &str) -> Result<T> {
     debug!("Requesting {}", url);
-    let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
+    let res = ureq::get(url).set("User-Agent", "ESLauncher2").call()?;
     check_ratelimit(&res);
-    if !res.ok() {
+    if res.status() >= 400 {
         warn!(
             "Got unexpected status code '{} {}' for {}",
             res.status(),
@@ -218,7 +218,7 @@ fn make_request<T: DeserializeOwned>(url: &str) -> Result<T> {
             url,
         )
     }
-    Ok(res.into_json_deserialize()?)
+    Ok(res.into_json()?)
 }
 
 fn make_paginated_request<T: DeserializeOwned>(url: &str) -> Result<Vec<T>> {
@@ -228,7 +228,7 @@ fn make_paginated_request<T: DeserializeOwned>(url: &str) -> Result<Vec<T>> {
     while next_url.is_some() {
         let url = next_url.clone().unwrap();
         debug!("Requesting {}", url);
-        let res = ureq::get(&url).set("User-Agent", "ESLauncher2").call();
+        let res = ureq::get(&url).set("User-Agent", "ESLauncher2").call()?;
         check_ratelimit(&res);
 
         if let Some(link_header) = res.header("link") {
@@ -244,7 +244,7 @@ fn make_paginated_request<T: DeserializeOwned>(url: &str) -> Result<Vec<T>> {
             next_url = None;
         }
 
-        results.push(res.into_json_deserialize()?);
+        results.push(res.into_json()?);
     }
 
     Ok(results)
@@ -282,7 +282,7 @@ pub fn download(instance_name: &str, url: &str, name: &str, folder: &PathBuf) ->
     info!("Downloading {} to {}", url, name);
     send_progress_message(instance_name, "Downloading".into());
 
-    let res = ureq::get(url).call();
+    let res = ureq::get(url).call()?;
     let total: Option<u32> = res
         .header("Content-Length")
         .map(|s| s.parse().ok())
