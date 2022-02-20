@@ -164,7 +164,6 @@ pub fn get_git_ref(name: &str) -> Result<GitRef> {
 pub struct Release {
     pub id: i64,
     pub tag_name: String,
-    assets_url: String,
 }
 
 pub fn get_release_by_tag(tag: &str) -> Result<Release> {
@@ -174,11 +173,20 @@ pub fn get_release_by_tag(tag: &str) -> Result<Release> {
     ))
 }
 
-pub fn get_latest_release(repo_slug: &str) -> Result<Release> {
-    make_request(&format!(
-        "https://api.github.com/repos/{}/releases/latest",
-        repo_slug
-    ))
+pub fn get_latest_release(repo_slug: &str) -> Result<String> {
+    let url = &format!("https://github.com/{}/releases/latest", repo_slug);
+    let res = ureq::get(url).call()?;
+
+    if res.status() >= 400 {
+        warn!(
+            "Got unexpected status code '{} {}' for {}",
+            res.status(),
+            res.status_text(),
+            url,
+        )
+    };
+
+    Ok(res.get_url().rsplit_once("/").unwrap().1.to_string())
 }
 
 #[derive(Deserialize, Debug)]

@@ -318,10 +318,8 @@ impl Application for ESLauncher {
 fn check_for_update() {
     thread::spawn(
         || match github::get_latest_release("EndlessSkyCommunity/ESLauncher2") {
-            Ok(release) => {
-                if !format!("v{}", version!()).eq(&release.tag_name) {
-                    info!("The latest version of ESLauncher2 is {}", release.tag_name)
-                }
+            Ok(tag) => {
+                info!("The latest version of ESLauncher2 is {}", tag)
             }
             Err(e) => error!("Failed to fetch latest ESLauncher2 release: {}", e),
         },

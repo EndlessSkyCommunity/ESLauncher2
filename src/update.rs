@@ -42,7 +42,7 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
                 .sha
         } else {
             // InstanceSourceType::Release
-            github::get_latest_release("endless-sky/endless-sky")?.tag_name
+            github::get_latest_release("endless-sky/endless-sky")?
         };
         if version.eq(&instance.version) {
             return Err(anyhow!("Latest version is already installed"));
