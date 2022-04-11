@@ -113,6 +113,7 @@ fn download_release_asset(
         &asset.browser_download_url,
         asset.name(),
         &destination.clone(),
+        None,
     )?)
 }
 
@@ -138,6 +139,7 @@ fn download_pr_asset(
         &unblocked_url,
         &format!("{}.zip", artifact.name()),
         destination,
+        Some(artifact.size_in_bytes),
     )?;
 
     send_progress_message(&instance_name, "Extracting artifact".into());
