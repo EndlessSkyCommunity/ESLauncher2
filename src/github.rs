@@ -42,16 +42,11 @@ pub fn get_pr(id: u16) -> Result<PR> {
     ))
 }
 
-#[derive(Deserialize, Debug)]
-pub struct UnblockedArtifact {
-    pub url: String,
-}
-
-pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact> {
-    make_request(&format!(
-        "https://endlesssky.mcofficer.me/actions-artifacts/artifact/{}",
-        artifact_id
-    ))
+pub fn unblock_artifact_download(artifact_id: u32) -> String {
+    format!(
+        "https://artifact-unblocker.mcofficer.workers.dev/artifact/{}",
+        artifact_id,
+    )
 }
 
 #[derive(Deserialize, Debug)]

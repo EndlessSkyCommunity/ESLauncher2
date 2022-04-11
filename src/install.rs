@@ -132,11 +132,10 @@ fn download_pr_asset(
     let artifacts = get_workflow_run_artifacts(run.id)?;
     let artifact = choose_artifact(artifacts, instance_type)?;
 
-    let unblocked = github::unblock_artifact_download(artifact.id)?;
-
+    let unblocked_url = github::unblock_artifact_download(artifact.id);
     let archive_path = github::download(
         instance_name,
-        &unblocked.url,
+        &unblocked_url,
         &format!("{}.zip", artifact.name()),
         destination,
     )?;
