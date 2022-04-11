@@ -16,7 +16,7 @@ osx_minimum_system_version = "10.7"
 
 [dependencies]
 anyhow = "1.0"
-bitar = { version="0.8", features=["rustls-tls"] }
+bitar = { version="0.10", features=["rustls-tls"] }
 chrono = { version = "0.4", features = ["serde"] }
 dmg = "0.1.1"
 espim = "0.2"
