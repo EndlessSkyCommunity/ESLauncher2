@@ -113,6 +113,7 @@ fn download_release_asset(
         &asset.browser_download_url,
         asset.name(),
         &destination.clone(),
+        None,
     )?)
 }
 
@@ -132,13 +133,13 @@ fn download_pr_asset(
     let artifacts = get_workflow_run_artifacts(run.id)?;
     let artifact = choose_artifact(artifacts, instance_type)?;
 
-    let unblocked = github::unblock_artifact_download(artifact.id)?;
-
+    let unblocked_url = github::unblock_artifact_download(artifact.id);
     let archive_path = github::download(
         instance_name,
-        &unblocked.url,
+        &unblocked_url,
         &format!("{}.zip", artifact.name()),
         destination,
+        Some(artifact.size_in_bytes),
     )?;
 
     send_progress_message(&instance_name, "Extracting artifact".into());

@@ -42,16 +42,11 @@ pub fn get_pr(id: u16) -> Result<PR> {
     ))
 }
 
-#[derive(Deserialize, Debug)]
-pub struct UnblockedArtifact {
-    pub url: String,
-}
-
-pub fn unblock_artifact_download(artifact_id: u32) -> Result<UnblockedArtifact> {
-    make_request(&format!(
-        "https://endlesssky.mcofficer.me/actions-artifacts/artifact/{}",
-        artifact_id
-    ))
+pub fn unblock_artifact_download(artifact_id: u32) -> String {
+    format!(
+        "https://artifact-unblocker.mcofficer.workers.dev/artifact/{}",
+        artifact_id,
+    )
 }
 
 #[derive(Deserialize, Debug)]
@@ -122,6 +117,7 @@ struct WorkflowRunArtifacts {
 #[derive(Deserialize, Debug)]
 pub struct WorkflowRunArtifact {
     pub id: u32,
+    pub size_in_bytes: u32,
     name: String,
 }
 
@@ -282,7 +278,13 @@ fn check_ratelimit(res: &ureq::Response) {
     }
 }
 
-pub fn download(instance_name: &str, url: &str, name: &str, folder: &PathBuf) -> Result<PathBuf> {
+pub fn download(
+    instance_name: &str,
+    url: &str,
+    name: &str,
+    folder: &PathBuf,
+    size_hint: Option<u32>,
+) -> Result<PathBuf> {
     let mut output_path = folder.clone();
     output_path.push(name);
     let mut output_file = File::create(&output_path)?;
@@ -294,7 +296,8 @@ pub fn download(instance_name: &str, url: &str, name: &str, folder: &PathBuf) ->
     let total: Option<u32> = res
         .header("Content-Length")
         .map(|s| s.parse().ok())
-        .flatten();
+        .flatten()
+        .or(size_hint);
     let fetched = Arc::new(AtomicUsize::new(0));
     let finished = Arc::new(AtomicBool::new(false));
 

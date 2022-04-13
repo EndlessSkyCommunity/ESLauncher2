@@ -1,6 +1,6 @@
 [package]
 name = "eslauncher2"
-version = "0.8.3"
+version = "0.8.4"
 authors = ["M*C*O <mcofficer@gmx.de>", "EndlessSkyCommunity"]
 edition = "2018"
 build = "build.rs"
@@ -25,7 +25,7 @@ fs_extra = "1.2.0"
 futures = "0.3"
 iced_futures = "0.3"
 lazy_static = "1.4"
-log = { version="0.4.14", features=["std"] }
+log = { version="0.4.16", features=["std"] }
 open = "2"
 parse_link_header = "0.3"
 platform-dirs = "0.3.0"
