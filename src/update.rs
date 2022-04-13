@@ -123,7 +123,7 @@ async fn bitar_update_archive(
     );
 
     // Open archive which source we want to clone
-    let reader = bitar::ReaderRemote::from_url(url.parse()?);
+    let reader = bitar::archive_reader::HttpReader::from_url(url.parse()?);
     let mut source_archive = bitar::Archive::try_init(reader).await?;
 
     // Open our target file
@@ -136,20 +136,22 @@ async fn bitar_update_archive(
 
     send_progress_message(instance_name, "Scanning local chunks".into());
     // Scan the target file for chunks and build a chunk index
-    let chunker = bitar::chunker::Chunker::new(source_archive.chunker_config(), &mut target);
-    let mut chunk_stream = chunker.map_ok(|(offset, chunk)| (offset, chunk.verify()));
-    let mut output_index = bitar::ChunkIndex::new_empty();
-    while let Some(r) = chunk_stream.next().await {
-        send_progress_message(
-            instance_name,
-            Progress::from("Scanning local chunks")
-                .done(output_index.len() as u32)
-                .total(source_archive.total_chunks() as u32)
-                .total_approx(true),
-        );
-        let (offset, verified) = r?;
-        let (hash, chunk) = verified.into_parts();
-        output_index.add_chunk(hash, chunk.len(), &[offset]);
+    let mut output_index = bitar::ChunkIndex::new_empty(source_archive.chunk_hash_length());
+    {
+        let chunker = source_archive.chunker_config().new_chunker(&mut target);
+        let mut chunk_stream = chunker.map_ok(|(offset, chunk)| (offset, chunk.verify()));
+        while let Some(r) = chunk_stream.next().await {
+            send_progress_message(
+                instance_name,
+                Progress::from("Scanning local chunks")
+                    .done(output_index.len() as u32)
+                    .total(source_archive.total_chunks() as u32)
+                    .total_approx(true),
+            );
+            let (offset, verified) = r?;
+            let (hash, chunk) = verified.into_parts();
+            output_index.add_chunk(hash, chunk.len(), &[offset]);
+        }
     }
 
     // Create output to contain the clone of the archive's source
