@@ -47,7 +47,7 @@ fi
 
 # Gets a list of icons with sizes and prints their appropriate install path.
 function get_icons() {
-  \ls .github/packaging/icons/eslauncher2_[0-9]*x[0-9]*.png | awk -F_ '
+  \ls packaging/icons/eslauncher2_[0-9]*x[0-9]*.png | awk -F_ '
     {
       file=$0;
       gsub(/^.*\//, "", $1);
@@ -92,7 +92,7 @@ for format in deb rpm; do
       --url https://github.com/EndlessSkyCommunity/ESLauncher2/ \
       --maintainer MCOfficer \
       "${install_icons[@]}" \
-      "./.github/packaging/eslauncher2.desktop=/usr/share/applications/eslauncher2.desktop" \
+      "./packaging/eslauncher2.desktop=/usr/share/applications/eslauncher2.desktop" \
       "${binary}=/usr/bin/eslauncher2"
   )
 done
