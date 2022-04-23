@@ -32,7 +32,7 @@ jobs:
           fi
           ./.github/packaging/create-packages.sh "${version}"
       - name: Upload binary
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: eslauncher2-x86_64-unknown-linux-gnu
           path: |
@@ -65,7 +65,7 @@ jobs:
           cargo build --verbose --release
           mv target/release/eslauncher2.exe eslauncher2-x86_64-pc-windows-msvc.exe
       - name: Archive binary
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: eslauncher2-x86_64-pc-windows-msvc
           path: eslauncher2-x86_64-pc-windows-msvc.exe
@@ -105,7 +105,7 @@ jobs:
           cd target/release/bundle/osx
           zip -r ESLauncher2.app.zip ESLauncher2.app
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ESLauncher2.app.zip
           path: target/release/bundle/osx
