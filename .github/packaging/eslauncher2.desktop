@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=ESLauncher2
+Comment=A program for organizing Endless Sky installations.
+Exec=eslauncher2
+Icon=eslauncher2
+Terminal=false
+Type=Application
+Categories=Game;
