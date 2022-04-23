@@ -84,11 +84,13 @@ for format in deb rpm; do
     fpm \
       -t "${format}" \
       -n eslauncher2 \
-      --license gpl3 \
+      --license GPLv3 \
       --architecture x86_64 \
       --description "${description}" \
       -v "${package_version}" \
       -s dir \
+      --url https://github.com/EndlessSkyCommunity/ESLauncher2/ \
+      --maintainer MCOfficer \
       "${install_icons[@]}" \
       "./.github/packaging/eslauncher2.desktop=/usr/share/applications/eslauncher2.desktop" \
       "${binary}=/usr/bin/eslauncher2"
