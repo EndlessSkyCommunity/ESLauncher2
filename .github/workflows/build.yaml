@@ -30,7 +30,7 @@ jobs:
           if ! grep '\([0-9]\+\.\)\{2\}[0-9]\+$' <<< "${version}"; then
             version=0.0."$(date +%s)"
           fi
-          ./.github/packaging/create-packages.sh "${version}"
+          ./packaging/create-packages.sh "${version}"
           mv *.deb eslauncher2.deb
           mv *.rpm eslauncher2.rpm
       - name: Upload binary
