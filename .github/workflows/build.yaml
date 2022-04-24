@@ -10,25 +10,52 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install dependencies
         run: |
+          set -x
           sudo apt update
           sudo apt install -y libasound2-dev
+          # fpm for creating DEB and RPM packages
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+          sudo gem install --no-document fpm
       - name: Build binary
         run: |
           cargo build --verbose --release
           mv target/release/eslauncher2 eslauncher2-x86_64-unknown-linux-gnu
       - name: Strip binary
         run: strip eslauncher2-x86_64-unknown-linux-gnu
+      - name: Build RPM and DEB
+        run: |
+          version=${{github.ref}}
+          version="${version#refs/tags/v}"
+          # set dev version if not tag release
+          if ! grep '\([0-9]\+\.\)\{2\}[0-9]\+$' <<< "${version}"; then
+            version=0.0."$(date +%s)"
+          fi
+          ./packaging/create-packages.sh "${version}"
+          mv *.deb eslauncher2.deb
+          mv *.rpm eslauncher2.rpm
       - name: Upload binary
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: eslauncher2-x86_64-unknown-linux-gnu
           path: eslauncher2-x86_64-unknown-linux-gnu
+      - name: Upload DEB
+        uses: actions/upload-artifact@v3
+        with:
+          name: eslauncher2.deb
+          path: eslauncher2.deb
+      - name: Upload RPM
+        uses: actions/upload-artifact@v3
+        with:
+          name: eslauncher2.rpm
+          path: eslauncher2.rpm
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: |
             eslauncher2-x86_64-unknown-linux-gnu
+            *.deb
+            *.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -47,7 +74,7 @@ jobs:
           cargo build --verbose --release
           mv target/release/eslauncher2.exe eslauncher2-x86_64-pc-windows-msvc.exe
       - name: Archive binary
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: eslauncher2-x86_64-pc-windows-msvc
           path: eslauncher2-x86_64-pc-windows-msvc.exe
@@ -87,7 +114,7 @@ jobs:
           cd target/release/bundle/osx
           zip -r ESLauncher2.app.zip ESLauncher2.app
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ESLauncher2.app.zip
           path: target/release/bundle/osx
