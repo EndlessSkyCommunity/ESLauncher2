@@ -941,7 +941,7 @@ dependencies = [
  "fs_extra",
  "futures",
  "iced",
- "iced_futures",
+ "iced_futures 0.4.0",
  "lazy_static",
  "log 0.4.17",
  "open",
@@ -1724,7 +1724,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05279cf5a83b960a1a01cff455fede8a33df720f3ff4fc9d33be79fcea9d2466"
 dependencies = [
  "iced_core",
- "iced_futures",
+ "iced_futures 0.3.0",
  "iced_glow",
  "iced_glutin",
  "iced_web",
@@ -1749,6 +1749,18 @@ dependencies = [
  "log 0.4.17",
  "tokio",
  "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "iced_futures"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a93ebc9bcad1745b0852f961c17f3311d8ad797dca5ec5d76c2f7b48922030d"
+dependencies = [
+ "futures",
+ "log 0.4.17",
+ "wasm-bindgen-futures",
+ "wasm-timer",
 ]
 
 [[package]]
@@ -1800,7 +1812,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35030736d160e88b79edddee7ab664a2f3ac6b4046608e298b4c853030e3cc06"
 dependencies = [
  "iced_core",
- "iced_futures",
+ "iced_futures 0.3.0",
  "num-traits",
  "twox-hash",
  "unicode-segmentation",
@@ -1823,7 +1835,7 @@ checksum = "9c57300b109735abcee7aed27101eb1b29016ba07ec50b6944530982231397ad"
 dependencies = [
  "dodrio",
  "iced_core",
- "iced_futures",
+ "iced_futures 0.3.0",
  "iced_style",
  "num-traits",
  "url",
@@ -1857,7 +1869,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6bd9fc4bb0e18949a905e3fe36aa4f7e85375ab3c4a83610cf7f08b5ed106f2"
 dependencies = [
- "iced_futures",
+ "iced_futures 0.3.0",
  "iced_graphics",
  "iced_native",
  "log 0.4.17",
@@ -3928,6 +3940,21 @@ name = "wasm-bindgen-shared"
 version = "0.2.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e7811dd7f9398f14cc76efd356f98f03aa30419dea46aa810d71e819fc97158"
+
+[[package]]
+name = "wasm-timer"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
+dependencies = [
+ "futures",
+ "js-sys",
+ "parking_lot",
+ "pin-utils",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
 
 [[package]]
 name = "wayland-client"
