@@ -163,7 +163,13 @@ pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceTy
             })?);
         if matches {
             info!("Choosing asset with name {}", artifact.name());
-            return Ok(artifact);
+            return if artifact.expired() {
+                Err(anyhow!(
+                    "Artifact is expired, the PR author has to trigger a new workflow"
+                ))
+            } else {
+                Ok(artifact)
+            };
         }
     }
     Err(anyhow!(

@@ -20,6 +20,8 @@ pub struct Repo {
 
 pub trait Artifact {
     fn name(&self) -> &str;
+
+    fn expired(&self) -> bool;
 }
 
 #[derive(Deserialize, Debug)]
@@ -119,11 +121,16 @@ pub struct WorkflowRunArtifact {
     pub id: u32,
     pub size_in_bytes: u32,
     name: String,
+    expired: bool,
 }
 
 impl Artifact for WorkflowRunArtifact {
     fn name(&self) -> &str {
         &self.name
+    }
+
+    fn expired(&self) -> bool {
+        self.expired
     }
 }
 
@@ -198,6 +205,10 @@ pub struct ReleaseAsset {
 impl Artifact for ReleaseAsset {
     fn name(&self) -> &str {
         &self.name
+    }
+
+    fn expired(&self) -> bool {
+        false
     }
 }
 

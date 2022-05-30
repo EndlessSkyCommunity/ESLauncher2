@@ -20,6 +20,10 @@ impl Artifact for BuildArtifact {
     fn name(&self) -> &str {
         &self.file_name
     }
+
+    fn expired(&self) -> bool {
+        false
+    }
 }
 
 pub fn get_latest_sha() -> Result<String> {
