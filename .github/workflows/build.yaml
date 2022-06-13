@@ -14,7 +14,7 @@ jobs:
           sudo apt update
           sudo apt install -y libasound2-dev
           # fpm for creating DEB and RPM packages
-          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm libarchive-tools zstd
           sudo gem install --no-document fpm
       - name: Build binary
         run: |
@@ -33,6 +33,7 @@ jobs:
           ./packaging/create-packages.sh "${version}"
           mv *.deb eslauncher2.deb
           mv *.rpm eslauncher2.rpm
+          mv *.pkg.tar.zst eslauncher2.pkg.tar.zst
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
@@ -48,6 +49,11 @@ jobs:
         with:
           name: eslauncher2.rpm
           path: eslauncher2.rpm
+      - name: Upload ArchLinux package
+        uses: actions/upload-artifact@v3
+        with:
+          name: eslauncher2.pkg.tar.zst
+          path: eslauncher2.pkg.tar.zst
       - name: Release binary
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
