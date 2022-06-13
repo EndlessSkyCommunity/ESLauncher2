@@ -6,3 +6,4 @@ ESLauncher2.log
 .DS_Store
 /*.deb
 /*.rpm
+/*.zst

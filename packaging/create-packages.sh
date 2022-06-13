@@ -78,7 +78,7 @@ if [ ! -x "${binary}" ]; then
   binary=target/release/eslauncher2
 fi
 
-for format in deb rpm; do
+for format in deb rpm pacman; do
   (
     set -x
     fpm \
