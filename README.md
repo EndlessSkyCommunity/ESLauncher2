@@ -21,6 +21,7 @@ Previous versions required DirectX 11 or 12, Vulkan or Metal. See also [#4](http
 [![Download for Linux](https://badgen.net/badge/DEB/Download/green?icon=terminal)](https://github.com/EndlessSkyCommunity/ESLauncher2/releases/latest/download/eslauncher2.deb)
 [![Download for Linux](https://badgen.net/badge/RPM/Download/green?icon=terminal)](https://github.com/EndlessSkyCommunity/ESLauncher2/releases/latest/download/eslauncher2.rpm)
 [![Download for Linux](https://badgen.net/badge/OSX/Download/green?icon=apple)](https://github.com/EndlessSkyCommunity/ESLauncher2/releases/latest/download/ESLauncher2.app.zip)
+- Arch Linux users: ```yay -S eslauncher2```
 - Download the latest version for your OS from these^ icons, or [the release page](https://github.com/EndlessSkyCommunity/ESLauncher2/releases).
 - Run it.
 
