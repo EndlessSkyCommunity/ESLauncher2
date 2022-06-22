@@ -22,7 +22,7 @@ Previous versions required DirectX 11 or 12, Vulkan or Metal. See also [#4](http
 [![Download for Linux](https://badgen.net/badge/RPM/Download/green?icon=terminal)](https://github.com/EndlessSkyCommunity/ESLauncher2/releases/latest/download/eslauncher2.rpm)
 [![Download for Linux](https://badgen.net/badge/OSX/Download/green?icon=apple)](https://github.com/EndlessSkyCommunity/ESLauncher2/releases/latest/download/ESLauncher2.app.zip)
 - Download the latest version for your OS from these^ icons, or [the release page](https://github.com/EndlessSkyCommunity/ESLauncher2/releases).
-- Run it.
+- For Arch Linux, there's also an AUR package [`eslauncher2`](https://aur.archlinux.org/packages/eslauncher2) maintained by @DisableGraphics.
 
 ### Additional instructions for Mac
 **Important**: the security mechanisms of newer MacOS system do not allow to run
