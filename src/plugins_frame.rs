@@ -1,10 +1,21 @@
-use crate::{style, Message};
+use crate::{get_data_dir, style, Message};
+use anyhow::Context;
+use anyhow::Result;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::PathBuf;
 
 use espim::Plugin as EspimPlugin;
 use iced::{
     alignment, button, scrollable, Alignment, Color, Column, Command, Container, Element, Length,
     Row, Scrollable, Space, Text,
 };
+use lazy_static::lazy_static;
+use regex::Regex;
+
+lazy_static! {
+    static ref CACHE_FILENAME_REGEX: Regex = Regex::new(r"[^\w.-]").unwrap();
+}
 
 #[derive(Debug, Clone)]
 pub enum PluginsFrameState {
@@ -205,7 +216,9 @@ pub async fn load_plugins() -> Vec<Plugin> {
         Ok(retrieved) => {
             for p in retrieved {
                 let name = String::from(p.name());
-                let icon_bytes = p.retrieve_icon();
+                let icon_bytes = load_icon_cached(&p)
+                    .map_err(|e| debug!("failed to fetch icon: {}", e))
+                    .ok();
                 plugins.push(Plugin {
                     state: PluginState::Idle { espim_plugin: p },
                     name,
@@ -225,7 +238,53 @@ pub async fn load_plugins() -> Vec<Plugin> {
     plugins
 }
 
+fn get_cache_file(p: &EspimPlugin) -> Result<PathBuf> {
+    let cache_dir = get_data_dir().unwrap().join("icons");
+    if !(cache_dir.exists()) {
+        std::fs::create_dir(&cache_dir).with_context(|| "Failed to create icon cache")?;
+    }
+
+    let version = p.versions().0.unwrap_or_else(|| p.versions().1.unwrap());
+    let desired = format!("{}-{}", p.name(), version);
+    let filename = CACHE_FILENAME_REGEX.replace_all(&desired, "_");
+    Ok(cache_dir.join(&*filename))
+}
+
+fn load_icon_cached(p: &EspimPlugin) -> Result<Vec<u8>> {
+    if p.is_installed() {
+        return p
+            .retrieve_icon()
+            .ok_or(anyhow!("Failed to get item from installed plugin"));
+    }
+
+    let cache_file = get_cache_file(p)?;
+    if cache_file.exists() && cache_file.is_file() && !p.is_installed() {
+        let mut bytes = vec![];
+        File::open(cache_file)?.read_to_end(&mut bytes)?;
+        Ok(bytes)
+    } else {
+        let bytes = p
+            .retrieve_icon()
+            .with_context(|| "Failed to load icon from URL")?;
+        File::create(cache_file)?.write_all(&bytes)?;
+        Ok(bytes)
+    }
+}
+
 pub async fn perform_install(mut plugin: EspimPlugin) -> EspimPlugin {
+    if plugin.is_installed() {
+        match get_cache_file(&plugin) {
+            Ok(old_cache_file) => {
+                if old_cache_file.exists() {
+                    let _ = std::fs::remove_file(old_cache_file);
+                }
+            }
+            Err(e) => {
+                error!("Failed to get cache filename: {}", e)
+            }
+        };
+    }
+
     if let Err(e) = plugin.download() {
         error!("Install failed: {:#}", e)
     }
