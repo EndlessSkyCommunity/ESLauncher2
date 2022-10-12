@@ -2,7 +2,7 @@
 name = "eslauncher2"
 version = "0.8.5"
 authors = ["M*C*O <mcofficer@gmx.de>", "EndlessSkyCommunity"]
-edition = "2018"
+edition = "2021"
 build = "build.rs"
 description = "A plugin and game resource manager for Endless Sky"
 
@@ -23,7 +23,7 @@ espim = "0.2"
 flate2 = "1.0"
 fs_extra = "1.2.0"
 futures = "0.3"
-iced_futures = "0.3"
+iced_futures = "0.4.1"
 lazy_static = "1.4"
 log = { version="0.4.17", features=["std"] }
 open = "2"
@@ -43,12 +43,12 @@ version = "3"
 zip-extract = { version = "0.1.1", default_features = false, features = ["deflate"] }
 
 [dependencies.iced]
-version = "0.3"
+version = "0.4.2"
 default_features = false
 features = ["glow", "image", "tokio"]
 
 [dev-dependencies.iced]
-version = "0.3"
+version = "0.4.2"
 default_features = false
 features = ["glow", "debug", "image", "tokio"]
 
