@@ -2,8 +2,8 @@ use crate::instance::{get_instances_dir, InstanceType};
 use crate::{instance, Message};
 use core::fmt;
 use iced::{
-    button, scrollable, text_input, Align, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Radio, Scrollable, Text, TextInput,
+    alignment, button, scrollable, text_input, Alignment, Button, Column, Command, Container,
+    Element, Length, Radio, Scrollable, Text, TextInput,
 };
 use serde::{Deserialize, Serialize};
 
@@ -150,7 +150,7 @@ impl InstallFrame {
                     .padding(20)
                     .push(
                         Text::new("Install")
-                            .horizontal_alignment(HorizontalAlignment::Center)
+                            .horizontal_alignment(alignment::Horizontal::Center)
                             .width(Length::Fill)
                             .size(26),
                     )
@@ -166,7 +166,7 @@ impl InstallFrame {
                     .push(controls)
                     .push(install_button)
                     .spacing(20)
-                    .align_items(Align::End),
+                    .align_items(Alignment::End),
             ),
         )
         .width(Length::FillPortion(2))

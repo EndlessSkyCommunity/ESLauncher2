@@ -2,8 +2,8 @@ use crate::{style, Message};
 
 use espim::Plugin as EspimPlugin;
 use iced::{
-    button, scrollable, Align, Color, Column, Command, Container, Element, HorizontalAlignment,
-    Length, Row, Scrollable, Space, Text, VerticalAlignment,
+    alignment, button, scrollable, Alignment, Color, Column, Command, Container, Element, Length,
+    Row, Scrollable, Space, Text,
 };
 
 #[derive(Debug, Clone)]
@@ -33,11 +33,11 @@ impl PluginsFrameState {
     pub fn view(&mut self) -> Container<Message> {
         match self {
             Self::Loading => Container::new(
-                Column::new().align_items(Align::Center).push(
+                Column::new().align_items(Alignment::Center).push(
                     Text::new("Loading...")
                         .width(Length::Fill)
                         .color(Color::from_rgb(0.7, 0.7, 0.7))
-                        .horizontal_alignment(HorizontalAlignment::Center),
+                        .horizontal_alignment(alignment::Horizontal::Center),
                 ),
             ),
             Self::Ready {
@@ -48,7 +48,7 @@ impl PluginsFrameState {
                     Column::new()
                         .padding(20)
                         .spacing(20)
-                        .align_items(Align::Center),
+                        .align_items(Alignment::Center),
                     |column, plugin| {
                         let name = plugin.name.clone();
                         column.push(
@@ -130,18 +130,17 @@ impl Plugin {
             content = content.push(
                 Row::new()
                     .width(Length::Units(ICON_DIMENSION))
-                    .align_items(Align::Center)
-                    // TODO: Re-enable when iced supports Image widgets with OpenGL
-                    // .push(
-                    //     Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
-                    //         .height(Length::Units(ICON_DIMENSION))
-                    //         .width(Length::Units(ICON_DIMENSION)),
-                    // ),
+                    .align_items(Alignment::Center), // TODO: Re-enable when iced supports Image widgets with OpenGL
+                                                     // .push(
+                                                     //     Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
+                                                     //         .height(Length::Units(ICON_DIMENSION))
+                                                     //         .width(Length::Units(ICON_DIMENSION)),
+                                                     // ),
             );
         }
 
-        let mut infos =
-            Column::new().push(Text::new(&self.name).vertical_alignment(VerticalAlignment::Center));
+        let mut infos = Column::new()
+            .push(Text::new(&self.name).vertical_alignment(alignment::Vertical::Center));
         let mut controls = Row::new().spacing(10);
 
         match &self.state {

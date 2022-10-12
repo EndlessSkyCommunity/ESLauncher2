@@ -4,8 +4,7 @@ use crate::{get_data_dir, install, send_message, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
 use iced::{
-    button, Align, Button, Column, Element, HorizontalAlignment, Length, ProgressBar, Row, Space,
-    Text,
+    alignment, button, Alignment, Button, Column, Element, Length, ProgressBar, Row, Space, Text,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -264,7 +263,7 @@ impl Instance {
         Row::new()
             .spacing(10)
             .padding(10)
-            .align_items(Align::Start)
+            .align_items(Alignment::Start)
             .width(Length::Fill)
             .push(
                 Column::new()
@@ -281,10 +280,10 @@ impl Instance {
             .push(Space::new(Length::Fill, Length::Shrink))
             .push({
                 if let InstanceState::Working(progress) = &self.state {
-                    let mut status_field = Column::new().align_items(Align::Center).push(
+                    let mut status_field = Column::new().align_items(Alignment::Center).push(
                         Text::new(&progress.status)
                             .size(16)
-                            .horizontal_alignment(HorizontalAlignment::Center),
+                            .horizontal_alignment(alignment::Horizontal::Center),
                     );
                     if let (Some(done), Some(total)) = (progress.done, progress.total) {
                         status_field = status_field.push(
@@ -305,7 +304,7 @@ impl Instance {
                                 progress.units.as_ref().unwrap_or(&"".into())
                             ))
                             .size(12)
-                            .horizontal_alignment(HorizontalAlignment::Center),
+                            .horizontal_alignment(alignment::Horizontal::Center),
                         )
                     }
                     Row::new()

@@ -1,8 +1,5 @@
 use iced::container::Style;
-use iced::{
-    button, container, Background, Color, Font, HorizontalAlignment, Length, Text, Vector,
-    VerticalAlignment,
-};
+use iced::{alignment, button, container, Background, Color, Font, Length, Text, Vector};
 
 pub const ICONS: Font = Font::External {
     name: "Icons",
@@ -17,8 +14,8 @@ fn icon(unicode: char) -> Text {
     Text::new(&unicode.to_string())
         .font(ICONS)
         .width(Length::Units(20))
-        .horizontal_alignment(HorizontalAlignment::Center)
-        .vertical_alignment(VerticalAlignment::Center)
+        .horizontal_alignment(alignment::Horizontal::Center)
+        .vertical_alignment(alignment::Vertical::Center)
         .size(20)
 }
 

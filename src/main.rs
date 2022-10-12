@@ -15,8 +15,8 @@ use std::thread;
 use std::time::Duration;
 
 use iced::{
-    button, scrollable, Align, Application, Button, Clipboard, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Subscription, Text,
+    alignment, button, scrollable, Alignment, Application, Button, Column, Command, Container,
+    Element, Length, Row, Scrollable, Settings, Space, Subscription, Text,
 };
 use std::collections::VecDeque;
 use std::sync::Mutex;
@@ -148,7 +148,7 @@ impl Application for ESLauncher {
         format!("ESLauncher2 v{}", version!())
     }
 
-    fn update(&mut self, message: Self::Message, _: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
             Message::InstanceMessage(name, msg) => {
@@ -217,7 +217,7 @@ impl Application for ESLauncher {
         let view_chooser = Row::new()
             .spacing(100)
             .padding(30)
-            .align_items(Align::Center)
+            .align_items(Alignment::Center)
             .push(
                 Button::new(
                     &mut self.instances_view_button,
@@ -247,14 +247,14 @@ impl Application for ESLauncher {
         };
 
         let logbox = self.log_buffer.iter().fold(
-            Column::new().spacing(1).align_items(Align::Start),
+            Column::new().spacing(1).align_items(Alignment::Start),
             |column, log| {
                 column.push(
                     Container::new(
                         Text::new(log)
                             .size(13)
                             .font(style::LOG_FONT)
-                            .horizontal_alignment(HorizontalAlignment::Left),
+                            .horizontal_alignment(alignment::Horizontal::Left),
                     )
                     .style(style::Container::for_log(log))
                     .width(Length::Fill),
@@ -264,21 +264,21 @@ impl Application for ESLauncher {
 
         let content = Column::new()
             .padding(20)
-            .align_items(Align::Center)
+            .align_items(Alignment::Center)
             .push(view_chooser)
             .push(main_view.height(Length::FillPortion(3)))
             .push(
                 Scrollable::new(&mut self.log_scrollable)
                     .push(logbox)
                     .padding(20)
-                    .align_items(Align::Start)
+                    .align_items(Alignment::Start)
                     .width(Length::Fill)
                     .height(Length::FillPortion(1)),
             ); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         let music_controls = Row::new()
             .width(Length::Fill)
-            .align_items(Align::Center)
+            .align_items(Alignment::Center)
             .padding(8)
             .push(Space::new(Length::Fill, Length::Shrink))
             .push(
@@ -299,7 +299,7 @@ impl Application for ESLauncher {
 
         Container::new(
             Column::new()
-                .align_items(Align::Start)
+                .align_items(Alignment::Start)
                 .push(
                     Container::new(content)
                         .width(Length::Fill)
