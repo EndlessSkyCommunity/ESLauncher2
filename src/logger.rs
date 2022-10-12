@@ -9,7 +9,14 @@ use simplelog::{
 
 use crate::{get_data_dir, Message};
 
-const BLACKLIST: [&str; 5] = ["gfx_backend_", "winit", "wgpu_", "iced_", "ureq::unit"];
+const BLACKLIST: [&str; 6] = [
+    "gfx_backend_",
+    "winit",
+    "wgpu_",
+    "iced_",
+    "ureq::unit",
+    "glow_glyph",
+];
 
 struct ChanneledLogger {}
 
