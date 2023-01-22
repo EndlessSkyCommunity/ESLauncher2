@@ -107,6 +107,14 @@ async fn update_continuous_instance(
     }
 
     let mut new_instance = instance.clone();
+    // TODO: Remove this after a while, only exists to migrate pre-cmake instances
+    if InstanceType::Windows == new_instance.instance_type {
+        let post_cmake_exec = new_instance.executable.with_file_name("Endless Sky.exe");
+        if post_cmake_exec != new_instance.executable && post_cmake_exec.exists() {
+            std::fs::remove_file(new_instance.executable).unwrap();
+            new_instance.executable = post_cmake_exec;
+        }
+    }
     new_instance.version = version;
     Ok(new_instance)
 }

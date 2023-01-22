@@ -79,6 +79,11 @@ pub fn install(
         archive::unpack(&archive_file, &destination, !cfg!(target_os = "macos"))?;
     }
 
+    // TODO: Remove this after a while, only exists for backwards compatibility with pre-cmake PRs
+    if InstanceType::Windows == instance_type && !executable_path.exists() {
+        executable_path.set_file_name("EndlessSky.exe")
+    }
+
     // upload-artifact doesn't preserve permissions, so we need to set the executable bit here
     // https://github.com/actions/upload-artifact/issues/38
     #[cfg(unix)]
