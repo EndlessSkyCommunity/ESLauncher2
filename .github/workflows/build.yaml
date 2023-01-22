@@ -23,6 +23,7 @@ jobs:
       - name: Strip binary
         run: strip eslauncher2-x86_64-unknown-linux-gnu
       - name: Build RPM and DEB
+        if: ${{ !startsWith(github.ref, 'refs/heads/dependabot') }}
         run: |
           version=${{github.ref}}
           version="${version#refs/tags/v}"
@@ -40,16 +41,19 @@ jobs:
           name: eslauncher2-x86_64-unknown-linux-gnu
           path: eslauncher2-x86_64-unknown-linux-gnu
       - name: Upload DEB
+        if: ${{ !startsWith(github.ref, 'refs/heads/dependabot') }}
         uses: actions/upload-artifact@v3
         with:
           name: eslauncher2.deb
           path: eslauncher2.deb
       - name: Upload RPM
+        if: ${{ !startsWith(github.ref, 'refs/heads/dependabot') }}
         uses: actions/upload-artifact@v3
         with:
           name: eslauncher2.rpm
           path: eslauncher2.rpm
       - name: Upload ArchLinux package
+        if: ${{ !startsWith(github.ref, 'refs/heads/dependabot') }}
         uses: actions/upload-artifact@v3
         with:
           name: eslauncher2.pkg.tar.zst
