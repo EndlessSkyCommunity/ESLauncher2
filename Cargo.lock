@@ -934,7 +934,7 @@ dependencies = [
  "simplelog",
  "tar",
  "tokio",
- "ureq 2.5.0",
+ "ureq 2.6.2",
  "version",
  "winres",
  "zip-extract",
@@ -3452,12 +3452,11 @@ dependencies = [
 
 [[package]]
 name = "ureq"
-version = "2.5.0"
+version = "2.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b97acb4c28a254fd7a4aeec976c46a7fa404eac4d7c134b30c75144846d7cb8f"
+checksum = "338b31dd1314f68f3aabf3ed57ab922df95ffcd902476ca7ba3c4ce7b908c46d"
 dependencies = [
  "base64",
- "chunked_transfer",
  "log",
  "once_cell",
  "rustls 0.20.6",
