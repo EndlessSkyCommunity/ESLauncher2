@@ -25,7 +25,6 @@ use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
-use lazy_static::lazy_static;
 
 mod archive;
 mod github;
@@ -40,27 +39,25 @@ mod plugins_frame;
 mod style;
 mod update;
 
-lazy_static! {
-    // Yes, this is terrible abuse of globals.
-    // I spent hours and hours trying to find a better solution:
-    // - async_channel
-    //      Somehow blocks during long operations, so all progress logs arrive after the installation has completed.
-    //      The messages are sent in time, and the receiving end is a future, so this makes no sense.
-    // - crossbeam_channel and std::sync::mpsc
-    //      When receiving in a blocking fashion, closing the window doesn't work; instead, it turns unresponsive.
-    //      When trying to use try_recv() repeatedly inside futures::stream::poll(),
-    //      the first non-log that is returned seems to end the stream (no matter what Poll variant it's wrapped in).
-    // - futures::channel::mpsc
-    //      send() is async and thus can't be used in the logger.
-    //      try_send() requires the sender to be mutable (??) and thus can't be used inside log().
-    //
-    // Bottom line, this is terrible design with comparatively bad performance, but also the only solution that
-    // - delivers messages immediately
-    // - Doesn't block the receiving thread and thus screws over iced's internals
-    // - Doesn't randomly break after some messages
-    // so here it will stay.
-    static ref MESSAGE_QUEUE: Mutex<VecDeque<Message>> = Mutex::new(VecDeque::new());
-}
+// Yes, this is terrible abuse of globals.
+// I spent hours and hours trying to find a better solution:
+// - async_channel
+//      Somehow blocks during long operations, so all progress logs arrive after the installation has completed.
+//      The messages are sent in time, and the receiving end is a future, so this makes no sense.
+// - crossbeam_channel and std::sync::mpsc
+//      When receiving in a blocking fashion, closing the window doesn't work; instead, it turns unresponsive.
+//      When trying to use try_recv() repeatedly inside futures::stream::poll(),
+//      the first non-log that is returned seems to end the stream (no matter what Poll variant it's wrapped in).
+// - futures::channel::mpsc
+//      send() is async and thus can't be used in the logger.
+//      try_send() requires the sender to be mutable (??) and thus can't be used inside log().
+//
+// Bottom line, this is terrible design with comparatively bad performance, but also the only solution that
+// - delivers messages immediately
+// - Doesn't block the receiving thread and thus screws over iced's internals
+// - Doesn't randomly break after some messages
+// so here it will stay.
+static MESSAGE_QUEUE: Mutex<VecDeque<Message>> = Mutex::new(VecDeque::new());
 
 pub fn main() -> iced::Result {
     ESLauncher::run(Settings::default())
