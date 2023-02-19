@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::{copy, BufReader};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -189,7 +189,7 @@ pub fn get_latest_release(repo_slug: &str) -> Result<String> {
         )
     };
 
-    Ok(res.get_url().rsplit_once("/").unwrap().1.to_string())
+    Ok(res.get_url().rsplit_once('/').unwrap().1.to_string())
 }
 
 #[derive(Deserialize, Debug)]
@@ -293,10 +293,10 @@ pub fn download(
     instance_name: &str,
     url: &str,
     name: &str,
-    folder: &PathBuf,
+    folder: &Path,
     size_hint: Option<u32>,
 ) -> Result<PathBuf> {
-    let mut output_path = folder.clone();
+    let mut output_path = folder.to_path_buf();
     output_path.push(name);
     let mut output_file = File::create(&output_path)?;
 
@@ -306,8 +306,7 @@ pub fn download(
     let res = ureq::get(url).call()?;
     let total: Option<u32> = res
         .header("Content-Length")
-        .map(|s| s.parse().ok())
-        .flatten()
+        .and_then(|s| s.parse().ok())
         .or(size_hint);
     let fetched = Arc::new(AtomicUsize::new(0));
     let finished = Arc::new(AtomicBool::new(false));

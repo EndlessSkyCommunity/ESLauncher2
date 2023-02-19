@@ -2,13 +2,13 @@ use anyhow::Result;
 use flate2::read::GzDecoder;
 use std::ffi::OsStr;
 use std::fs::{create_dir, File};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tar::Archive;
 
 /// Unpacks a .tar.gz or .zip archive.
 /// If `strip_toplevel` is true, zip archives containing a single folder will extract the contents of that folder instead.
 /// .tar.gz archives are not affected by `strip_toplevel`.
-pub fn unpack(archive_file: &PathBuf, destination: &PathBuf, strip_toplevel: bool) -> Result<()> {
+pub fn unpack(archive_file: &Path, destination: &PathBuf, strip_toplevel: bool) -> Result<()> {
     info!(
         "Extracting {} to {}",
         archive_file.to_string_lossy(),

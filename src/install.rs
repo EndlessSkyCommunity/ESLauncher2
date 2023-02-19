@@ -8,7 +8,7 @@ use fs_extra::dir::{copy, CopyOptions};
 use regex::Regex;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{fs, io};
 
 pub fn install(
@@ -104,22 +104,22 @@ pub fn install(
 fn download_release_asset(
     instance_name: &str,
     tag: &str,
-    destination: &PathBuf,
+    destination: &Path,
     instance_type: InstanceType,
 ) -> Result<PathBuf> {
-    send_progress_message(&instance_name, "Fetching release data".into());
+    send_progress_message(instance_name, "Fetching release data".into());
     let release = github::get_release_by_tag(tag)?;
     let assets = github::get_release_assets(release.id)?;
     let asset = choose_artifact(assets, instance_type)?;
 
     info!("Downloading artifact from {}", asset.browser_download_url);
-    Ok(github::download(
-        &instance_name,
+    github::download(
+        instance_name,
         &asset.browser_download_url,
         asset.name(),
-        &destination.clone(),
+        destination,
         None,
-    )?)
+    )
 }
 
 fn download_pr_asset(
@@ -128,13 +128,13 @@ fn download_pr_asset(
     instance_type: InstanceType,
     pr_id: u16,
 ) -> Result<(PathBuf, String)> {
-    send_progress_message(&instance_name, "Fetching PR data".into());
+    send_progress_message(instance_name, "Fetching PR data".into());
     let pr = github::get_pr(pr_id)?;
-    send_progress_message(&instance_name, "Fetching CD workflow".into());
+    send_progress_message(instance_name, "Fetching CD workflow".into());
     let workflow = github::get_cd_workflow()?;
-    send_progress_message(&instance_name, "Fetching CD workflow run".into());
+    send_progress_message(instance_name, "Fetching CD workflow run".into());
     let run = github::get_latest_workflow_run(workflow.id, &pr.head.branch, pr.head.repo.id)?;
-    send_progress_message(&instance_name, "Fetching CD run artifacts".into());
+    send_progress_message(instance_name, "Fetching CD run artifacts".into());
     let artifacts = get_workflow_run_artifacts(run.id)?;
     let artifact = choose_artifact(artifacts, instance_type)?;
 
@@ -147,7 +147,7 @@ fn download_pr_asset(
         Some(artifact.size_in_bytes),
     )?;
 
-    send_progress_message(&instance_name, "Extracting artifact".into());
+    send_progress_message(instance_name, "Extracting artifact".into());
     archive::unpack(&archive_path, destination, true)?;
     fs::remove_file(archive_path)?;
 

@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 // One should expect the install process to fail on particularly exotic characters.
 const BLACKLISTED_CHARS: [char; 10] = ['/', '\\', ':', '*', '?', '"', '<', '>', '|', '%'];
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct InstallFrame {
     pub(crate) name: String,
     name_chooser: text_input::State,
@@ -61,21 +61,8 @@ impl fmt::Display for InstanceSourceType {
     }
 }
 
-impl Default for InstallFrame {
-    fn default() -> Self {
-        Self {
-            name: String::default(),
-            name_chooser: text_input::State::default(),
-            install_button: button::State::default(),
-            source: InstanceSource::default(),
-            source_identifier_input: text_input::State::default(),
-            scrollable: scrollable::State::default(),
-        }
-    }
-}
-
 impl InstallFrame {
-    pub fn update(&mut self, message: InstallFrameMessage) -> iced::Command<Message> {
+    pub fn update(&mut self, message: InstallFrameMessage) -> Command<Message> {
         match message {
             InstallFrameMessage::StartInstallation(instance_type) => {
                 if let Some(mut destination) = get_instances_dir() {
@@ -95,7 +82,7 @@ impl InstallFrame {
             }
             InstallFrameMessage::SourceTypeChanged(source_type) => self.source.r#type = source_type,
             InstallFrameMessage::NameChanged(name) => {
-                if let Some(invalid) = name.chars().rfind(|c| BLACKLISTED_CHARS.contains(&c)) {
+                if let Some(invalid) = name.chars().rfind(|c| BLACKLISTED_CHARS.contains(c)) {
                     error!("Invalid character: '{}'", invalid)
                 } else {
                     self.name = name

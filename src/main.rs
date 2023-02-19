@@ -82,7 +82,7 @@ struct ESLauncher {
     plugins_view_button: button::State,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MainView {
     Instances,
     Plugins,

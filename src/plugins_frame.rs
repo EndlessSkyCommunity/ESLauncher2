@@ -254,7 +254,7 @@ fn load_icon_cached(p: &EspimPlugin) -> Result<Vec<u8>> {
     if p.is_installed() {
         return p
             .retrieve_icon()
-            .ok_or(anyhow!("Failed to get item from installed plugin"));
+            .ok_or_else(|| anyhow!("Failed to get item from installed plugin"));
     }
 
     let cache_file = get_cache_file(p)?;

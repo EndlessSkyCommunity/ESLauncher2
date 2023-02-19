@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::SystemTime;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum InstanceType {
     MacOS,
     Windows,
@@ -296,7 +296,7 @@ impl Instance {
                             Text::new(format!(
                                 "{}/{}{}{}",
                                 done,
-                                progress.total_approx.then(|| "~").unwrap_or(""),
+                                if progress.total_approx { "~" } else { "" },
                                 progress
                                     .total
                                     .map(|u| u.to_string())
@@ -360,7 +360,7 @@ pub async fn open_folder(path: PathBuf) {
 }
 
 pub async fn delete(path: PathBuf) -> Option<PathBuf> {
-    if std::fs::remove_dir_all(&path).is_ok() {
+    if fs::remove_dir_all(&path).is_ok() {
         info!("Removed {}", path.to_string_lossy());
         Some(path)
     } else {
@@ -462,7 +462,7 @@ fn save_instances(instances: BTreeMap<String, Instance>) -> Result<()> {
     instances_file.push("instances.json");
     debug!("Saving to {}", instances_file.to_string_lossy());
 
-    let file = fs::File::create(instances_file)?;
+    let file = File::create(instances_file)?;
 
     serde_json::to_writer_pretty(
         file,
@@ -478,7 +478,7 @@ pub fn load_instances() -> Result<Vec<Instance>> {
     debug!("Loading from {}", instances_file.to_string_lossy());
 
     if instances_file.exists() {
-        let file = fs::File::open(instances_file)?;
+        let file = File::open(instances_file)?;
 
         let container: InstancesContainer = serde_json::from_reader(file)?;
         Ok(container.0)

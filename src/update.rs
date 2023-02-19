@@ -53,7 +53,7 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
     Ok(new_instance)
 }
 
-fn find_archive_path(instance_path: &PathBuf, instance_type: InstanceType) -> Result<PathBuf> {
+fn find_archive_path(instance_path: PathBuf, instance_type: InstanceType) -> Result<PathBuf> {
     let mut p = instance_path.clone();
     let matcher = instance_type
         .archive()
@@ -73,7 +73,7 @@ async fn update_continuous_instance(instance: &Instance) -> Result<Instance> {
     let archive_path = if InstanceType::AppImage == instance.instance_type {
         instance.executable.clone()
     } else {
-        find_archive_path(&instance.path, instance.instance_type)?
+        find_archive_path(instance.path.clone(), instance.instance_type)?
     };
     if !archive_path.exists() {
         return Err(anyhow!("{} doesn't exist", archive_path.to_string_lossy()));
@@ -168,7 +168,7 @@ async fn bitar_update_archive(
     info!("Used {}b from existing file", reused_bytes);
 
     // Fetch the rest of the chunks from the source archive
-    let mut chunk_stream = source_archive.chunk_stream(&output.chunks());
+    let mut chunk_stream = source_archive.chunk_stream(output.chunks());
     let mut read_from_remote = 0;
     while let Some(result) = chunk_stream.next().await {
         send_progress_message(
