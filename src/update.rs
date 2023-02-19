@@ -9,20 +9,11 @@ use tokio::fs::OpenOptions;
 
 pub async fn update_instance(instance: Instance) -> Result<Instance> {
     if let InstanceType::Unknown = instance.instance_type {
-        return Err(anyhow!("Cannot update InstanceType::Unknown",));
-    }
-
-    let mut archive_path = if InstanceType::AppImage == instance.instance_type {
-        instance.executable.clone()
-    } else {
-        find_archive_path(&instance.path, instance.instance_type)?
-    };
-    if !archive_path.exists() {
-        return Err(anyhow!("{} doesn't exist", archive_path.to_string_lossy()));
+        return Err(anyhow!("Cannot update InstanceType::Unknown"));
     }
 
     let new_instance = if InstanceSourceType::Continuous == instance.source.r#type {
-        match update_continuous_instance(&instance, &mut archive_path).await {
+        match update_continuous_instance(&instance).await {
             Ok(i) => i,
             Err(e) => {
                 error!("Failed to perform incremental update: {}", e);
@@ -78,10 +69,16 @@ fn find_archive_path(instance_path: &PathBuf, instance_type: InstanceType) -> Re
     Err(anyhow!("Failed to find local instance"))
 }
 
-async fn update_continuous_instance(
-    instance: &Instance,
-    archive_path: &mut PathBuf,
-) -> Result<Instance> {
+async fn update_continuous_instance(instance: &Instance) -> Result<Instance> {
+    let archive_path = if InstanceType::AppImage == instance.instance_type {
+        instance.executable.clone()
+    } else {
+        find_archive_path(&instance.path, instance.instance_type)?
+    };
+    if !archive_path.exists() {
+        return Err(anyhow!("{} doesn't exist", archive_path.to_string_lossy()));
+    }
+
     let version = jenkins::get_latest_sha()?;
     if version.eq(&instance.version) {
         error!("Latest version is already installed");
@@ -96,14 +93,14 @@ async fn update_continuous_instance(
         artifact.name()
     );
 
-    bitar_update_archive(&instance.name, archive_path, url).await?;
+    bitar_update_archive(&instance.name, &archive_path, url).await?;
 
     if !archive_path
         .to_string_lossy()
         .ends_with(InstanceType::AppImage.archive().unwrap())
     {
         send_progress_message(&instance.name, "Extracting archive".into());
-        archive::unpack(archive_path, &instance.path, !cfg!(target_os = "macos"))?;
+        archive::unpack(&archive_path, &instance.path, !cfg!(target_os = "macos"))?;
     }
 
     let mut new_instance = instance.clone();
