@@ -81,7 +81,7 @@ pub struct WorkflowRuns {
 
 #[derive(Deserialize, Debug)]
 pub struct WorkflowRun {
-    pub(crate) id: u32,
+    pub(crate) id: u64,
     run_number: u32,
     head_repository: Option<Repo>,
 }
@@ -134,7 +134,7 @@ impl Artifact for WorkflowRunArtifact {
     }
 }
 
-pub fn get_workflow_run_artifacts(run_id: u32) -> Result<Vec<WorkflowRunArtifact>> {
+pub fn get_workflow_run_artifacts(run_id: u64) -> Result<Vec<WorkflowRunArtifact>> {
     let artifacts: WorkflowRunArtifacts = make_request(&format!(
         "https://api.github.com/repos/endless-sky/endless-sky/actions/runs/{}/artifacts",
         run_id
