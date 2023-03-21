@@ -994,7 +994,7 @@ dependencies = [
  "fs_extra",
  "futures",
  "iced",
- "iced_futures",
+ "iced_futures 0.6.0",
  "lazy_static",
  "log",
  "open",
@@ -1623,7 +1623,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6025abe6b1056c9b5adad79c484c5fd8b7012e5230f3b0439a1294ade7ded7bf"
 dependencies = [
  "iced_core",
- "iced_futures",
+ "iced_futures 0.4.1",
  "iced_glow",
  "iced_glutin",
  "iced_graphics",
@@ -1652,6 +1652,18 @@ dependencies = [
  "futures",
  "log",
  "tokio",
+ "wasm-bindgen-futures",
+ "wasm-timer",
+]
+
+[[package]]
+name = "iced_futures"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "215d51fa4f70dbb63775d7141243c4d98d4d525d8949695601f8fbac7dcbc04e"
+dependencies = [
+ "futures",
+ "log",
  "wasm-bindgen-futures",
  "wasm-timer",
 ]
@@ -1705,7 +1717,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ca174d4693a5daa2ffcae38d5c28cf0dbd54bd8fc19848f28392cd52624751a"
 dependencies = [
  "iced_core",
- "iced_futures",
+ "iced_futures 0.4.1",
  "iced_style",
  "num-traits",
  "twox-hash",
@@ -1748,7 +1760,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72011b895e439e2ebad8f545720e3e97c7368ecfc47a23cbfeaa9508a98af90c"
 dependencies = [
- "iced_futures",
+ "iced_futures 0.4.1",
  "iced_graphics",
  "iced_native",
  "log",
