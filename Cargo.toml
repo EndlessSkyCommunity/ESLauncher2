@@ -35,7 +35,7 @@ rodio = { version="0.17", default_features = false, features=["vorbis"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde-xml-rs = "0.6"
-simplelog = "0.12.0"
+simplelog = "0.12.1"
 tar = "0.4"
 tokio = { version="1", default_features = false, features=["fs"] }
 ureq = { version = "2.6", default_features = false, features = ["json", "tls"] }
