@@ -57,6 +57,8 @@ pub struct Instance {
     #[serde(skip)]
     folder_button: button::State,
     #[serde(skip)]
+    advanced_button: button::State,
+    #[serde(skip)]
     delete_button: button::State,
 
     #[serde(skip)]
@@ -149,6 +151,7 @@ pub enum InstanceMessage {
     Play(bool),
     Update,
     Folder,
+    Advanced,
     Delete,
     StateChanged(InstanceState),
 }
@@ -175,6 +178,7 @@ impl Instance {
             play_button: button::State::default(),
             update_button: button::State::default(),
             folder_button: button::State::default(),
+            advanced_button: button::State::default(),
             delete_button: button::State::default(),
         }
     }
@@ -225,6 +229,12 @@ impl Instance {
             InstanceMessage::Folder => {
                 iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
             }
+            InstanceMessage::Advanced => {
+                let name = self.name.clone();
+                iced::Command::perform(dummy(), move |_| {
+                    Message::OpenAdvanced(name.clone())
+                })
+            }
             InstanceMessage::Delete => {
                 let name = self.name.clone();
                 iced::Command::perform(delete(self.path.clone()), move |_| {
@@ -249,6 +259,9 @@ impl Instance {
         let folder_button = Button::new(&mut self.folder_button, style::folder_icon())
             .style(style::Button::Icon)
             .on_press(InstanceMessage::Folder);
+        let advanced_button = Button::new(&mut self.advanced_button, style::advanced_icon())
+            .style(style::Button::Icon)
+            .on_press(InstanceMessage::Advanced);
         let mut delete_button = Button::new(&mut self.delete_button, style::delete_icon())
             .style(style::Button::Destructive);
 
@@ -317,6 +330,7 @@ impl Instance {
                         .push(play_button)
                         .push(update_button)
                         .push(folder_button)
+                        .push(advanced_button)
                         .push(delete_button)
                 }
             })

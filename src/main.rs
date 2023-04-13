@@ -14,10 +14,12 @@ use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
 
+use advanced_frame::AdvancedFrame;
 use iced::{
     alignment, button, scrollable, Alignment, Application, Button, Column, Command, Container,
     Element, Length, Row, Scrollable, Settings, Space, Subscription, Text,
 };
+use instances_frame_holder::AdvancedFrameOpen;
 use std::collections::VecDeque;
 use std::sync::Mutex;
 
@@ -27,12 +29,14 @@ use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
 use lazy_static::lazy_static;
 
+mod advanced_frame;
 mod archive;
 mod github;
 mod install;
 mod install_frame;
 mod instance;
 mod instances_frame;
+mod instances_frame_holder;
 mod jenkins;
 mod logger;
 mod music;
@@ -72,7 +76,7 @@ struct ESLauncher {
     music_button: button::State,
     music_state: MusicState,
     install_frame: install_frame::InstallFrame,
-    instances_frame: instances_frame::InstancesFrame,
+    instances_frame_holder: instances_frame_holder::InstanceFrameHolder,
     plugins_frame: plugins_frame::PluginsFrameState,
     log_scrollable: scrollable::State,
     message_receiver: MessageReceiver,
@@ -95,6 +99,9 @@ pub enum Message {
     PluginMessage(String, PluginMessage),
     AddInstance(Instance),
     RemoveInstance(Option<String>),
+    OpenAdvanced(String),
+    CloseAdvanced(String, Instance),
+    StrChanged(String),
     Dummy(()),
     MusicMessage(MusicCommand),
     ViewChanged(MainView),
@@ -131,7 +138,7 @@ impl Application for ESLauncher {
                 music_button: button::State::default(),
                 music_state: MusicState::Playing,
                 install_frame: install_frame::InstallFrame::default(),
-                instances_frame: instances_frame::InstancesFrame::default(),
+                instances_frame_holder: instances_frame_holder::InstanceFrameHolder::default(),
                 plugins_frame: plugins_frame_state,
                 log_scrollable: scrollable::State::default(),
                 message_receiver: MessageReceiver {},
@@ -152,7 +159,7 @@ impl Application for ESLauncher {
         match message {
             Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
             Message::InstanceMessage(name, msg) => {
-                match self.instances_frame.instances.get_mut(&name) {
+                match self.instances_frame_holder.instances_frame.instances.get_mut(&name) {
                     None => error!("Failed to find internal Instance with name {}", &name),
                     Some(instance) => return instance.update(msg),
                 }
@@ -169,18 +176,30 @@ impl Application for ESLauncher {
             }
             Message::AddInstance(instance) => {
                 let is_ready = instance.state.is_ready();
-                self.instances_frame
+                self.instances_frame_holder
+                    .instances_frame
                     .instances
                     .insert(instance.name.clone(), instance);
                 if is_ready {
-                    instance::perform_save_instances(self.instances_frame.instances.clone())
+                    instance::perform_save_instances(self.instances_frame_holder.instances_frame.instances.clone())
                 };
             }
             Message::RemoveInstance(option) => {
                 if let Some(name) = option {
-                    self.instances_frame.instances.remove(&name);
-                    instance::perform_save_instances(self.instances_frame.instances.clone());
+                    self.instances_frame_holder.instances_frame.instances.remove(&name);
+                    instance::perform_save_instances(self.instances_frame_holder.instances_frame.instances.clone());
                 }
+            }
+            Message::OpenAdvanced(instance_name) => {
+                if let Some(instance) = self.instances_frame_holder.instances_frame.instances.get(&instance_name) {
+                    self.instances_frame_holder.advanced_frame_open = AdvancedFrameOpen::Open(AdvancedFrame::new(instance.clone()))
+                }
+            }
+            Message::CloseAdvanced(old_instance_name, new_instance) => {
+                self.instances_frame_holder.instances_frame.instances.remove(&old_instance_name);
+                self.instances_frame_holder.instances_frame.instances.insert(new_instance.name.clone(), new_instance);
+                instance::perform_save_instances(self.instances_frame_holder.instances_frame.instances.clone());
+                self.instances_frame_holder.advanced_frame_open = AdvancedFrameOpen::Closed;
             }
             Message::MusicMessage(cmd) => {
                 self.music_sender.send(cmd).ok();
@@ -195,6 +214,7 @@ impl Application for ESLauncher {
             }
             Message::Log(line) => self.log_buffer.push(line),
             Message::Dummy(_) => (),
+            _ => ()
         }
         Command::none()
     }
@@ -239,7 +259,7 @@ impl Application for ESLauncher {
         let main_view = match self.view {
             MainView::Instances => Container::new(
                 Row::new()
-                    .push(self.instances_frame.view())
+                    .push(self.instances_frame_holder.view())
                     .push(self.install_frame.view().map(Message::InstallFrameMessage))
                     .spacing(50),
             ),

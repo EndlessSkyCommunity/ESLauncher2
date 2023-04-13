@@ -43,6 +43,14 @@ pub fn folder_icon() -> Text {
     icon('\u{E930}')
 }
 
+pub fn advanced_icon() -> Text {
+    icon('\u{E994}')
+}
+
+pub fn close_icon() -> Text {
+    icon('\u{EA0F}')
+}
+
 pub enum Button {
     Icon,
     Destructive,
