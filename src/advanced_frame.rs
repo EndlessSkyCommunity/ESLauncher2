@@ -2,13 +2,20 @@ use iced::{Text, Element, Column, Button, button, Length, Alignment, alignment, 
 
 use crate::{Message, instance::Instance, style};
 
+#[derive(Debug, Clone)]
+pub enum AdvancedMessage {
+    NameTextInputChanged(String),
+    ArgsTextInputChanged(String),
+}
+
 #[derive(Debug)]
 pub struct AdvancedFrame {
     old_name: String,
     instance: Option<Instance>,
 
     close_button: button::State,
-    _name_input: text_input::State
+    name_input: text_input::State,
+    args_input: text_input::State
 }
 
 impl Default for AdvancedFrame {
@@ -17,7 +24,8 @@ impl Default for AdvancedFrame {
             old_name: String::default(),
             instance: None,
             close_button: button::State::default(),
-            _name_input: text_input::State::default()
+            name_input: text_input::State::default(),
+            args_input: text_input::State::default()
         }
     }
 }
@@ -28,6 +36,18 @@ impl AdvancedFrame {
             old_name: String::from(&new_instance.name),
             instance: Some(new_instance),
             ..Default::default()
+        }
+    }
+
+    pub fn update(&mut self, message: AdvancedMessage) {
+        match message {
+            AdvancedMessage::NameTextInputChanged(string) => {
+                self.instance.as_mut().unwrap().name = string;
+            }
+
+            AdvancedMessage::ArgsTextInputChanged(string) => {
+                self.instance.as_mut().unwrap().args = string;
+            }
         }
     }
 
@@ -47,7 +67,7 @@ impl AdvancedFrame {
         .push(
         Row::new()
                 .width(Length::Fill)
-                .align_items(Alignment::End)
+                .align_items(Alignment::End) 
                 .push(
                     Text::new("Advanced Settings")
                         .size(26)
@@ -57,17 +77,47 @@ impl AdvancedFrame {
                 .push(close_button)
                 .padding(p)
         )
-        .padding(30)
-        .width(iced::Length::FillPortion(3));
+        .padding(40)
+        .width(iced::Length::FillPortion(3))
+        .spacing(6);
 
         if let Some(instance) = &self.instance {
+
+            let name_input = text_input::TextInput::new(
+                &mut self.name_input,
+                "Instance name",
+                &instance.name,
+                name_text_input_changed
+            ).padding(4);
+
+            let out = out
+            .push(
+                Row::new()
+                .push(
+                    {
+                        let text = format!("Instance name:");
+                        Text::new(text)
+                        .size(18)
+                    }
+                )
+                .push(
+                    name_input
+                )
+                .spacing(14)
+                .align_items(Alignment::Center)
+            )
+            .push(
+                text_input::TextInput::new(
+                    &mut self.args_input,
+                    "Executable arguments",
+                    &instance.args,
+                    args_text_input_changed
+                ).padding(4)
+            );
+
             out
             .push(
-                {
-                    let text = format!("Instance name: {}", &instance.name);
-                    Text::new(text)
-                    .size(18)
-                }
+                Text::new("-h or --help to log help")
             )
             .into()
         } else {
@@ -75,6 +125,13 @@ impl AdvancedFrame {
             .push(Text::new("How in the..."))
             .into()
         }
-        
     }
+}
+
+fn name_text_input_changed(string: String) -> Message {
+    Message::AdvancedMessage(AdvancedMessage::NameTextInputChanged(string))
+}
+
+fn args_text_input_changed(string: String) -> Message {
+    Message::AdvancedMessage(AdvancedMessage::ArgsTextInputChanged(string))
 }

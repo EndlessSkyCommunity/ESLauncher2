@@ -101,7 +101,7 @@ pub enum Message {
     RemoveInstance(Option<String>),
     OpenAdvanced(String),
     CloseAdvanced(String, Instance),
-    StrChanged(String),
+    AdvancedMessage(advanced_frame::AdvancedMessage),
     Dummy(()),
     MusicMessage(MusicCommand),
     ViewChanged(MainView),
@@ -201,6 +201,14 @@ impl Application for ESLauncher {
                 instance::perform_save_instances(self.instances_frame_holder.instances_frame.instances.clone());
                 self.instances_frame_holder.advanced_frame_open = AdvancedFrameOpen::Closed;
             }
+            Message::AdvancedMessage(msg) => {
+                match &mut self.instances_frame_holder.advanced_frame_open {
+                    AdvancedFrameOpen::Open(frame) => {
+                        frame.update(msg);
+                    }
+                    AdvancedFrameOpen::Closed => {}
+                }
+            }
             Message::MusicMessage(cmd) => {
                 self.music_sender.send(cmd).ok();
                 self.music_state = match cmd {
@@ -214,7 +222,6 @@ impl Application for ESLauncher {
             }
             Message::Log(line) => self.log_buffer.push(line),
             Message::Dummy(_) => (),
-            _ => ()
         }
         Command::none()
     }

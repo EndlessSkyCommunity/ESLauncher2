@@ -66,6 +66,7 @@ pub struct Instance {
 
     pub path: PathBuf,
     pub executable: PathBuf,
+    pub args: String,
     pub name: String,
     pub version: String,
     pub instance_type: InstanceType,
@@ -160,6 +161,7 @@ impl Instance {
     pub fn new(
         path: PathBuf,
         executable: PathBuf,
+        args: String,
         name: String,
         version: String,
         instance_type: InstanceType,
@@ -169,6 +171,7 @@ impl Instance {
         Self {
             path,
             executable,
+            args,
             name,
             version,
             instance_type,
@@ -202,6 +205,7 @@ impl Instance {
                             self.executable.clone(),
                             self.name.clone(),
                             do_debug,
+                            self.args.clone()
                         ),
                         move |()| {
                             Message::InstanceMessage(
@@ -349,6 +353,7 @@ pub async fn perform_install(
     send_message(Message::AddInstance(Instance::new(
         path.clone(),
         "provisional".into(),
+        String::new(),
         name.clone(),
         instance_source.identifier.clone(),
         instance_type,
@@ -397,15 +402,15 @@ pub async fn perform_update(instance: Instance) {
     }
 }
 
-pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) {
+pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool, args: String) {
     send_message(Message::MusicMessage(MusicCommand::Pause));
-    if let Err(e) = play(path, executable, name, do_debug).await {
+    if let Err(e) = play(path, executable, name, do_debug, args).await {
         error!("Failed to run game: {:#}", e);
     }
     send_message(Message::MusicMessage(MusicCommand::Play));
 }
 
-pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) -> Result<()> {
+pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool, args: String) -> Result<()> {
     let mut log_path = path;
     log_path.push("logs");
     fs::create_dir_all(&log_path)?;
@@ -431,7 +436,7 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
     let output = if do_debug {
         cmd.arg("-d").output()
     } else {
-        cmd.output()
+        cmd.arg(args).output()
     };
     match output {
         Ok(output) => {
