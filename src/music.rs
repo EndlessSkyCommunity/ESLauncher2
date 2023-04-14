@@ -18,31 +18,24 @@ pub enum MusicCommand {
 
 impl MusicCommand {
     pub fn update_state<F: FnOnce()>(self, music_state: MusicState, f: F) -> MusicState {
-        match self {
-            MusicCommand::Pause => {
+        match (self, music_state) {
+            (MusicCommand::Pause, _) => {
                 f();
                 MusicState::Paused
             }
-            MusicCommand::Play => {
+            (MusicCommand::Play, _) => {
                 f();
                 MusicState::Playing
             }
-            MusicCommand::AutoPause => {
-                if music_state == MusicState::Playing {
-                    f();
-                    MusicState::AutoPaused
-                } else {
-                    music_state
-                }
+            (MusicCommand::AutoPause, MusicState::Playing) => {
+                f();
+                MusicState::AutoPaused
             }
-            MusicCommand::AutoPlay => {
-                if music_state == MusicState::AutoPaused {
-                    f();
-                    MusicState::Playing
-                } else {
-                    music_state
-                }
+            (MusicCommand::AutoPlay, MusicState::AutoPaused) => {
+                f();
+                MusicState::Playing
             }
+            (MusicCommand::AutoPause | MusicCommand::AutoPlay, _) => music_state,
         }
     }
 }
