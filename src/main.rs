@@ -181,16 +181,7 @@ impl Application for ESLauncher {
             }
             Message::MusicMessage(cmd) => {
                 self.music_sender.send(cmd).ok();
-                self.music_state = match cmd {
-                    MusicCommand::Pause => MusicState::Paused,
-                    MusicCommand::Play => MusicState::Playing,
-                    MusicCommand::AutoPause => {
-                        if self.music_state == MusicState::Playing { MusicState::AutoPaused } else { self.music_state }
-                    }
-                    MusicCommand::AutoPlay => {
-                        if self.music_state == MusicState::AutoPaused { MusicState::Playing } else { self.music_state }
-                    }
-                }
+                self.music_state = cmd.update_state(self.music_state, || {});
             }
             Message::ViewChanged(view) => self.view = view,
             Message::PluginFrameLoaded(plugins) => {

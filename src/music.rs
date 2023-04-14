@@ -16,6 +16,37 @@ pub enum MusicCommand {
     AutoPlay,
 }
 
+impl MusicCommand {
+    pub fn update_state<F: FnOnce()>(self, music_state: MusicState, f: F) -> MusicState {
+        match self {
+            MusicCommand::Pause => {
+                f();
+                MusicState::Paused
+            }
+            MusicCommand::Play => {
+                f();
+                MusicState::Playing
+            }
+            MusicCommand::AutoPause => {
+                if music_state == MusicState::Playing {
+                    f();
+                    MusicState::AutoPaused
+                } else {
+                    music_state
+                }
+            }
+            MusicCommand::AutoPlay => {
+                if music_state == MusicState::AutoPaused {
+                    f();
+                    MusicState::Playing
+                } else {
+                    music_state
+                }
+            }
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MusicState {
     Playing,
@@ -42,27 +73,9 @@ fn play(rx: &Receiver<MusicCommand>) -> Result<()> {
     let mut state = MusicState::Playing;
     loop {
         if let Ok(cmd) = rx.try_recv() {
-            match cmd {
-                MusicCommand::Pause => {
-                    state = MusicState::Paused;
-                    sink.pause()
-                }
-                MusicCommand::Play => {
-                    state = MusicState::Playing;
-                    sink.play()
-                }
-                MusicCommand::AutoPause => {
-                    if state == MusicState::Playing {
-                        state = MusicState::AutoPaused;
-                        sink.pause()
-                    }
-                }
-                MusicCommand::AutoPlay => {
-                    if state == MusicState::AutoPaused {
-                        state = MusicState::Playing;
-                        sink.play()
-                    }
-                }
+            state = match cmd {
+                MusicCommand::Pause | MusicCommand::AutoPause => cmd.update_state(state, || sink.pause()),
+                MusicCommand::Play | MusicCommand::AutoPlay => cmd.update_state(state, || sink.play()),
             }
         }
 
