@@ -184,6 +184,12 @@ impl Application for ESLauncher {
                 self.music_state = match cmd {
                     MusicCommand::Pause => MusicState::Paused,
                     MusicCommand::Play => MusicState::Playing,
+                    MusicCommand::AutoPause => {
+                        if self.music_state == MusicState::Playing { MusicState::AutoPaused } else { self.music_state }
+                    }
+                    MusicCommand::AutoPlay => {
+                        if self.music_state == MusicState::AutoPaused { MusicState::Playing } else { self.music_state }
+                    }
                 }
             }
             Message::ViewChanged(view) => self.view = view,
@@ -284,12 +290,14 @@ impl Application for ESLauncher {
                     match self.music_state {
                         MusicState::Playing => style::pause_icon(),
                         MusicState::Paused => style::play_icon(),
+                        MusicState::AutoPaused => style::play_icon(),
                     },
                 )
                 .style(style::Button::Icon)
                 .on_press(Message::MusicMessage(match self.music_state {
                     MusicState::Playing => MusicCommand::Pause,
                     MusicState::Paused => MusicCommand::Play,
+                    MusicState::AutoPaused => MusicCommand::Play,
                 })),
             )
             .push(Text::new("Playing: Endless Sky Prototype by JimmyZenith").size(14));

@@ -12,12 +12,15 @@ const SONG: &[u8] = include_bytes!("../assets/endless-prototype.ogg");
 pub enum MusicCommand {
     Pause,
     Play,
+    AutoPause,
+    AutoPlay,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MusicState {
     Playing,
     Paused,
+    AutoPaused,
 }
 
 pub fn spawn() -> Sender<MusicCommand> {
@@ -47,6 +50,18 @@ fn play(rx: &Receiver<MusicCommand>) -> Result<()> {
                 MusicCommand::Play => {
                     state = MusicState::Playing;
                     sink.play()
+                }
+                MusicCommand::AutoPause => {
+                    if state == MusicState::Playing {
+                        state = MusicState::AutoPaused;
+                        sink.pause()
+                    }
+                }
+                MusicCommand::AutoPlay => {
+                    if state == MusicState::AutoPaused {
+                        state = MusicState::Playing;
+                        sink.play()
+                    }
                 }
             }
         }
