@@ -434,7 +434,7 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
 
     let mut cmd = Command::new(&executable);
     let output = if do_debug {
-        cmd.arg("-d").output()
+        cmd.args(["-d", &args]).output()
     } else {
         cmd.arg(args).output()
     };
