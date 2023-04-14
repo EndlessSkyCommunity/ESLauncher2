@@ -31,7 +31,7 @@ impl Default for AdvancedFrame {
 }
 
 impl AdvancedFrame {
-    pub fn new(new_instance: Instance) -> Self{
+    pub fn new(new_instance: Instance) -> Self {
         Self {
             old_name: String::from(&new_instance.name),
             instance: Some(new_instance),
