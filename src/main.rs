@@ -18,13 +18,12 @@ use iced::{
     alignment, button, scrollable, Alignment, Application, Button, Column, Command, Container,
     Element, Length, Row, Scrollable, Settings, Space, Subscription, Text,
 };
-use music::save_music_state;
 use std::collections::VecDeque;
 use std::sync::Mutex;
 
 use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
-use crate::music::{MusicCommand, MusicState, load_music_state};
+use crate::music::{MusicCommand, MusicState, save_music_state, load_music_state};
 use crate::plugins_frame::PluginMessage;
 
 mod archive;
