@@ -1,10 +1,13 @@
 use anyhow::{Context, Result};
 use rodio::Sink;
+use std::fs::File;
 use std::io::{BufReader, Cursor};
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::time::Duration;
+
+use crate::get_data_dir;
 
 const SONG: &[u8] = include_bytes!("../assets/endless-prototype.ogg");
 
@@ -12,6 +15,8 @@ const SONG: &[u8] = include_bytes!("../assets/endless-prototype.ogg");
 pub enum MusicCommand {
     Pause,
     Play,
+    TryPause,
+    TryPlay,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -48,6 +53,17 @@ fn play(rx: &Receiver<MusicCommand>) -> Result<()> {
                     state = MusicState::Playing;
                     sink.play()
                 }
+                MusicCommand::TryPause => {
+                    sink.pause()
+                }
+                MusicCommand::TryPlay => {
+                    match state {
+                        MusicState::Playing => {
+                            sink.play()
+                        }
+                        MusicState::Paused => {}
+                    }
+                }
             }
         }
 
@@ -57,5 +73,35 @@ fn play(rx: &Receiver<MusicCommand>) -> Result<()> {
         }
 
         thread::sleep(Duration::from_millis(100));
+    }
+}
+
+pub fn save_music_state(state: bool) -> Result<()> {
+    let mut app_save_file =
+        get_data_dir().ok_or_else(|| anyhow!("Failed to get app save dir"))?;
+    app_save_file.push("application_save.json");
+
+    let file = File::create(app_save_file)?;
+
+    serde_json::to_writer_pretty(
+        file,
+        &state,
+    )?;
+    Ok(())
+}
+
+pub fn load_music_state() -> bool {
+    let mut app_save_file =
+        get_data_dir().ok_or_else(|| anyhow!("Failed to get app save dir")).unwrap();
+    app_save_file.push("application_save.json");
+
+    if app_save_file.exists() {
+        let file = File::open(app_save_file).unwrap();
+
+        let loaded: bool = serde_json::from_reader(file).unwrap_or(true);
+        loaded
+    } else {
+        warn!("instances.json doesn't exist (yet?), commencing without loading Instances");
+        true
     }
 }

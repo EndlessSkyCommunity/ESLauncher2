@@ -384,11 +384,11 @@ pub async fn perform_update(instance: Instance) {
 }
 
 pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) {
-    send_message(Message::MusicMessage(MusicCommand::Pause));
+    send_message(Message::MusicMessage(MusicCommand::TryPause));
     if let Err(e) = play(path, executable, name, do_debug).await {
         error!("Failed to run game: {:#}", e);
     }
-    send_message(Message::MusicMessage(MusicCommand::Play));
+    send_message(Message::MusicMessage(MusicCommand::TryPlay));
 }
 
 pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) -> Result<()> {

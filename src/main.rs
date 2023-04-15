@@ -18,12 +18,13 @@ use iced::{
     alignment, button, scrollable, Alignment, Application, Button, Column, Command, Container,
     Element, Length, Row, Scrollable, Settings, Space, Subscription, Text,
 };
+use music::save_music_state;
 use std::collections::VecDeque;
 use std::sync::Mutex;
 
 use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
-use crate::music::{MusicCommand, MusicState};
+use crate::music::{MusicCommand, MusicState, load_music_state};
 use crate::plugins_frame::PluginMessage;
 
 mod archive;
@@ -119,6 +120,15 @@ impl Application for ESLauncher {
 
         let music_sender = music::spawn();
 
+        let music_saved_state = if load_music_state() {MusicState::Playing} else {MusicState::Paused};
+
+        if match music_saved_state {
+            MusicState::Playing => music_sender.send(MusicCommand::Play).is_err(),
+            MusicState::Paused => music_sender.send(MusicCommand::Pause).is_err()
+        } {
+            error!("Failed to default music.");
+        }
+
         check_for_update();
 
         let (plugins_frame_state, command) = plugins_frame::PluginsFrameState::new();
@@ -126,7 +136,7 @@ impl Application for ESLauncher {
             Self {
                 music_sender,
                 music_button: button::State::default(),
-                music_state: MusicState::Playing,
+                music_state: music_saved_state,
                 install_frame: install_frame::InstallFrame::default(),
                 instances_frame: instances_frame::InstancesFrame::default(),
                 plugins_frame: plugins_frame_state,
@@ -184,7 +194,12 @@ impl Application for ESLauncher {
                 self.music_state = match cmd {
                     MusicCommand::Pause => MusicState::Paused,
                     MusicCommand::Play => MusicState::Playing,
-                }
+                    MusicCommand::TryPause => self.music_state,
+                    MusicCommand::TryPlay => self.music_state,
+                };
+                if let Err(e) = save_music_state(self.music_state == MusicState::Playing) {
+                    error!("Failed to save music state: {:#}", e);
+                };
             }
             Message::ViewChanged(view) => self.view = view,
             Message::PluginFrameLoaded(plugins) => {
