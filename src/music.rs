@@ -15,8 +15,8 @@ const SONG: &[u8] = include_bytes!("../assets/endless-prototype.ogg");
 pub enum MusicCommand {
     Pause,
     Play,
-    TryPause,
-    TryPlay,
+    WeakPause,
+    WeakPlay,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -53,10 +53,10 @@ fn play(rx: &Receiver<MusicCommand>) -> Result<()> {
                     state = MusicState::Playing;
                     sink.play()
                 }
-                MusicCommand::TryPause => {
+                MusicCommand::WeakPause => {
                     sink.pause()
                 }
-                MusicCommand::TryPlay => {
+                MusicCommand::WeakPlay => {
                     match state {
                         MusicState::Playing => {
                             sink.play()

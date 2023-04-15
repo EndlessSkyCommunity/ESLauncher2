@@ -193,8 +193,8 @@ impl Application for ESLauncher {
                 self.music_state = match cmd {
                     MusicCommand::Pause => MusicState::Paused,
                     MusicCommand::Play => MusicState::Playing,
-                    MusicCommand::TryPause => self.music_state,
-                    MusicCommand::TryPlay => self.music_state,
+                    MusicCommand::WeakPause => self.music_state,
+                    MusicCommand::WeakPlay => self.music_state,
                 };
                 if let Err(e) = save_music_state(self.music_state == MusicState::Playing) {
                     error!("Failed to save music state: {:#}", e);
