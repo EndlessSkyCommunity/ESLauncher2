@@ -72,9 +72,9 @@ pub struct Instance {
 
 #[derive(Debug, Clone, Default)]
 pub enum InstanceState {
-    #[default]
     Playing,
     Working(Progress),
+    #[default]
     Ready,
 }
 
