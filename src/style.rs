@@ -11,7 +11,7 @@ pub const LOG_FONT: Font = Font::External {
 };
 
 fn icon(unicode: char) -> Text {
-    Text::new(&unicode.to_string())
+    Text::new(unicode.to_string())
         .font(ICONS)
         .width(Length::Units(20))
         .horizontal_alignment(alignment::Horizontal::Center)

@@ -6,10 +6,10 @@ use crate::{archive, github};
 use anyhow::{Context, Result};
 use fs_extra::dir::{copy, CopyOptions};
 use regex::Regex;
+use std::fs;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::{fs, io};
 
 pub fn install(
     destination: PathBuf,

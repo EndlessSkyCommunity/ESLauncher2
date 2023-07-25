@@ -70,8 +70,9 @@ pub struct Instance {
     pub source: InstanceSource,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum InstanceState {
+    #[default]
     Playing,
     Working(Progress),
     Ready,
@@ -135,12 +136,6 @@ impl InstanceState {
     }
     pub fn is_ready(&self) -> bool {
         matches!(self, InstanceState::Ready)
-    }
-}
-
-impl Default for InstanceState {
-    fn default() -> Self {
-        InstanceState::Ready
     }
 }
 
