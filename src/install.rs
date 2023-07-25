@@ -158,15 +158,7 @@ fn download_pr_asset(
 
 pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceType) -> Result<A> {
     for artifact in artifacts {
-        let matches = artifact
-            .name()
-            .contains(instance_type.archive().ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Got InstanceType without archive property",
-                )
-            })?);
-        if matches {
+        if instance_type.archive_matches(artifact.name()) {
             info!("Choosing asset with name {}", artifact.name());
             return if artifact.expired() {
                 Err(anyhow!(
@@ -178,8 +170,8 @@ pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceTy
         }
     }
     Err(anyhow!(
-        "Couldn't match any asset against {}",
-        instance_type.archive().unwrap()
+        "Couldn't match any asset against for {:#?}",
+        instance_type
     ))
 }
 

@@ -25,13 +25,13 @@ pub enum InstanceType {
 }
 
 impl InstanceType {
-    pub fn archive(self) -> Option<&'static str> {
+    pub fn archive_matches(self, archive_name: &str) -> bool {
         match self {
-            Self::MacOS => Some("mac"),
-            Self::Windows => Some("win64"),
-            Self::Linux => Some(".tar.gz"),
-            Self::AppImage => Some(".AppImage"),
-            Self::Unknown => None,
+            Self::MacOS => archive_name.contains("mac") || archive_name.ends_with(".dmg"),
+            Self::Windows => archive_name.contains("win64"),
+            Self::Linux => archive_name.ends_with(".tar.gz"),
+            Self::AppImage => archive_name.ends_with(".AppImage"),
+            Self::Unknown => false,
         }
     }
 

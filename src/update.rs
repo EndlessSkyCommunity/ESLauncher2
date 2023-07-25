@@ -55,13 +55,10 @@ pub async fn update_instance(instance: Instance) -> Result<Instance> {
 
 fn find_archive_path(instance_path: PathBuf, instance_type: InstanceType) -> Result<PathBuf> {
     let mut p = instance_path.clone();
-    let matcher = instance_type
-        .archive()
-        .ok_or_else(|| anyhow!("Got InstanceType without archive property"))?;
 
     for r in instance_path.read_dir()? {
         let candidate = r?.path();
-        if candidate.to_string_lossy().contains(matcher) {
+        if instance_type.archive_matches(&candidate.to_string_lossy()) {
             p.push(candidate);
             return Ok(p);
         }
@@ -95,10 +92,7 @@ async fn update_continuous_instance(instance: &Instance) -> Result<Instance> {
 
     bitar_update_archive(&instance.name, &archive_path, url).await?;
 
-    if !archive_path
-        .to_string_lossy()
-        .ends_with(InstanceType::AppImage.archive().unwrap())
-    {
+    if !InstanceType::AppImage.archive_matches(&archive_path.to_string_lossy()) {
         send_progress_message(&instance.name, "Extracting archive".into());
         archive::unpack(&archive_path, &instance.path, !cfg!(target_os = "macos"))?;
     }
