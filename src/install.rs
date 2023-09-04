@@ -93,6 +93,7 @@ pub fn install(
     Ok(Instance::new(
         destination,
         executable_path,
+        String::new(),
         name,
         version,
         instance_type,

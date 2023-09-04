@@ -57,6 +57,8 @@ pub struct Instance {
     #[serde(skip)]
     folder_button: button::State,
     #[serde(skip)]
+    advanced_button: button::State,
+    #[serde(skip)]
     delete_button: button::State,
 
     #[serde(skip)]
@@ -64,6 +66,7 @@ pub struct Instance {
 
     pub path: PathBuf,
     pub executable: PathBuf,
+    pub args: String,
     pub name: String,
     pub version: String,
     pub instance_type: InstanceType,
@@ -144,6 +147,7 @@ pub enum InstanceMessage {
     Play(bool),
     Update,
     Folder,
+    Advanced,
     Delete,
     StateChanged(InstanceState),
 }
@@ -152,6 +156,7 @@ impl Instance {
     pub fn new(
         path: PathBuf,
         executable: PathBuf,
+        args: String,
         name: String,
         version: String,
         instance_type: InstanceType,
@@ -161,6 +166,7 @@ impl Instance {
         Self {
             path,
             executable,
+            args,
             name,
             version,
             instance_type,
@@ -170,6 +176,7 @@ impl Instance {
             play_button: button::State::default(),
             update_button: button::State::default(),
             folder_button: button::State::default(),
+            advanced_button: button::State::default(),
             delete_button: button::State::default(),
         }
     }
@@ -193,6 +200,7 @@ impl Instance {
                             self.executable.clone(),
                             self.name.clone(),
                             do_debug,
+                            self.args.clone()
                         ),
                         move |()| {
                             Message::InstanceMessage(
@@ -220,6 +228,12 @@ impl Instance {
             InstanceMessage::Folder => {
                 iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
             }
+            InstanceMessage::Advanced => {
+                let name = self.name.clone();
+                iced::Command::perform(dummy(), move |_| {
+                    Message::OpenAdvanced(name.clone())
+                })
+            }
             InstanceMessage::Delete => {
                 let name = self.name.clone();
                 iced::Command::perform(delete(self.path.clone()), move |_| {
@@ -244,6 +258,9 @@ impl Instance {
         let folder_button = Button::new(&mut self.folder_button, style::folder_icon())
             .style(style::Button::Icon)
             .on_press(InstanceMessage::Folder);
+        let advanced_button = Button::new(&mut self.advanced_button, style::advanced_icon())
+            .style(style::Button::Icon)
+            .on_press(InstanceMessage::Advanced);
         let mut delete_button = Button::new(&mut self.delete_button, style::delete_icon())
             .style(style::Button::Destructive);
 
@@ -312,6 +329,7 @@ impl Instance {
                         .push(play_button)
                         .push(update_button)
                         .push(folder_button)
+                        .push(advanced_button)
                         .push(delete_button)
                 }
             })
@@ -330,6 +348,7 @@ pub async fn perform_install(
     send_message(Message::AddInstance(Instance::new(
         path.clone(),
         "provisional".into(),
+        String::new(),
         name.clone(),
         instance_source.identifier.clone(),
         instance_type,
@@ -378,15 +397,15 @@ pub async fn perform_update(instance: Instance) {
     }
 }
 
-pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) {
+pub async fn perform_play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool, args: String) {
     send_message(Message::MusicMessage(MusicCommand::Pause));
-    if let Err(e) = play(path, executable, name, do_debug).await {
+    if let Err(e) = play(path, executable, name, do_debug, args).await {
         error!("Failed to run game: {:#}", e);
     }
     send_message(Message::MusicMessage(MusicCommand::Play));
 }
 
-pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool) -> Result<()> {
+pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bool, args: String) -> Result<()> {
     let mut log_path = path;
     log_path.push("logs");
     fs::create_dir_all(&log_path)?;
@@ -410,9 +429,9 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
 
     let mut cmd = Command::new(&executable);
     let output = if do_debug {
-        cmd.arg("-d").output()
+        cmd.args(["-d", &args]).output()
     } else {
-        cmd.output()
+        cmd.arg(args).output()
     };
     match output {
         Ok(output) => {
