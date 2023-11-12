@@ -15,7 +15,10 @@ use std::thread;
 use std::time::Duration;
 
 use iced::widget::{button, Button, Column, Container, Row, Scrollable, Space, Text};
-use iced::{alignment, Alignment, Application, Command, Element, Length, Settings, Subscription};
+use iced::{
+    alignment, theme, Alignment, Application, Command, Element, Length, Settings, Subscription,
+    Theme,
+};
 use std::collections::VecDeque;
 use std::sync::Mutex;
 
@@ -135,6 +138,8 @@ impl Application for ESLauncher {
         format!("ESLauncher2 v{}", version!())
     }
 
+    type Theme = Theme;
+
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
             Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
@@ -200,7 +205,7 @@ impl Application for ESLauncher {
         Subscription::from_recipe(self.message_receiver.clone())
     }
 
-    fn view(&mut self) -> Element<'_, Self::Message> {
+    fn view(&self) -> Element<'_, Self::Message> {
         let view_chooser = Row::new()
             .spacing(100)
             .padding(30)
@@ -208,13 +213,11 @@ impl Application for ESLauncher {
             .push(
                 button(Container::new(Text::new("Instances")).padding(5))
                     .padding(5)
-                    .on_press(Message::ViewChanged(MainView::Instances))
-                    .style(style::Button::Tab(self.view == MainView::Instances)),
+                    .on_press(Message::ViewChanged(MainView::Instances)), //.style(style::Button::Tab(self.view == MainView::Instances)),
             )
             .push(
                 button(Container::new(Text::new("Plugins")).padding(5))
-                    .on_press(Message::ViewChanged(MainView::Plugins))
-                    .style(style::Button::Tab(self.view == MainView::Plugins)),
+                    .on_press(Message::ViewChanged(MainView::Plugins)), //.style(style::Button::Tab(self.view == MainView::Plugins)),
             );
 
         let main_view = match self.view {
@@ -237,7 +240,7 @@ impl Application for ESLauncher {
                             .font(style::LOG_FONT)
                             .horizontal_alignment(alignment::Horizontal::Left),
                     )
-                    .style(style::Container::for_log(log))
+                    //.style(style::Container::for_log(log))
                     .width(Length::Fill),
                 )
             },
@@ -249,11 +252,10 @@ impl Application for ESLauncher {
             .push(view_chooser)
             .push(main_view.height(Length::FillPortion(3)))
             .push(
-                Scrollable::new(logbox)
-                    .padding(20)
-                    .align_items(Alignment::Start)
-                    .width(Length::Fill)
-                    .height(Length::FillPortion(1)),
+                Scrollable::new(logbox), //.padding(20)
+                                         //.align_items(Alignment::Start)
+                                         // .width(Length::Fill)
+                                         //.height(Length::FillPortion(1)),
             ); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         let music_controls = Row::new()
@@ -266,7 +268,7 @@ impl Application for ESLauncher {
                     MusicState::Playing => style::pause_icon(),
                     MusicState::Paused => style::play_icon(),
                 })
-                .style(style::Button::Icon)
+                .style(theme::Button::Primary)
                 .on_press(Message::MusicMessage(match self.music_state {
                     MusicState::Playing => MusicCommand::Pause,
                     MusicState::Paused => MusicCommand::Play,

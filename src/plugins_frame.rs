@@ -6,8 +6,8 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 
 use espim::Plugin as EspimPlugin;
-use iced::widget::{button, scrollable, Column, Container, Row, Scrollable, Space, Text};
-use iced::{alignment, Alignment, Color, Command, Element, Length};
+use iced::widget::{button, Column, Container, Row, Scrollable, Space, Text};
+use iced::{alignment, theme, Alignment, Color, Command, Element, Length};
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -39,7 +39,7 @@ impl PluginsFrameState {
                 Column::new().align_items(Alignment::Center).push(
                     Text::new("Loading...")
                         .width(Length::Fill)
-                        .color(Color::from_rgb(0.7, 0.7, 0.7))
+                        .style(theme::Text::Color(Color::from_rgb(0.7, 0.7, 0.7)))
                         .horizontal_alignment(alignment::Horizontal::Center),
                 ),
             ),
@@ -152,7 +152,7 @@ impl Plugin {
                             String::from("Not installed")
                         })
                         .size(14)
-                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                     )
                     .push(
                         Text::new(if espim_plugin.is_available() {
@@ -161,17 +161,16 @@ impl Plugin {
                             String::from("Unavailable")
                         })
                         .size(14)
-                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                     );
 
-                let mut install_button = button::Button::new(style::update_icon()) // TODO: Use other icon here?
-                    .style(style::Button::Icon);
+                let mut install_button = button::Button::new(style::update_icon()); // TODO: Use other icon here?
                 if espim_plugin.is_available() {
                     install_button = install_button.on_press(PluginMessage::Install)
                 }
 
                 let mut remove_button =
-                    button::Button::new(style::delete_icon()).style(style::Button::Destructive);
+                    button::Button::new(style::delete_icon()).style(theme::Button::Destructive);
                 if espim_plugin.is_installed() {
                     remove_button = remove_button.on_press(PluginMessage::Remove)
                 }
@@ -182,7 +181,7 @@ impl Plugin {
                 infos = infos.push(
                     Text::new("Working...")
                         .size(14)
-                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                 )
             }
         };

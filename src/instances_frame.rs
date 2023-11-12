@@ -1,7 +1,7 @@
 use crate::instance::{load_instances, Instance};
 use crate::Message;
-use iced::widget::{scrollable, Column, Container, Scrollable, Text};
-use iced::{alignment, Alignment, Color, Element, Length};
+use iced::widget::{Column, Container, Scrollable, Text};
+use iced::{alignment, theme, Alignment, Color, Element, Length};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -37,14 +37,16 @@ impl InstancesFrame {
             instances_column
                 .push(
                     Text::new("No Instances yet")
-                        .color(Color::from_rgb8(150, 150, 150))
+                        .style(theme::Text::Color(
+                       Color::from_rgb8(150, 150, 150)))
                         .horizontal_alignment(alignment::Horizontal::Center)
                         .width(Length::Fill),
                 )
                 .push(
                     Text::new("ESLauncher allows you to install multiple instances of Endless Sky. Instances are installations which ESLauncher automatically updates. Install your first instance by typing a name like 'newest' in the box to the right and choosing which version of the game to install.")
                         .size(16)
-                        .color(Color::from_rgb8(150, 150, 150))
+                         .style(theme::Text::Color(
+                       Color::from_rgb8(150, 150, 150)))
                         .horizontal_alignment(alignment::Horizontal::Center)
                         .width(Length::Fill),
                 )
