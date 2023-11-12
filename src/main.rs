@@ -18,8 +18,8 @@ use iced::advanced::subscription::EventStream;
 use iced::advanced::Hasher;
 use iced::widget::{button, Button, Column, Container, Row, Scrollable, Space, Text};
 use iced::{
-    alignment, theme, Alignment, Application, Command, Element, Length, Settings, Subscription,
-    Theme,
+    alignment, font, Alignment, Application, Command, Element, Font, Length, Settings,
+    Subscription, Theme,
 };
 use std::collections::VecDeque;
 use std::sync::Mutex;
@@ -28,6 +28,7 @@ use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
+use crate::style::{icon_button, log_container, tab_button};
 
 mod archive;
 mod github;
@@ -92,6 +93,7 @@ pub enum Message {
     AddInstance(Instance),
     RemoveInstance(Option<String>),
     Dummy(()),
+    FontLoaded(Result<(), font::Error>),
     MusicMessage(MusicCommand),
     ViewChanged(MainView),
     PluginFrameLoaded(Vec<plugins_frame::Plugin>),
@@ -120,7 +122,7 @@ impl Application for ESLauncher {
 
         check_for_update();
 
-        let (plugins_frame_state, command) = plugins_frame::PluginsFrameState::new();
+        let (plugins_frame_state, plugins_frame_cmd) = plugins_frame::PluginsFrameState::new();
         (
             Self {
                 music_sender,
@@ -132,7 +134,13 @@ impl Application for ESLauncher {
                 log_buffer: vec![],
                 view: MainView::Instances,
             },
-            command,
+            Command::batch(vec![
+                plugins_frame_cmd,
+                font::load(include_bytes!("../assets/IcoMoon-Free.ttf").as_slice())
+                    .map(Message::FontLoaded),
+                font::load(include_bytes!("../assets/DejaVuSansMono.ttf").as_slice())
+                    .map(Message::FontLoaded),
+            ]),
         )
     }
 
@@ -189,6 +197,7 @@ impl Application for ESLauncher {
             }
             Message::Log(line) => self.log_buffer.push(line),
             Message::Dummy(_) => (),
+            Message::FontLoaded(_) => (),
         }
         Command::none()
     }
@@ -215,11 +224,13 @@ impl Application for ESLauncher {
             .push(
                 button(Container::new(Text::new("Instances")).padding(5))
                     .padding(5)
-                    .on_press(Message::ViewChanged(MainView::Instances)), //.style(style::Button::Tab(self.view == MainView::Instances)),
+                    .on_press(Message::ViewChanged(MainView::Instances))
+                    .style(tab_button(self.view == MainView::Instances)),
             )
             .push(
                 button(Container::new(Text::new("Plugins")).padding(5))
-                    .on_press(Message::ViewChanged(MainView::Plugins)), //.style(style::Button::Tab(self.view == MainView::Plugins)),
+                    .on_press(Message::ViewChanged(MainView::Plugins))
+                    .style(tab_button(self.view == MainView::Plugins)),
             );
 
         let main_view = match self.view {
@@ -238,11 +249,11 @@ impl Application for ESLauncher {
                 column.push(
                     Container::new(
                         Text::new(log)
-                            .size(13)
-                            // .font(style::LOG_FONT)
+                            .size(11)
+                            .font(Font::with_name("DejaVu Sans Mono"))
                             .horizontal_alignment(alignment::Horizontal::Left),
                     )
-                    //.style(style::Container::for_log(log))
+                    .style(log_container(log))
                     .width(Length::Fill),
                 )
             },
@@ -254,10 +265,9 @@ impl Application for ESLauncher {
             .push(view_chooser)
             .push(main_view.height(Length::FillPortion(3)))
             .push(
-                Scrollable::new(logbox), //.padding(20)
-                                         //.align_items(Alignment::Start)
-                                         // .width(Length::Fill)
-                                         //.height(Length::FillPortion(1)),
+                Scrollable::new(logbox)
+                    .width(Length::Fill)
+                    .height(Length::FillPortion(1)),
             ); // TODO: Autoscroll this to bottom. https://github.com/hecrj/iced/issues/307
 
         let music_controls = Row::new()
@@ -270,7 +280,7 @@ impl Application for ESLauncher {
                     MusicState::Playing => style::pause_icon(),
                     MusicState::Paused => style::play_icon(),
                 })
-                .style(theme::Button::Primary)
+                .style(icon_button())
                 .on_press(Message::MusicMessage(match self.music_state {
                     MusicState::Playing => MusicCommand::Pause,
                     MusicState::Paused => MusicCommand::Play,

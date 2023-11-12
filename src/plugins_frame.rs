@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 
+use crate::style::icon_button;
 use espim::Plugin as EspimPlugin;
 use iced::widget::{button, image, Column, Container, Image, Row, Scrollable, Space, Text};
 use iced::{alignment, theme, Alignment, Color, Command, Element, Length};
@@ -164,7 +165,8 @@ impl Plugin {
                         .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                     );
 
-                let mut install_button = button::Button::new(style::update_icon()); // TODO: Use other icon here?
+                let mut install_button =
+                    button::Button::new(style::update_icon()).style(icon_button()); // TODO: Use other icon here?
                 if espim_plugin.is_available() {
                     install_button = install_button.on_press(PluginMessage::Install)
                 }
