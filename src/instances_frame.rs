@@ -28,7 +28,7 @@ impl Default for InstancesFrame {
     }
 }
 impl InstancesFrame {
-    pub fn view(&mut self) -> Element<Message> {
+    pub fn view(&self) -> Element<Message> {
         let instances_column = Column::new()
             .padding(20)
             .spacing(20)
@@ -53,7 +53,7 @@ impl InstancesFrame {
                 .into()
         } else {
             self.instances
-                .values_mut()
+                .values()
                 .fold(instances_column, |column, instance| {
                     let name = instance.name.clone();
                     column.push(

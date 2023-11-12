@@ -89,7 +89,7 @@ impl InstallFrame {
         Command::none()
     }
 
-    pub fn view(&mut self) -> Element<InstallFrameMessage> {
+    pub fn view(&self) -> Element<InstallFrameMessage> {
         let mut controls = InstanceSourceType::ALL.iter().fold(
             Column::new().spacing(10).push(Text::new("Choose a Type:")),
             |column, source_type| {

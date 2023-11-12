@@ -216,7 +216,7 @@ impl Instance {
         }
     }
 
-    pub fn view(&mut self) -> Element<InstanceMessage> {
+    pub fn view(&self) -> Element<InstanceMessage> {
         // Buttons
         let mut debug_button = Button::new(style::debug_icon()).style(theme::Button::Primary);
         let mut play_button = Button::new(style::play_icon());

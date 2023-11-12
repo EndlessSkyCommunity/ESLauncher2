@@ -33,7 +33,7 @@ impl PluginsFrameState {
         Self::Ready { plugins }
     }
 
-    pub fn view(&mut self) -> Container<Message> {
+    pub fn view(&self) -> Container<Message> {
         match self {
             Self::Loading => Container::new(
                 Column::new().align_items(Alignment::Center).push(
@@ -44,7 +44,7 @@ impl PluginsFrameState {
                 ),
             ),
             Self::Ready { plugins } => {
-                let plugin_list = plugins.iter_mut().fold(
+                let plugin_list = plugins.iter().fold(
                     Column::new()
                         .padding(20)
                         .spacing(20)
@@ -121,7 +121,7 @@ impl Plugin {
         Command::none()
     }
 
-    fn view(&mut self) -> Element<PluginMessage> {
+    fn view(&self) -> Element<PluginMessage> {
         let mut content = Row::new().spacing(10).padding(10);
         if let Some(_bytes) = &self.icon_bytes {
             const ICON_DIMENSION: u16 = 48;
