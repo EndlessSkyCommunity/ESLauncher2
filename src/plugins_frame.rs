@@ -90,7 +90,7 @@ pub enum PluginState {
 pub struct Plugin {
     pub state: PluginState,
     pub name: String,
-    icon_bytes: Option<Vec<u8>>,
+    icon: Option<image::Handle>,
 }
 
 impl Plugin {
@@ -124,14 +124,14 @@ impl Plugin {
 
     fn view(&self) -> Element<PluginMessage> {
         let mut content = Row::new().spacing(10).padding(10);
-        if let Some(bytes) = &self.icon_bytes {
+        if let Some(icon) = &self.icon {
             const ICON_DIMENSION: f32 = 48.;
             content = content.push(
                 Row::new()
                     .width(Length::Fixed(ICON_DIMENSION))
                     .align_items(Alignment::Center)
                     .push(
-                        Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
+                        Image::new(icon.clone())
                             .height(Length::Fixed(ICON_DIMENSION))
                             .width(Length::Fixed(ICON_DIMENSION)),
                     ),
@@ -202,13 +202,14 @@ pub async fn load_plugins() -> Vec<Plugin> {
         Ok(retrieved) => {
             for p in retrieved {
                 let name = String::from(p.name());
-                let icon_bytes = load_icon_cached(&p)
+                let icon = load_icon_cached(&p)
+                    .map(image::Handle::from_memory)
                     .map_err(|e| debug!("failed to fetch icon: {}", e))
                     .ok();
                 plugins.push(Plugin {
                     state: PluginState::Idle { espim_plugin: p },
                     name,
-                    icon_bytes,
+                    icon,
                 })
             }
         }
