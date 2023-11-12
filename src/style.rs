@@ -2,18 +2,18 @@
 use iced::widget::{button, container, Text};
 use iced::{alignment, Background, Color, Font, Length, Vector};
 
-pub const ICONS: Font = Font::External {
-    name: "Icons",
-    bytes: include_bytes!("../assets/IcoMoon-Free.ttf"),
-};
-pub const LOG_FONT: Font = Font::External {
-    name: "DejaVuSansMono",
-    bytes: include_bytes!("../assets/DejaVuSansMono.ttf"),
-};
+// pub const ICONS: Font = Font::External {
+//     name: "Icons",
+//     bytes: include_bytes!("../assets/IcoMoon-Free.ttf"),
+// };
+// pub const LOG_FONT: Font = Font::External {
+//     name: "DejaVuSansMono",
+//     bytes: include_bytes!("../assets/DejaVuSansMono.ttf"),
+// };
 
 fn icon(unicode: char) -> Text<'static> {
     Text::new(unicode.to_string())
-        .font(ICONS)
+        // .font(ICONS)
         .width(Length::Fixed(20.))
         .horizontal_alignment(alignment::Horizontal::Center)
         .vertical_alignment(alignment::Vertical::Center)

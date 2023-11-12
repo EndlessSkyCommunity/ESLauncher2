@@ -14,6 +14,8 @@ use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
 
+use iced::advanced::subscription::EventStream;
+use iced::advanced::Hasher;
 use iced::widget::{button, Button, Column, Container, Row, Scrollable, Space, Text};
 use iced::{
     alignment, theme, Alignment, Application, Command, Element, Length, Settings, Subscription,
@@ -237,7 +239,7 @@ impl Application for ESLauncher {
                     Container::new(
                         Text::new(log)
                             .size(13)
-                            .font(style::LOG_FONT)
+                            // .font(style::LOG_FONT)
                             .horizontal_alignment(alignment::Horizontal::Left),
                     )
                     //.style(style::Container::for_log(log))
@@ -312,19 +314,16 @@ fn get_data_dir() -> Option<PathBuf> {
 #[derive(Debug, Clone)]
 pub struct MessageReceiver {}
 
-impl<H, I> iced::subscription::Recipe<H, I> for MessageReceiver
-where
-    H: std::hash::Hasher,
-{
+impl iced::advanced::subscription::Recipe for MessageReceiver {
     type Output = Message;
 
-    fn hash(&self, state: &mut H) {
+    fn hash(&self, state: &mut Hasher) {
         std::any::TypeId::of::<Self>().hash(state);
     }
 
     fn stream(
         self: Box<Self>,
-        _input: futures::stream::BoxStream<'static, I>,
+        _input: EventStream,
     ) -> futures::stream::BoxStream<'static, Self::Output> {
         Box::pin(futures::stream::unfold(0, |state| async move {
             let mut interval = tokio::time::interval(Duration::from_millis(10));
