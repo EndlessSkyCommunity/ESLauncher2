@@ -312,7 +312,7 @@ fn get_data_dir() -> Option<PathBuf> {
 #[derive(Debug, Clone)]
 pub struct MessageReceiver {}
 
-impl<H, I> iced_futures::subscription::Recipe<H, I> for MessageReceiver
+impl<H, I> iced::subscription::Recipe<H, I> for MessageReceiver
 where
     H: std::hash::Hasher,
 {
