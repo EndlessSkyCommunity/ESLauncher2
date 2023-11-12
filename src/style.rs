@@ -1,5 +1,6 @@
 use iced::container::Style;
-use iced::{alignment, button, container, Background, Color, Font, Length, Text, Vector};
+use iced::widget::{button, container, Text};
+use iced::{alignment, Background, Color, Font, Length, Vector};
 
 pub const ICONS: Font = Font::External {
     name: "Icons",

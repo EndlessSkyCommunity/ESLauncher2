@@ -1,8 +1,7 @@
 use crate::instance::{load_instances, Instance};
 use crate::Message;
-use iced::{
-    alignment, scrollable, Alignment, Color, Column, Container, Element, Length, Scrollable, Text,
-};
+use iced::widget::{scrollable, Column, Container, Scrollable, Text};
+use iced::{alignment, Alignment, Color, Element, Length};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]

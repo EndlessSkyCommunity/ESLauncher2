@@ -6,10 +6,8 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 
 use espim::Plugin as EspimPlugin;
-use iced::{
-    alignment, button, scrollable, Alignment, Color, Column, Command, Container, Element, Length,
-    Row, Scrollable, Space, Text,
-};
+use iced::widget::{button, scrollable, Column, Container, Row, Scrollable, Space, Text};
+use iced::{alignment, Alignment, Color, Command, Element, Length};
 use lazy_static::lazy_static;
 use regex::Regex;
 

@@ -3,9 +3,8 @@ use crate::music::MusicCommand;
 use crate::{get_data_dir, install, send_message, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
-use iced::{
-    alignment, button, Alignment, Button, Column, Element, Length, ProgressBar, Row, Space, Text,
-};
+use iced::widget::{button, Button, Column, ProgressBar, Row, Space, Text};
+use iced::{alignment, Alignment, Element, Length};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;

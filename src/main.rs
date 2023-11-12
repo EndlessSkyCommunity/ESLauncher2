@@ -14,10 +14,8 @@ use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
 
-use iced::{
-    alignment, button, scrollable, Alignment, Application, Button, Column, Command, Container,
-    Element, Length, Row, Scrollable, Settings, Space, Subscription, Text,
-};
+use iced::widget::{button, scrollable, Button, Column, Container, Row, Scrollable, Space, Text};
+use iced::{alignment, Alignment, Application, Command, Element, Length, Settings, Subscription};
 use std::collections::VecDeque;
 use std::sync::Mutex;
 

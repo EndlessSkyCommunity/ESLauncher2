@@ -1,10 +1,10 @@
 use crate::instance::{get_instances_dir, InstanceType};
 use crate::{instance, Message};
 use core::fmt;
-use iced::{
-    alignment, button, scrollable, text_input, Alignment, Button, Column, Command, Container,
-    Element, Length, Radio, Scrollable, Text, TextInput,
+use iced::widget::{
+    button, scrollable, text_input, Button, Column, Container, Radio, Scrollable, Text, TextInput,
 };
+use iced::{alignment, Alignment, Command, Element, Length};
 use serde::{Deserialize, Serialize};
 
 // Characters that shall not be allowed to enter. This does not cover all cases!
