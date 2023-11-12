@@ -124,10 +124,10 @@ impl Plugin {
     fn view(&self) -> Element<PluginMessage> {
         let mut content = Row::new().spacing(10).padding(10);
         if let Some(_bytes) = &self.icon_bytes {
-            const ICON_DIMENSION: u16 = 48;
+            const ICON_DIMENSION: f32 = 48.;
             content = content.push(
                 Row::new()
-                    .width(Length::Units(ICON_DIMENSION))
+                    .width(Length::Fixed(ICON_DIMENSION))
                     .align_items(Alignment::Center), // TODO: Re-enable when iced supports Image widgets with OpenGL
                                                      // .push(
                                                      //     Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass

@@ -260,7 +260,7 @@ impl Instance {
                     if let (Some(done), Some(total)) = (progress.done, progress.total) {
                         status_field = status_field.push(
                             ProgressBar::new(0.0..=total as f32, done as f32)
-                                .height(Length::Units(5)),
+                                .height(Length::Fixed(5.)),
                         );
                     }
                     if let Some(done) = progress.done {

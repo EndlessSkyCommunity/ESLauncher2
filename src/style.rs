@@ -14,7 +14,7 @@ pub const LOG_FONT: Font = Font::External {
 fn icon(unicode: char) -> Text<'static> {
     Text::new(unicode.to_string())
         .font(ICONS)
-        .width(Length::Units(20))
+        .width(Length::Fixed(20.))
         .horizontal_alignment(alignment::Horizontal::Center)
         .vertical_alignment(alignment::Vertical::Center)
         .size(20)
