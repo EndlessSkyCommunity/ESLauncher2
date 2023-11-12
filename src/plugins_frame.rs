@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 
 use espim::Plugin as EspimPlugin;
-use iced::widget::{button, Column, Container, Row, Scrollable, Space, Text};
+use iced::widget::{button, image, Column, Container, Image, Row, Scrollable, Space, Text};
 use iced::{alignment, theme, Alignment, Color, Command, Element, Length};
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -123,17 +123,17 @@ impl Plugin {
 
     fn view(&self) -> Element<PluginMessage> {
         let mut content = Row::new().spacing(10).padding(10);
-        if let Some(_bytes) = &self.icon_bytes {
+        if let Some(bytes) = &self.icon_bytes {
             const ICON_DIMENSION: f32 = 48.;
             content = content.push(
                 Row::new()
                     .width(Length::Fixed(ICON_DIMENSION))
-                    .align_items(Alignment::Center), // TODO: Re-enable when iced supports Image widgets with OpenGL
-                                                     // .push(
-                                                     //     Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
-                                                     //         .height(Length::Units(ICON_DIMENSION))
-                                                     //         .width(Length::Units(ICON_DIMENSION)),
-                                                     // ),
+                    .align_items(Alignment::Center)
+                    .push(
+                        Image::new(image::Handle::from_memory(bytes.clone())) // Not ideal, clones a couple KB every rendering pass
+                            .height(Length::Fixed(ICON_DIMENSION))
+                            .width(Length::Fixed(ICON_DIMENSION)),
+                    ),
             );
         }
 
