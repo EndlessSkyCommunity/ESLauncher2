@@ -94,8 +94,8 @@ impl InstallFrame {
             Column::new().spacing(10).push(Text::new("Choose a Type:")),
             |column, source_type| {
                 column.push(Radio::new(
-                    *source_type,
                     format!("{:?}", source_type),
+                    *source_type,
                     Some(self.source.r#type),
                     InstallFrameMessage::SourceTypeChanged,
                 ))
@@ -103,12 +103,9 @@ impl InstallFrame {
         );
         if InstanceSourceType::Continuous != self.source.r#type {
             controls = controls.push(
-                TextInput::new(
-                    "Enter Version / Hash / PR Number",
-                    &self.source.identifier,
-                    InstallFrameMessage::SourceIdentifierChanged,
-                )
-                .padding(10),
+                TextInput::new("Enter Version / Hash / PR Number", &self.source.identifier)
+                    .on_input(InstallFrameMessage::SourceIdentifierChanged)
+                    .padding(10),
             );
         }
 
@@ -134,12 +131,9 @@ impl InstallFrame {
                         .size(26),
                 )
                 .push(
-                    TextInput::new(
-                        "Name (required)",
-                        &self.name,
-                        InstallFrameMessage::NameChanged,
-                    )
-                    .padding(10),
+                    TextInput::new("Name (required)", &self.name)
+                        .on_input(InstallFrameMessage::NameChanged)
+                        .padding(10),
                 )
                 .push(controls)
                 .push(install_button)
