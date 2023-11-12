@@ -18,10 +18,7 @@ lazy_static! {
 #[derive(Debug, Clone)]
 pub enum PluginsFrameState {
     Loading,
-    Ready {
-        plugins: Vec<Plugin>,
-        plugin_scrollable: scrollable::State,
-    },
+    Ready { plugins: Vec<Plugin> },
 }
 
 impl PluginsFrameState {
@@ -33,10 +30,7 @@ impl PluginsFrameState {
     }
 
     pub fn from(plugins: Vec<Plugin>) -> Self {
-        Self::Ready {
-            plugins,
-            plugin_scrollable: scrollable::State::default(),
-        }
+        Self::Ready { plugins }
     }
 
     pub fn view(&mut self) -> Container<Message> {
@@ -49,10 +43,7 @@ impl PluginsFrameState {
                         .horizontal_alignment(alignment::Horizontal::Center),
                 ),
             ),
-            Self::Ready {
-                plugins,
-                plugin_scrollable,
-            } => {
+            Self::Ready { plugins } => {
                 let plugin_list = plugins.iter_mut().fold(
                     Column::new()
                         .padding(20)
@@ -70,7 +61,7 @@ impl PluginsFrameState {
 
                 Container::new(
                     Column::new()
-                        .push(Scrollable::new(plugin_scrollable).push(plugin_list))
+                        .push(Scrollable::new(plugin_list))
                         .spacing(20)
                         .width(Length::Fill),
                 )
@@ -99,8 +90,6 @@ pub struct Plugin {
     pub state: PluginState,
     pub name: String,
     icon_bytes: Option<Vec<u8>>,
-    install_button: button::State,
-    remove_button: button::State,
 }
 
 impl Plugin {
@@ -175,16 +164,14 @@ impl Plugin {
                         .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     );
 
-                let mut install_button =
-                    button::Button::new(&mut self.install_button, style::update_icon()) // TODO: Use other icon here?
-                        .style(style::Button::Icon);
+                let mut install_button = button::Button::new(style::update_icon()) // TODO: Use other icon here?
+                    .style(style::Button::Icon);
                 if espim_plugin.is_available() {
                     install_button = install_button.on_press(PluginMessage::Install)
                 }
 
                 let mut remove_button =
-                    button::Button::new(&mut self.remove_button, style::delete_icon())
-                        .style(style::Button::Destructive);
+                    button::Button::new(style::delete_icon()).style(style::Button::Destructive);
                 if espim_plugin.is_installed() {
                     remove_button = remove_button.on_press(PluginMessage::Remove)
                 }
@@ -221,8 +208,6 @@ pub async fn load_plugins() -> Vec<Plugin> {
                     state: PluginState::Idle { espim_plugin: p },
                     name,
                     icon_bytes,
-                    install_button: button::State::default(),
-                    remove_button: button::State::default(),
                 })
             }
         }

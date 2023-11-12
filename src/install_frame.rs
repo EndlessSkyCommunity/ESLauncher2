@@ -1,9 +1,7 @@
 use crate::instance::{get_instances_dir, InstanceType};
 use crate::{instance, Message};
 use core::fmt;
-use iced::widget::{
-    button, scrollable, text_input, Button, Column, Container, Radio, Scrollable, Text, TextInput,
-};
+use iced::widget::{Button, Column, Container, Radio, Scrollable, Text, TextInput};
 use iced::{alignment, Alignment, Command, Element, Length};
 use serde::{Deserialize, Serialize};
 
@@ -14,11 +12,7 @@ const BLACKLISTED_CHARS: [char; 10] = ['/', '\\', ':', '*', '?', '"', '<', '>', 
 #[derive(Debug, Clone, Default)]
 pub struct InstallFrame {
     pub(crate) name: String,
-    name_chooser: text_input::State,
-    install_button: button::State,
     source: InstanceSource,
-    source_identifier_input: text_input::State,
-    scrollable: scrollable::State,
 }
 
 #[derive(Debug, Clone)]
@@ -110,7 +104,6 @@ impl InstallFrame {
         if InstanceSourceType::Continuous != self.source.r#type {
             controls = controls.push(
                 TextInput::new(
-                    &mut self.source_identifier_input,
                     "Enter Version / Hash / PR Number",
                     &self.source.identifier,
                     InstallFrameMessage::SourceIdentifierChanged,
@@ -119,7 +112,7 @@ impl InstallFrame {
             );
         }
 
-        let mut install_button = Button::new(&mut self.install_button, Text::new("Install"));
+        let mut install_button = Button::new(Text::new("Install"));
         if !self.name.trim().is_empty() {
             install_button =
                 install_button.on_press(InstallFrameMessage::StartInstallation(if cfg!(windows) {
@@ -131,31 +124,28 @@ impl InstallFrame {
                 }))
         }
 
-        Container::new(
-            Scrollable::new(&mut self.scrollable).push(
-                Column::new()
-                    .padding(20)
-                    .push(
-                        Text::new("Install")
-                            .horizontal_alignment(alignment::Horizontal::Center)
-                            .width(Length::Fill)
-                            .size(26),
+        Container::new(Scrollable::new(
+            Column::new()
+                .padding(20)
+                .push(
+                    Text::new("Install")
+                        .horizontal_alignment(alignment::Horizontal::Center)
+                        .width(Length::Fill)
+                        .size(26),
+                )
+                .push(
+                    TextInput::new(
+                        "Name (required)",
+                        &self.name,
+                        InstallFrameMessage::NameChanged,
                     )
-                    .push(
-                        TextInput::new(
-                            &mut self.name_chooser,
-                            "Name (required)",
-                            &self.name,
-                            InstallFrameMessage::NameChanged,
-                        )
-                        .padding(10),
-                    )
-                    .push(controls)
-                    .push(install_button)
-                    .spacing(20)
-                    .align_items(Alignment::End),
-            ),
-        )
+                    .padding(10),
+                )
+                .push(controls)
+                .push(install_button)
+                .spacing(20)
+                .align_items(Alignment::End),
+        ))
         .width(Length::FillPortion(2))
         .into()
     }

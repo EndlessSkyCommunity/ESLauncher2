@@ -7,7 +7,6 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone)]
 pub struct InstancesFrame {
     pub instances: BTreeMap<String, Instance>,
-    scrollable: scrollable::State,
 }
 
 impl Default for InstancesFrame {
@@ -25,10 +24,7 @@ impl Default for InstancesFrame {
                 BTreeMap::new()
             }
         };
-        Self {
-            instances,
-            scrollable: scrollable::State::default(),
-        }
+        Self { instances }
     }
 }
 impl InstancesFrame {
@@ -66,20 +62,18 @@ impl InstancesFrame {
                 })
                 .into()
         };
-        Container::new(
-            Scrollable::new(&mut self.scrollable).push(
-                Column::new()
-                    .push(
-                        Text::new("Instances")
-                            .size(26)
-                            .horizontal_alignment(alignment::Horizontal::Center)
-                            .width(Length::Fill),
-                    )
-                    .push(instances_list)
-                    .spacing(20)
-                    .width(Length::Fill),
-            ),
-        )
+        Container::new(Scrollable::new(
+            Column::new()
+                .push(
+                    Text::new("Instances")
+                        .size(26)
+                        .horizontal_alignment(alignment::Horizontal::Center)
+                        .width(Length::Fill),
+                )
+                .push(instances_list)
+                .spacing(20)
+                .width(Length::Fill),
+        ))
         .width(Length::FillPortion(3))
         .padding(30)
         .into()

@@ -3,7 +3,7 @@ use crate::music::MusicCommand;
 use crate::{get_data_dir, install, send_message, style, update, Message};
 use anyhow::Result;
 use chrono::{DateTime, Local};
-use iced::widget::{button, Button, Column, ProgressBar, Row, Space, Text};
+use iced::widget::{Button, Column, ProgressBar, Row, Space, Text};
 use iced::{alignment, Alignment, Element, Length};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -47,17 +47,6 @@ impl InstanceType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Instance {
-    #[serde(skip)]
-    debug_button: button::State,
-    #[serde(skip)]
-    play_button: button::State,
-    #[serde(skip)]
-    update_button: button::State,
-    #[serde(skip)]
-    folder_button: button::State,
-    #[serde(skip)]
-    delete_button: button::State,
-
     #[serde(skip)]
     pub state: InstanceState,
 
@@ -165,11 +154,6 @@ impl Instance {
             instance_type,
             source,
             state,
-            debug_button: button::State::default(),
-            play_button: button::State::default(),
-            update_button: button::State::default(),
-            folder_button: button::State::default(),
-            delete_button: button::State::default(),
         }
     }
 
@@ -234,17 +218,13 @@ impl Instance {
 
     pub fn view(&mut self) -> Element<InstanceMessage> {
         // Buttons
-        let mut debug_button =
-            Button::new(&mut self.debug_button, style::debug_icon()).style(style::Button::Icon);
-        let mut play_button =
-            Button::new(&mut self.play_button, style::play_icon()).style(style::Button::Icon);
-        let mut update_button =
-            Button::new(&mut self.update_button, style::update_icon()).style(style::Button::Icon);
-        let folder_button = Button::new(&mut self.folder_button, style::folder_icon())
+        let mut debug_button = Button::new(style::debug_icon()).style(style::Button::Icon);
+        let mut play_button = Button::new(style::play_icon()).style(style::Button::Icon);
+        let mut update_button = Button::new(style::update_icon()).style(style::Button::Icon);
+        let folder_button = Button::new(style::folder_icon())
             .style(style::Button::Icon)
             .on_press(InstanceMessage::Folder);
-        let mut delete_button = Button::new(&mut self.delete_button, style::delete_icon())
-            .style(style::Button::Destructive);
+        let mut delete_button = Button::new(style::delete_icon()).style(style::Button::Destructive);
 
         if self.state.is_ready() {
             debug_button = debug_button.on_press(InstanceMessage::Play(true));

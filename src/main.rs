@@ -14,7 +14,7 @@ use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
 
-use iced::widget::{button, scrollable, Button, Column, Container, Row, Scrollable, Space, Text};
+use iced::widget::{button, Button, Column, Container, Row, Scrollable, Space, Text};
 use iced::{alignment, Alignment, Application, Command, Element, Length, Settings, Subscription};
 use std::collections::VecDeque;
 use std::sync::Mutex;
@@ -64,17 +64,13 @@ pub fn main() -> iced::Result {
 #[derive(Debug)]
 struct ESLauncher {
     music_sender: Sender<MusicCommand>,
-    music_button: button::State,
     music_state: MusicState,
     install_frame: install_frame::InstallFrame,
     instances_frame: instances_frame::InstancesFrame,
     plugins_frame: plugins_frame::PluginsFrameState,
-    log_scrollable: scrollable::State,
     message_receiver: MessageReceiver,
     log_buffer: Vec<String>,
     view: MainView,
-    instances_view_button: button::State,
-    plugins_view_button: button::State,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -123,17 +119,13 @@ impl Application for ESLauncher {
         (
             Self {
                 music_sender,
-                music_button: button::State::default(),
                 music_state: MusicState::Playing,
                 install_frame: install_frame::InstallFrame::default(),
                 instances_frame: instances_frame::InstancesFrame::default(),
                 plugins_frame: plugins_frame_state,
-                log_scrollable: scrollable::State::default(),
                 message_receiver: MessageReceiver {},
                 log_buffer: vec![],
                 view: MainView::Instances,
-                instances_view_button: button::State::default(),
-                plugins_view_button: button::State::default(),
             },
             command,
         )
@@ -214,21 +206,15 @@ impl Application for ESLauncher {
             .padding(30)
             .align_items(Alignment::Center)
             .push(
-                Button::new(
-                    &mut self.instances_view_button,
-                    Container::new(Text::new("Instances")).padding(5),
-                )
-                .padding(5)
-                .on_press(Message::ViewChanged(MainView::Instances))
-                .style(style::Button::Tab(self.view == MainView::Instances)),
+                button(Container::new(Text::new("Instances")).padding(5))
+                    .padding(5)
+                    .on_press(Message::ViewChanged(MainView::Instances))
+                    .style(style::Button::Tab(self.view == MainView::Instances)),
             )
             .push(
-                Button::new(
-                    &mut self.plugins_view_button,
-                    Container::new(Text::new("Plugins")).padding(5),
-                )
-                .on_press(Message::ViewChanged(MainView::Plugins))
-                .style(style::Button::Tab(self.view == MainView::Plugins)),
+                button(Container::new(Text::new("Plugins")).padding(5))
+                    .on_press(Message::ViewChanged(MainView::Plugins))
+                    .style(style::Button::Tab(self.view == MainView::Plugins)),
             );
 
         let main_view = match self.view {
@@ -263,8 +249,7 @@ impl Application for ESLauncher {
             .push(view_chooser)
             .push(main_view.height(Length::FillPortion(3)))
             .push(
-                Scrollable::new(&mut self.log_scrollable)
-                    .push(logbox)
+                Scrollable::new(logbox)
                     .padding(20)
                     .align_items(Alignment::Start)
                     .width(Length::Fill)
@@ -277,13 +262,10 @@ impl Application for ESLauncher {
             .padding(8)
             .push(Space::new(Length::Fill, Length::Shrink))
             .push(
-                Button::new(
-                    &mut self.music_button,
-                    match self.music_state {
-                        MusicState::Playing => style::pause_icon(),
-                        MusicState::Paused => style::play_icon(),
-                    },
-                )
+                Button::new(match self.music_state {
+                    MusicState::Playing => style::pause_icon(),
+                    MusicState::Paused => style::play_icon(),
+                })
                 .style(style::Button::Icon)
                 .on_press(Message::MusicMessage(match self.music_state {
                     MusicState::Playing => MusicCommand::Pause,
