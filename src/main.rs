@@ -16,11 +16,12 @@ use std::time::Duration;
 
 use iced::advanced::subscription::EventStream;
 use iced::advanced::Hasher;
-use iced::widget::{button, Button, Column, Container, Row, Scrollable, Space, Text};
+use iced::widget::{Button, Column, Container, Row, Scrollable, Space, Text};
 use iced::{
     alignment, font, Alignment, Application, Command, Element, Font, Length, Settings,
     Subscription, Theme,
 };
+use iced_aw::{TabLabel, Tabs};
 use std::collections::VecDeque;
 use std::sync::Mutex;
 
@@ -28,7 +29,7 @@ use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
-use crate::style::{icon_button, log_container, tab_button};
+use crate::style::{icon_button, log_container, tab_bar};
 
 mod archive;
 mod github;
@@ -76,11 +77,11 @@ struct ESLauncher {
     plugins_frame: plugins_frame::PluginsFrameState,
     message_receiver: MessageReceiver,
     log_buffer: Vec<String>,
-    view: MainView,
+    active_tab: Tab,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MainView {
+pub enum Tab {
     Instances,
     Plugins,
 }
@@ -95,7 +96,7 @@ pub enum Message {
     Dummy(()),
     FontLoaded(Result<(), font::Error>),
     MusicMessage(MusicCommand),
-    ViewChanged(MainView),
+    TabSelected(Tab),
     PluginFrameLoaded(Vec<plugins_frame::Plugin>),
     Log(String),
 }
@@ -132,7 +133,7 @@ impl Application for ESLauncher {
                 plugins_frame: plugins_frame_state,
                 message_receiver: MessageReceiver {},
                 log_buffer: vec![],
-                view: MainView::Instances,
+                active_tab: Tab::Instances,
             },
             Command::batch(vec![
                 plugins_frame_cmd,
@@ -191,7 +192,7 @@ impl Application for ESLauncher {
                     MusicCommand::Play => MusicState::Playing,
                 }
             }
-            Message::ViewChanged(view) => self.view = view,
+            Message::TabSelected(active_tab) => self.active_tab = active_tab,
             Message::PluginFrameLoaded(plugins) => {
                 self.plugins_frame = plugins_frame::PluginsFrameState::from(plugins);
             }
@@ -217,34 +218,30 @@ impl Application for ESLauncher {
     }
 
     fn view(&self) -> Element<'_, Self::Message> {
-        let view_chooser = Row::new()
-            .spacing(100)
-            .padding(30)
-            .align_items(Alignment::Center)
-            .push(
-                button(Container::new(Text::new("Instances")).padding(5))
-                    .padding(5)
-                    .on_press(Message::ViewChanged(MainView::Instances))
-                    .style(tab_button(self.view == MainView::Instances)),
-            )
-            .push(
-                button(Container::new(Text::new("Plugins")).padding(5))
-                    .on_press(Message::ViewChanged(MainView::Plugins))
-                    .style(tab_button(self.view == MainView::Plugins)),
-            );
-
-        let main_view = match self.view {
-            MainView::Instances => Container::new(
+        let tabs = Tabs::new(Message::TabSelected)
+            .push::<Element<'_, Message>>(
+                Tab::Instances,
+                TabLabel::Text("Instances".into()),
                 Row::new()
                     .push(self.instances_frame.view())
                     .push(self.install_frame.view().map(Message::InstallFrameMessage))
-                    .spacing(50),
-            ),
-            MainView::Plugins => self.plugins_frame.view(),
-        };
+                    .spacing(50)
+                    .padding(15)
+                    .into(),
+            )
+            .push(
+                Tab::Plugins,
+                TabLabel::Text("Plugins".into()),
+                self.plugins_frame.view(),
+            )
+            .set_active_tab(&self.active_tab)
+            .tab_bar_style(tab_bar());
 
         let logbox = self.log_buffer.iter().fold(
-            Column::new().spacing(1).align_items(Alignment::Start),
+            Column::new()
+                .spacing(1)
+                .padding(15)
+                .align_items(Alignment::Start),
             |column, log| {
                 column.push(
                     Container::new(
@@ -260,10 +257,8 @@ impl Application for ESLauncher {
         );
 
         let content = Column::new()
-            .padding(20)
             .align_items(Alignment::Center)
-            .push(view_chooser)
-            .push(main_view.height(Length::FillPortion(3)))
+            .push(tabs.height(Length::FillPortion(3)))
             .push(
                 Scrollable::new(logbox)
                     .width(Length::Fill)
