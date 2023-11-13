@@ -1,7 +1,6 @@
 use crate::instance::Progress;
 use crate::send_progress_message;
 use anyhow::Result;
-use chrono::Utc;
 use progress_streams::ProgressReader;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
@@ -12,6 +11,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use time::OffsetDateTime;
 
 #[derive(Deserialize, Debug)]
 pub struct Repo {
@@ -275,7 +275,7 @@ fn check_ratelimit(res: &ureq::Response) {
                         match resets_at.parse::<i64>() {
                             Ok(resets_at) => info!(
                                 "RateLimit resets in {} minutes",
-                                (resets_at - Utc::now().timestamp()) / 60
+                                (resets_at - OffsetDateTime::now_utc().unix_timestamp()) / 60
                             ),
                             Err(e) => warn!("Failed to parse X-RateLimit-Reset Header: {}", e),
                         };

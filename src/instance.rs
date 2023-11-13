@@ -3,7 +3,6 @@ use crate::music::MusicCommand;
 use crate::style::icon_button;
 use crate::{get_data_dir, install, send_message, style, update, Message};
 use anyhow::Result;
-use chrono::{DateTime, Local};
 use iced::widget::{Button, Column, ProgressBar, Row, Space, Text};
 use iced::{alignment, theme, Alignment, Element, Length};
 use serde::{Deserialize, Serialize};
@@ -13,7 +12,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
-use std::time::SystemTime;
+use time::{format_description, OffsetDateTime};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum InstanceType {
@@ -371,9 +370,9 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
     log_path.push("logs");
     fs::create_dir_all(&log_path)?;
 
-    let time = DateTime::<Local>::from(SystemTime::now())
-        .format("%F %H-%M-%S")
-        .to_string();
+    let time = OffsetDateTime::now_local()?.format(&format_description::parse(
+        "[year]-[month]-[day] [hour]:[minute]:[second]",
+    )?)?;
     let mut out_path = log_path.clone();
     out_path.push(format!("{}.out", time));
     let mut out = File::create(out_path)?;
