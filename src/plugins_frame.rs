@@ -123,18 +123,16 @@ impl Plugin {
     }
 
     fn view(&self) -> Element<PluginMessage> {
-        let mut content = Row::new().spacing(10).padding(10);
+        let content = Row::new().spacing(10).padding(10);
+        const ICON_DIMENSION: f32 = 48.;
+        let mut icon_container = Row::new()
+            .width(Length::Fixed(ICON_DIMENSION))
+            .align_items(Alignment::Center);
         if let Some(icon) = &self.icon {
-            const ICON_DIMENSION: f32 = 48.;
-            content = content.push(
-                Row::new()
-                    .width(Length::Fixed(ICON_DIMENSION))
-                    .align_items(Alignment::Center)
-                    .push(
-                        Image::new(icon.clone())
-                            .height(Length::Fixed(ICON_DIMENSION))
-                            .width(Length::Fixed(ICON_DIMENSION)),
-                    ),
+            icon_container = icon_container.push(
+                Image::new(icon.clone())
+                    .height(Length::Fixed(ICON_DIMENSION))
+                    .width(Length::Fixed(ICON_DIMENSION)),
             );
         }
 
@@ -189,6 +187,7 @@ impl Plugin {
         };
 
         content
+            .push(icon_container)
             .push(infos)
             .push(Space::new(Length::Fill, Length::Shrink))
             .push(controls)
