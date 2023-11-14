@@ -371,7 +371,7 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
     fs::create_dir_all(&log_path)?;
 
     let time = OffsetDateTime::now_local()?.format(&format_description::parse(
-        "[year]-[month]-[day] [hour]:[minute]:[second]",
+        "[year]-[month]-[day] [hour]-[minute]-[second]",
     )?)?;
     let mut out_path = log_path.clone();
     out_path.push(format!("{}.out", time));
