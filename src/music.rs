@@ -46,16 +46,16 @@ fn play(rx: &Receiver<MusicCommand>, initial_state: MusicState) -> Result<()> {
             match cmd {
                 MusicCommand::Pause => {
                     state = MusicState::Paused;
-                    sink.pause()
+                    fade(&sink, true)
                 }
                 MusicCommand::Play => {
                     state = MusicState::Playing;
-                    sink.play()
+                    fade(&sink, false)
                 }
-                MusicCommand::WeakPause => sink.pause(),
+                MusicCommand::WeakPause => fade(&sink, true),
                 MusicCommand::WeakPlay => {
                     if let MusicState::Playing = state {
-                        sink.play()
+                        fade(&sink, false)
                     }
                 }
             }
@@ -67,5 +67,23 @@ fn play(rx: &Receiver<MusicCommand>, initial_state: MusicState) -> Result<()> {
         }
 
         thread::sleep(Duration::from_millis(100));
+    }
+}
+
+fn fade(sink: &Sink, out: bool) {
+    let mut range: Vec<i32> = (1..20).collect();
+    if out {
+        range.reverse();
+    } else {
+        sink.play();
+    }
+
+    for i in range {
+        sink.set_volume(i as f32 / 20.);
+        thread::sleep(Duration::from_millis(20));
+    }
+
+    if out {
+        sink.pause()
     }
 }
