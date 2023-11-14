@@ -1,5 +1,5 @@
 use iced::widget::{button, container, Text};
-use iced::{alignment, Background, Color, Font, Length, Theme, Vector};
+use iced::{alignment, Background, BorderRadius, Color, Font, Length, Theme, Vector};
 use std::default::Default;
 use std::rc::Rc;
 
@@ -39,6 +39,9 @@ pub fn folder_icon() -> Text<'static> {
 pub fn icon_button() -> iced::theme::Button {
     iced::theme::Button::Custom(Box::new(ButtonStyle::Icon))
 }
+pub fn text_button() -> iced::theme::Button {
+    iced::theme::Button::Custom(Box::new(ButtonStyle::Text))
+}
 
 pub fn tab_bar() -> iced_aw::style::tab_bar::TabBarStyles {
     iced_aw::style::tab_bar::TabBarStyles::Custom(Rc::new(CustomTabBar))
@@ -51,6 +54,7 @@ pub fn log_container(log: &str) -> iced::theme::Container {
 /// graphic design is my passion
 pub enum ButtonStyle {
     Icon,
+    Text,
 }
 
 impl button::StyleSheet for ButtonStyle {
@@ -60,7 +64,15 @@ impl button::StyleSheet for ButtonStyle {
         match self {
             ButtonStyle::Icon => button::Appearance {
                 text_color: Color::from_rgb(0.5, 0.5, 0.5),
-                ..button::Appearance::default()
+                ..Default::default()
+            },
+            ButtonStyle::Text => button::Appearance {
+                background: Some(Background::Color(Color::WHITE)),
+                border_color: Color::from_rgb(0.8, 0.8, 0.8),
+                border_radius: BorderRadius::from(2.),
+                border_width: 0.3,
+                shadow_offset: Vector::new(0.3, 0.3),
+                ..Default::default()
             },
         }
     }
@@ -68,10 +80,28 @@ impl button::StyleSheet for ButtonStyle {
     fn hovered(&self, style: &Self::Style) -> button::Appearance {
         let active = self.active(style);
 
-        button::Appearance {
-            text_color: Color::from_rgb(0.2, 0.2, 0.7),
-            shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
-            ..active
+        match self {
+            ButtonStyle::Icon => button::Appearance {
+                text_color: Color::from_rgb(0.3, 0.3, 0.3),
+                shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
+                ..active
+            },
+            ButtonStyle::Text => button::Appearance {
+                border_color: Color::from_rgb(0.4, 0.4, 0.4),
+                shadow_offset: active.shadow_offset + Vector::new(0.1, 0.3),
+                ..active
+            },
+        }
+    }
+
+    fn disabled(&self, style: &Self::Style) -> button::Appearance {
+        let active = self.active(style);
+        match self {
+            ButtonStyle::Text => button::Appearance {
+                text_color: Color::from_rgb(0.5, 0.5, 0.5),
+                ..active
+            },
+            _ => active,
         }
     }
 }
@@ -101,7 +131,7 @@ impl container::StyleSheet for LogContainer {
         container::Appearance {
             text_color: Some(Color::from_rgb(0.6, 0.6, 0.6)),
             background: self.background.map(Background::Color),
-            ..container::Appearance::default()
+            ..Default::default()
         }
     }
 }
