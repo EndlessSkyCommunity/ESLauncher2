@@ -18,8 +18,7 @@ use iced::advanced::subscription::EventStream;
 use iced::advanced::Hasher;
 use iced::widget::{Button, Column, Container, Row, Scrollable, Space, Text};
 use iced::{
-    alignment, font, Alignment, Application, Command, Element, Font, Length, Settings,
-    Subscription, Theme,
+    alignment, font, Alignment, Application, Command, Element, Font, Length, Subscription, Theme,
 };
 use iced_aw::{TabLabel, Tabs};
 use std::collections::VecDeque;
@@ -29,6 +28,7 @@ use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
+use crate::settings::Settings;
 use crate::style::{icon_button, log_container, tab_bar};
 
 mod archive;
@@ -41,6 +41,7 @@ mod jenkins;
 mod logger;
 mod music;
 mod plugins_frame;
+mod settings;
 mod style;
 mod update;
 
@@ -65,19 +66,19 @@ mod update;
 static MESSAGE_QUEUE: Mutex<VecDeque<Message>> = Mutex::new(VecDeque::new());
 
 pub fn main() -> iced::Result {
-    ESLauncher::run(Settings::default())
+    ESLauncher::run(iced::Settings::default())
 }
 
 #[derive(Debug)]
 struct ESLauncher {
     music_sender: Sender<MusicCommand>,
-    music_state: MusicState,
     install_frame: install_frame::InstallFrame,
     instances_frame: instances_frame::InstancesFrame,
     plugins_frame: plugins_frame::PluginsFrameState,
     message_receiver: MessageReceiver,
     log_buffer: Vec<String>,
     active_tab: Tab,
+    settings: Settings,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -119,7 +120,8 @@ impl Application for ESLauncher {
             info!("  running on target environment other");
         }
 
-        let music_sender = music::spawn();
+        let settings = Settings::load();
+        let music_sender = music::spawn(settings.music_state);
 
         check_for_update();
 
@@ -127,13 +129,13 @@ impl Application for ESLauncher {
         (
             Self {
                 music_sender,
-                music_state: MusicState::Playing,
                 install_frame: install_frame::InstallFrame::default(),
                 instances_frame: instances_frame::InstancesFrame::default(),
                 plugins_frame: plugins_frame_state,
                 message_receiver: MessageReceiver {},
                 log_buffer: vec![],
                 active_tab: Tab::Instances,
+                settings,
             },
             Command::batch(vec![
                 plugins_frame_cmd,
@@ -187,10 +189,14 @@ impl Application for ESLauncher {
             }
             Message::MusicMessage(cmd) => {
                 self.music_sender.send(cmd).ok();
-                self.music_state = match cmd {
+                self.settings.music_state = match cmd {
                     MusicCommand::Pause => MusicState::Paused,
                     MusicCommand::Play => MusicState::Playing,
-                }
+                    _ => self.settings.music_state,
+                };
+                if let Err(e) = self.settings.save() {
+                    error!("Failed to save settings.json: {:#?}", e)
+                };
             }
             Message::TabSelected(active_tab) => self.active_tab = active_tab,
             Message::PluginFrameLoaded(plugins) => {
@@ -271,17 +277,19 @@ impl Application for ESLauncher {
             .padding(8)
             .push(Space::new(Length::Fill, Length::Shrink))
             .push(
-                Button::new(match self.music_state {
+                Button::new(match self.settings.music_state {
                     MusicState::Playing => style::pause_icon(),
                     MusicState::Paused => style::play_icon(),
                 })
                 .style(icon_button())
-                .on_press(Message::MusicMessage(match self.music_state {
-                    MusicState::Playing => MusicCommand::Pause,
-                    MusicState::Paused => MusicCommand::Play,
-                })),
+                .on_press(Message::MusicMessage(
+                    match self.settings.music_state {
+                        MusicState::Playing => MusicCommand::Pause,
+                        MusicState::Paused => MusicCommand::Play,
+                    },
+                )),
             )
-            .push(Text::new("Playing: Endless Sky Prototype by JimmyZenith").size(14));
+            .push(Text::new("Endless Sky Prototype by JimmyZenith").size(13));
 
         Container::new(
             Column::new()
@@ -293,7 +301,7 @@ impl Application for ESLauncher {
                         .center_x()
                         .center_y(),
                 )
-                .push(music_controls),
+                .push(music_controls.height(Length::Shrink)),
         )
         .width(Length::Fill)
         .height(Length::Fill)

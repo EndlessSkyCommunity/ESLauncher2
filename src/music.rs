@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use rodio::Sink;
+use serde::{Deserialize, Serialize};
 use std::io::{BufReader, Cursor};
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -12,31 +13,34 @@ const SONG: &[u8] = include_bytes!("../assets/endless-prototype.ogg");
 pub enum MusicCommand {
     Pause,
     Play,
+    WeakPause,
+    WeakPlay,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MusicState {
+    #[default]
     Playing,
     Paused,
 }
 
-pub fn spawn() -> Sender<MusicCommand> {
+pub fn spawn(initial_state: MusicState) -> Sender<MusicCommand> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
-        if let Err(e) = play(&rx) {
+        if let Err(e) = play(&rx, initial_state) {
             error!("Music thread crashed: {:#}", e)
         }
     });
     tx
 }
 
-fn play(rx: &Receiver<MusicCommand>) -> Result<()> {
+fn play(rx: &Receiver<MusicCommand>, initial_state: MusicState) -> Result<()> {
     let (_stream, stream_handle) =
         rodio::OutputStream::try_default().context("Failed to get output stream")?;
 
     let sink = Sink::try_new(&stream_handle).context("Failed to create Sink")?;
 
-    let mut state = MusicState::Playing;
+    let mut state = initial_state;
     loop {
         if let Ok(cmd) = rx.try_recv() {
             match cmd {
@@ -47,6 +51,12 @@ fn play(rx: &Receiver<MusicCommand>) -> Result<()> {
                 MusicCommand::Play => {
                     state = MusicState::Playing;
                     sink.play()
+                }
+                MusicCommand::WeakPause => sink.pause(),
+                MusicCommand::WeakPlay => {
+                    if let MusicState::Playing = state {
+                        sink.play()
+                    }
                 }
             }
         }
