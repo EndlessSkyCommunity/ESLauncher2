@@ -9,12 +9,6 @@ A program for organizing Endless Sky installations.
 - Play instances
 - Install & manage plug-ins
 
-### Requirements
-As of 0.6.0, ESLauncher2 requires **OpenGL 3** (same as Endless Sky).
-
-Previous versions required DirectX 11 or 12, Vulkan or Metal. See also [#4](https://github.com/EndlessSkyCommunity/ESLauncher2/issues/4).
-
-
 ### Installation
 [![Download for Windows](https://badgen.net/badge/Windows/Download/green?icon=windows)](https://github.com/EndlessSkyCommunity/ESLauncher2/releases/latest/download/eslauncher2-x86_64-pc-windows-msvc.exe)
 [![Download for Linux](https://badgen.net/badge/Linux/Download/green?icon=terminal)](https://github.com/EndlessSkyCommunity/ESLauncher2/releases/latest/download/eslauncher2-x86_64-unknown-linux-gnu)
