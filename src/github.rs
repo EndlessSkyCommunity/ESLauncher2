@@ -327,9 +327,9 @@ pub fn download(
         send_progress_message(
             &thread_instance_name,
             Progress::from("Downloading")
-                .done(fetched as u32)
-                .total(total)
-                .units("b"),
+                .done((fetched / (1024 * 1024)) as u32)
+                .total(total.map(|t| t / (1024 * 1024)))
+                .units("MiB"),
         );
         thread::sleep(Duration::from_millis(30));
     });
