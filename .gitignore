@@ -7,3 +7,5 @@ ESLauncher2.log
 /*.deb
 /*.rpm
 /*.zst
+.vscode/launch.json
+.vscode/tasks.json

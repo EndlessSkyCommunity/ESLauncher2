@@ -175,7 +175,13 @@ impl Plugin {
                     remove_button = remove_button.on_press(PluginMessage::Remove)
                 }
 
-                controls = controls.push(install_button).push(remove_button);
+                let mut href_button =
+                    button::Button::new(style::href_icon()).style(icon_button()); // TODO: Use other icon here?
+                    if false {
+                        // To-Do: go to Plugin github page
+                    }
+
+                controls = controls.push(href_button).push(install_button).push(remove_button);
             }
             PluginState::Working => {
                 infos = infos.push(
