@@ -23,9 +23,6 @@ pub fn debug_icon() -> Text<'static> {
 pub fn play_icon() -> Text<'static> {
     icon('\u{EA1C}')
 }
-pub fn href_icon() -> Text<'static> {
-    icon('\u{E9CB}')
-}
 
 pub fn update_icon() -> Text<'static> {
     icon('\u{E9C7}')
