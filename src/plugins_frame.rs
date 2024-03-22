@@ -1,17 +1,15 @@
+use crate::style::icon_button;
 use crate::{get_data_dir, style, Message};
 use anyhow::Context;
 use anyhow::Result;
-use std::fs::File;
-use std::io::{Read, Write};
-use std::path::PathBuf;
-use crate::style::icon_button;
 use espim::Plugin as EspimPlugin;
 use iced::widget::{button, image, Column, Container, Image, Row, Scrollable, Text};
 use iced::{alignment, theme, Alignment, Color, Command, Element, Length};
 use lazy_static::lazy_static;
 use regex::Regex;
-use webbrowser;
-use url::Url;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::PathBuf;
 
 lazy_static! {
     static ref CACHE_FILENAME_REGEX: Regex = Regex::new(r"[^\w.-]").unwrap();
@@ -118,16 +116,16 @@ impl Plugin {
             PluginMessage::OpenHREF => {
                 if let PluginState::Idle { espim_plugin } = &mut self.state {
                     if espim_plugin.is_available() {
-                        
-                        let url = espim_plugin.homepage().unwrap_or("No Homepage Available".to_string());
-                        if validate_url(&url) {
-                            if !webbrowser::open(&url).is_ok() {
-                                error!("URL could not be opened: {}", url);
+                        let url = espim_plugin
+                            .homepage()
+                            .unwrap_or("No homepage available".to_string());
+                        if url.trim().starts_with("http://") || url.trim().starts_with("https://") {
+                            if !open::that(&url.trim()).is_ok() {
+                                error!("URL could not be opened: '{}'", url);
                             }
                         } else {
-                            error!("URL-Validation broke: {}", url);
+                            error!("URL validation failed: '{}' is not http(s):// .", url);
                         }
-                        
                     }
                 }
             }
@@ -141,7 +139,6 @@ impl Plugin {
     }
 
     fn view(&self) -> Element<PluginMessage> {
-        
         let content = Row::new().spacing(10).padding(10);
         const ICON_DIMENSION: f32 = 48.;
         let mut icon_container = Row::new()
@@ -155,43 +152,49 @@ impl Plugin {
             );
         }
         let mut textbox = Column::new().width(Length::Fill);
-        let mut titlebox = Row::new().push(Text::new(&self.name).vertical_alignment(alignment::Vertical::Center).width(Length::Fill));
+        let mut titlebox = Row::new().push(
+            Text::new(&self.name)
+                .vertical_alignment(alignment::Vertical::Center)
+                .width(Length::Fill),
+        );
         let mut infos = Column::new();
-        
+
         let mut controls = Row::new().spacing(10);
 
         match &self.state {
             PluginState::Idle { espim_plugin } => {
                 let versions = espim_plugin.versions();
                 infos = infos
-                        .push(
-                            Text::new(if espim_plugin.is_installed() {
-                                format!("Installed: {}", versions.0.unwrap_or("unknown"))
-                            } else {
-                                String::from("Not installed")
-                            })
-                            .size(14)
-                            .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
-                        )
-                        .push(
-                                Text::new(if espim_plugin.is_available() {
+                    .push(
+                        Text::new(if espim_plugin.is_installed() {
+                            format!("Installed: {}", versions.0.unwrap_or("unknown"))
+                        } else {
+                            String::from("Not installed")
+                        })
+                        .size(14)
+                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                    )
+                    .push(
+                        Text::new(if espim_plugin.is_available() {
                             format!("Available: {}", versions.1.unwrap_or("unknown"))
                         } else {
                             String::from("Unavailable")
-                        }).size(14).style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6)))
-                        )
-                        .push(
-                            Row::new().spacing(10).padding(10)
-                        )       
-                        .push(
-                            Text::new(
-                                format!("Description: {}", espim_plugin.description().unwrap_or("Not available".to_string()))
-                            )
-                            .size(14)
-                            .width(Length::Shrink)
-                            .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
-                        );
-                        
+                        })
+                        .size(14)
+                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                    )
+                    .push(Row::new().spacing(10).padding(10))
+                    .push(
+                        Text::new(format!(
+                            "Description: {}",
+                            espim_plugin
+                                .description()
+                                .unwrap_or("Not available".to_string())
+                        ))
+                        .size(14)
+                        .width(Length::Shrink)
+                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                    );
 
                 let mut install_button =
                     button::Button::new(style::update_icon()).style(icon_button()); // TODO: Use other icon here?
@@ -205,14 +208,15 @@ impl Plugin {
                     remove_button = remove_button.on_press(PluginMessage::Remove)
                 }
 
-                let mut href_button =
-                    button::Button::new(style::href_icon()).style(icon_button()); // TODO: Use other icon here?
-                    if espim_plugin.is_available() {
-                        href_button = href_button.on_press(PluginMessage::OpenHREF)
-                    }
+                let mut href_button = button::Button::new(style::href_icon()).style(icon_button()); // TODO: Use other icon here?
+                if espim_plugin.is_available() {
+                    href_button = href_button.on_press(PluginMessage::OpenHREF)
+                }
 
-                controls = controls.push(href_button).push(install_button).push(remove_button);
-                
+                controls = controls
+                    .push(href_button)
+                    .push(install_button)
+                    .push(remove_button);
             }
             PluginState::Working => {
                 infos = infos.push(
@@ -223,15 +227,9 @@ impl Plugin {
             }
         };
         titlebox = titlebox.push(controls);
-        textbox = textbox
-            .push(titlebox)
-            .push(infos);
+        textbox = textbox.push(titlebox).push(infos);
 
-        content
-            .push(icon_container)
-            .push(textbox)
-            .into()
-            
+        content.push(icon_container).push(textbox).into()
     }
 }
 
@@ -313,14 +311,4 @@ pub async fn perform_install(mut plugin: EspimPlugin) -> EspimPlugin {
         error!("Install failed: {:#}", e)
     }
     plugin
-}
-
-fn validate_url(url: &str) -> bool {
-    match Url::parse(&url) {
-        Ok(parsed_url) => {
-            // Überprüft, ob das Schema http oder https ist
-            parsed_url.scheme() == "http" || parsed_url.scheme() == "https"
-        },
-        Err(_) => false,
-    }
 }
