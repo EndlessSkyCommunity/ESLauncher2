@@ -254,6 +254,7 @@ pub async fn load_plugins() -> Vec<Plugin> {
             );
         }
     }
+    plugins.sort_unstable_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     plugins
 }
 
