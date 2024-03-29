@@ -120,7 +120,7 @@ impl Plugin {
                             .homepage()
                             .unwrap_or("No homepage available".to_string());
                         if url.trim().starts_with("http://") || url.trim().starts_with("https://") {
-                            if open::that(&url.trim()).is_err() {
+                            if open::that(url.trim()).is_err() {
                                 error!("URL could not be opened: '{}'", url);
                             }
                         } else {
