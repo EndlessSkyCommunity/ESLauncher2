@@ -1,5 +1,6 @@
+use iced::border::Radius;
 use iced::widget::{button, container, Text};
-use iced::{alignment, Background, BorderRadius, Color, Font, Length, Theme, Vector};
+use iced::{alignment, Background, Border, Color, Font, Length, Theme, Vector};
 use std::default::Default;
 use std::rc::Rc;
 
@@ -71,9 +72,11 @@ impl button::StyleSheet for ButtonStyle {
             },
             ButtonStyle::Text => button::Appearance {
                 background: Some(Background::Color(Color::WHITE)),
-                border_color: Color::from_rgb(0.8, 0.8, 0.8),
-                border_radius: BorderRadius::from(2.),
-                border_width: 0.3,
+                border: Border {
+                    color: Color::from_rgb(0.8, 0.8, 0.8),
+                    width: 0.3,
+                    radius: Radius::from(2.0),
+                },
                 shadow_offset: Vector::new(0.3, 0.3),
                 ..Default::default()
             },
@@ -90,7 +93,10 @@ impl button::StyleSheet for ButtonStyle {
                 ..active
             },
             ButtonStyle::Text => button::Appearance {
-                border_color: Color::from_rgb(0.4, 0.4, 0.4),
+                border: Border {
+                    color: Color::from_rgb(0.4, 0.4, 0.4),
+                    ..Default::default()
+                },
                 shadow_offset: active.shadow_offset + Vector::new(0.1, 0.3),
                 ..active
             },
