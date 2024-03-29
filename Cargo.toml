@@ -47,11 +47,6 @@ version = "0.10.0"
 default_features = false
 features = ["advanced", "image", "tokio"]
 
-[dev-dependencies.iced]
-version = "0.10.0"
-default_features = false
-features = ["advanced", "image", "tokio", "debug"]
-
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"
 
