@@ -54,7 +54,18 @@ impl InstancesFrame {
                 .values()
                 .fold(instances_column, |column, instance| {
                     column
-                        .push(iced::widget::horizontal_rule(2))
+                        .push(
+                            iced::widget::horizontal_rule(2).style(iced::theme::Rule::from(
+                                |theme: &iced::Theme| {
+                                    let mut appearance = iced::widget::rule::StyleSheet::appearance(
+                                        theme,
+                                        &Default::default(),
+                                    );
+                                    appearance.color.a *= 0.75;
+                                    appearance
+                                },
+                            )),
+                        )
                         .push(instance.view().map(move |message| {
                             Message::InstanceMessage(instance.name.clone(), message)
                         }))

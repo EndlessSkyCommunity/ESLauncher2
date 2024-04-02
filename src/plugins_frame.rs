@@ -44,20 +44,31 @@ impl PluginsFrameState {
                 ),
             ),
             Self::Ready { plugins } => {
-                let plugin_list = plugins.iter().fold(
-                    Column::new()
-                        .padding(20)
-                        .spacing(5)
-                        .width(Length::Fill)
-                        .align_items(Alignment::Center),
-                    |column, plugin| {
-                        column.push(iced::widget::horizontal_rule(2)).push(
-                            plugin
-                                .view()
-                                .map(move |msg| Message::PluginMessage(plugin.name.clone(), msg)),
-                        )
-                    },
-                );
+                let plugin_list =
+                    plugins.iter().fold(
+                        Column::new()
+                            .padding(20)
+                            .spacing(5)
+                            .width(Length::Fill)
+                            .align_items(Alignment::Center),
+                        |column, plugin| {
+                            column
+                                .push(iced::widget::horizontal_rule(2).style(
+                                    iced::theme::Rule::from(|theme: &iced::Theme| {
+                                        let mut appearance =
+                                            iced::widget::rule::StyleSheet::appearance(
+                                                theme,
+                                                &Default::default(),
+                                            );
+                                        appearance.color.a *= 0.75;
+                                        appearance
+                                    }),
+                                ))
+                                .push(plugin.view().map(move |msg| {
+                                    Message::PluginMessage(plugin.name.clone(), msg)
+                                }))
+                        },
+                    );
 
                 Container::new(
                     Column::new()
