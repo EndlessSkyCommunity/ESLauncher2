@@ -22,7 +22,7 @@ use iced::{
 };
 use iced_aw::{TabLabel, Tabs};
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
