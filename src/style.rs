@@ -1,7 +1,6 @@
 use iced::border::Radius;
 use iced::widget::{button, container, Text};
 use iced::{alignment, Background, Border, Color, Font, Length, Theme, Vector};
-use std::default::Default;
 use std::rc::Rc;
 
 fn icon(unicode: char) -> Text<'static> {
@@ -66,11 +65,11 @@ impl button::StyleSheet for ButtonStyle {
 
     fn active(&self, _: &Self::Style) -> button::Appearance {
         match self {
-            ButtonStyle::Icon => button::Appearance {
+            Self::Icon => button::Appearance {
                 text_color: Color::from_rgb(0.5, 0.5, 0.5),
                 ..Default::default()
             },
-            ButtonStyle::Text => button::Appearance {
+            Self::Text => button::Appearance {
                 background: Some(Background::Color(Color::WHITE)),
                 border: Border {
                     color: Color::from_rgb(0.8, 0.8, 0.8),
@@ -87,12 +86,12 @@ impl button::StyleSheet for ButtonStyle {
         let active = self.active(style);
 
         match self {
-            ButtonStyle::Icon => button::Appearance {
+            Self::Icon => button::Appearance {
                 text_color: Color::from_rgb(0.3, 0.3, 0.3),
                 shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
                 ..active
             },
-            ButtonStyle::Text => button::Appearance {
+            Self::Text => button::Appearance {
                 border: Border {
                     color: Color::from_rgb(0.4, 0.4, 0.4),
                     ..Default::default()
@@ -106,7 +105,7 @@ impl button::StyleSheet for ButtonStyle {
     fn disabled(&self, style: &Self::Style) -> button::Appearance {
         let active = self.active(style);
         match self {
-            ButtonStyle::Text => button::Appearance {
+            Self::Text => button::Appearance {
                 text_color: Color::from_rgb(0.5, 0.5, 0.5),
                 ..active
             },

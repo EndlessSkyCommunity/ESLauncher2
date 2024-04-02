@@ -39,16 +39,12 @@ pub struct PRHead {
 
 pub fn get_pr(id: u16) -> Result<PR> {
     make_request(&format!(
-        "https://api.github.com/repos/endless-sky/endless-sky/pulls/{}",
-        id
+        "https://api.github.com/repos/endless-sky/endless-sky/pulls/{id}"
     ))
 }
 
 pub fn unblock_artifact_download(artifact_id: u32) -> String {
-    format!(
-        "https://artifact-unblocker.mcofficer.workers.dev/artifact/{}",
-        artifact_id,
-    )
+    format!("https://artifact-unblocker.mcofficer.workers.dev/artifact/{artifact_id}",)
 }
 
 #[derive(Deserialize, Debug)]
@@ -92,8 +88,7 @@ pub fn get_latest_workflow_run(
     head_repo_id: u32,
 ) -> Result<WorkflowRun> {
     let mut pages: Vec<WorkflowRuns> = make_paginated_request(&format!(
-        "https://api.github.com/repos/endless-sky/endless-sky/actions/workflows/{}/runs?branch={}",
-        workflow_id, branch
+        "https://api.github.com/repos/endless-sky/endless-sky/actions/workflows/{workflow_id}/runs?branch={branch}"
     ))?;
 
     let runs: Vec<WorkflowRun> = pages
@@ -136,8 +131,7 @@ impl Artifact for WorkflowRunArtifact {
 
 pub fn get_workflow_run_artifacts(run_id: u64) -> Result<Vec<WorkflowRunArtifact>> {
     let artifacts: WorkflowRunArtifacts = make_request(&format!(
-        "https://api.github.com/repos/endless-sky/endless-sky/actions/runs/{}/artifacts",
-        run_id
+        "https://api.github.com/repos/endless-sky/endless-sky/actions/runs/{run_id}/artifacts"
     ))?;
     info!(
         "Got {} artifacts for workflow run {}",
@@ -158,8 +152,7 @@ pub struct GitObject {
 
 pub fn get_git_ref(name: &str) -> Result<GitRef> {
     make_request(&format!(
-        "https://api.github.com/repos/endless-sky/endless-sky/git/ref/{}",
-        name
+        "https://api.github.com/repos/endless-sky/endless-sky/git/ref/{name}"
     ))
 }
 
@@ -171,13 +164,12 @@ pub struct Release {
 
 pub fn get_release_by_tag(tag: &str) -> Result<Release> {
     make_request(&format!(
-        "https://api.github.com/repos/endless-sky/endless-sky/releases/tags/{}",
-        tag
+        "https://api.github.com/repos/endless-sky/endless-sky/releases/tags/{tag}"
     ))
 }
 
 pub fn get_latest_release(repo_slug: &str) -> Result<String> {
-    let url = &format!("https://github.com/{}/releases/latest", repo_slug);
+    let url = &format!("https://github.com/{repo_slug}/releases/latest");
     let res = ureq::get(url).call()?;
 
     if res.status() >= 400 {
@@ -186,7 +178,7 @@ pub fn get_latest_release(repo_slug: &str) -> Result<String> {
             res.status(),
             res.status_text(),
             url,
-        )
+        );
     };
 
     Ok(res.get_url().rsplit_once('/').unwrap().1.to_string())
@@ -214,8 +206,7 @@ impl Artifact for ReleaseAsset {
 
 pub fn get_release_assets(release_id: i64) -> Result<Vec<ReleaseAsset>> {
     let assets: ReleaseAssets = make_request(&format!(
-        "https://api.github.com/repos/endless-sky/endless-sky/releases/{}/assets",
-        release_id
+        "https://api.github.com/repos/endless-sky/endless-sky/releases/{release_id}/assets"
     ))?;
     info!("Got {} assets for release {}", assets.0.len(), release_id);
     Ok(assets.0)
@@ -231,7 +222,7 @@ fn make_request<T: DeserializeOwned>(url: &str) -> Result<T> {
             res.status(),
             res.status_text(),
             url,
-        )
+        );
     }
     Ok(res.into_json()?)
 }
@@ -281,7 +272,7 @@ fn check_ratelimit(res: &ureq::Response) {
                         };
                     }
                 } else if remaining < 10 {
-                    warn!("Only {} github API requests remaining", remaining)
+                    warn!("Only {} github API requests remaining", remaining);
                 }
             }
             Err(e) => warn!("Failed to parse X-RateLimit-Remaining Header: {}", e),
