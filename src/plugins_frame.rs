@@ -44,34 +44,20 @@ impl PluginsFrameState {
                 ),
             ),
             Self::Ready { plugins } => {
-                let mut plugin_iter = plugins.iter();
-
-                let mut column_contents = Vec::with_capacity(plugins.len() * 2);
-
-                if let Some(plugin) = plugin_iter.next() {
-                    let name = plugin.name.clone();
-                    column_contents.push(
-                        plugin
-                            .view()
-                            .map(move |msg| Message::PluginMessage(name.clone(), msg)),
-                    );
-                }
-                for plugin in plugin_iter {
-                    column_contents.push(iced::widget::horizontal_rule(2).into());
-
-                    let name = plugin.name.clone();
-                    column_contents.push(
-                        plugin
-                            .view()
-                            .map(move |msg| Message::PluginMessage(name.clone(), msg)),
-                    );
-                }
-
-                let plugin_list = Column::from_vec(column_contents)
-                    .padding(20)
-                    .spacing(20)
-                    .width(Length::Fill)
-                    .align_items(Alignment::Center);
+                let plugin_list = plugins.iter().fold(
+                    Column::new()
+                        .padding(20)
+                        .spacing(5)
+                        .width(Length::Fill)
+                        .align_items(Alignment::Center),
+                    |column, plugin| {
+                        column.push(iced::widget::horizontal_rule(2)).push(
+                            plugin
+                                .view()
+                                .map(move |msg| Message::PluginMessage(plugin.name.clone(), msg)),
+                        )
+                    },
+                );
 
                 Container::new(
                     Column::new()
@@ -80,7 +66,12 @@ impl PluginsFrameState {
                         .width(Length::Fill),
                 )
                 .width(Length::Fill)
-                .padding(30)
+                .padding(iced::Padding {
+                    top: 0.0,
+                    right: 30.0,
+                    bottom: 0.0,
+                    left: 30.0,
+                })
             }
         }
     }

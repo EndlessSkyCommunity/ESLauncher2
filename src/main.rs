@@ -228,17 +228,30 @@ impl Application for ESLauncher {
             .push::<Element<'_, Message>>(
                 Tab::Instances,
                 TabLabel::Text("Instances".into()),
-                Row::new()
-                    .push(self.instances_frame.view())
-                    .push(self.install_frame.view().map(Message::InstallFrameMessage))
-                    .spacing(50)
-                    .padding(15)
-                    .into(),
+                iced::widget::column([
+                    iced::widget::horizontal_rule(2).into(),
+                    Row::new()
+                        .push(self.instances_frame.view())
+                        .push(iced::widget::vertical_rule(2))
+                        .push(self.install_frame.view().map(Message::InstallFrameMessage))
+                        .spacing(10)
+                        .padding(iced::Padding {
+                            top: 0.0,
+                            right: 15.0,
+                            bottom: 0.0,
+                            left: 15.0,
+                        })
+                        .into(),
+                ])
+                .into(),
             )
             .push(
                 Tab::Plugins,
                 TabLabel::Text("Plugins".into()),
-                self.plugins_frame.view(),
+                iced::widget::column([
+                    iced::widget::horizontal_rule(2).into(),
+                    self.plugins_frame.view().into(),
+                ]),
             )
             .set_active_tab(&self.active_tab)
             .tab_bar_style(tab_bar());
@@ -265,6 +278,14 @@ impl Application for ESLauncher {
         let content = Column::new()
             .align_items(Alignment::Center)
             .push(tabs.height(Length::FillPortion(3)))
+            .push(
+                iced::widget::container(iced::widget::horizontal_rule(2)).padding(iced::Padding {
+                    top: 0.0,
+                    right: 10.0,
+                    bottom: 0.0,
+                    left: 10.0,
+                }),
+            )
             .push(
                 Scrollable::new(logbox)
                     .width(Length::Fill)
