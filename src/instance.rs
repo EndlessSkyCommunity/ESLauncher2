@@ -66,25 +66,13 @@ pub enum InstanceState {
     Ready,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Progress {
     status: String,
     done: Option<u32>,
     total: Option<u32>,
     units: Option<String>,
     total_approx: bool,
-}
-
-impl Default for Progress {
-    fn default() -> Self {
-        Self {
-            status: "".into(),
-            done: None,
-            total: None,
-            units: None,
-            total_approx: false,
-        }
-    }
 }
 
 impl Progress {
@@ -117,13 +105,13 @@ impl<T: AsRef<str>> From<T> for Progress {
 
 impl InstanceState {
     pub fn is_playing(&self) -> bool {
-        matches!(self, InstanceState::Playing)
+        matches!(self, Self::Playing)
     }
     pub fn is_working(&self) -> bool {
-        matches!(self, InstanceState::Working { .. })
+        matches!(self, Self::Working { .. })
     }
     pub fn is_ready(&self) -> bool {
-        matches!(self, InstanceState::Ready)
+        matches!(self, Self::Ready)
     }
 }
 
@@ -147,13 +135,13 @@ impl Instance {
         state: InstanceState,
     ) -> Self {
         Self {
+            state,
             path,
             executable,
             name,
             version,
             instance_type,
             source,
-            state,
         }
     }
 
@@ -166,7 +154,7 @@ impl Instance {
                 iced::Command::batch(vec![
                     iced::Command::perform(dummy(), move |()| {
                         Message::InstanceMessage(
-                            name1.to_string(),
+                            name1,
                             InstanceMessage::StateChanged(InstanceState::Playing),
                         )
                     }),
@@ -179,7 +167,7 @@ impl Instance {
                         ),
                         move |()| {
                             Message::InstanceMessage(
-                                name2.to_string(),
+                                name2,
                                 InstanceMessage::StateChanged(InstanceState::Ready),
                             )
                         },
@@ -191,7 +179,7 @@ impl Instance {
                 iced::Command::batch(vec![
                     iced::Command::perform(dummy(), move |()| {
                         Message::InstanceMessage(
-                            name.clone(),
+                            name,
                             InstanceMessage::StateChanged(InstanceState::Working(
                                 "Updating".into(),
                             )),
@@ -206,7 +194,7 @@ impl Instance {
             InstanceMessage::Delete => {
                 let name = self.name.clone();
                 iced::Command::perform(delete(self.path.clone()), move |_| {
-                    Message::RemoveInstance(Some(name.clone()))
+                    Message::RemoveInstance(Some(name))
                 })
             }
             InstanceMessage::StateChanged(state) => {
@@ -271,15 +259,12 @@ impl Instance {
                                 "{}/{}{}{}",
                                 done,
                                 if progress.total_approx { "~" } else { "" },
-                                progress
-                                    .total
-                                    .map(|u| u.to_string())
-                                    .unwrap_or_else(|| "?".into()),
-                                progress.units.as_ref().unwrap_or(&"".into())
+                                progress.total.map_or_else(|| "?".into(), |u| u.to_string()),
+                                progress.units.as_ref().unwrap_or(&String::new())
                             ))
                             .size(12)
                             .horizontal_alignment(alignment::Horizontal::Center),
-                        )
+                        );
                     }
                     Row::new()
                         .push(Space::with_width(Length::FillPortion(1)))
@@ -306,7 +291,7 @@ pub async fn perform_install(
     instance_type: InstanceType,
     instance_source: InstanceSource,
 ) {
-    send_message(Message::AddInstance(Instance::new(
+    send_message(Message::AddInstance(Box::new(Instance::new(
         path.clone(),
         "provisional".into(),
         name.clone(),
@@ -314,10 +299,10 @@ pub async fn perform_install(
         instance_type,
         instance_source.clone(),
         InstanceState::Working(Progress::default()),
-    )));
+    ))));
     match install::install(path, name.clone(), instance_type, instance_source) {
         Ok(instance) => {
-            send_message(Message::AddInstance(instance));
+            send_message(Message::AddInstance(Box::new(instance)));
         }
         Err(e) => {
             error!("Install failed: {:#}", e);
@@ -329,7 +314,7 @@ pub async fn perform_install(
 pub async fn open_folder(path: PathBuf) {
     info!("Opening {} in file explorer", path.to_string_lossy());
     if let Err(e) = open::that(path.as_path()) {
-        error!("Failed to open path: {}", e)
+        error!("Failed to open path: {}", e);
     }
 }
 
@@ -346,7 +331,7 @@ pub async fn delete(path: PathBuf) -> Option<PathBuf> {
 pub async fn perform_update(instance: Instance) {
     let name = instance.name.clone();
     match update::update_instance(instance).await {
-        Ok(instance) => send_message(Message::AddInstance(instance)),
+        Ok(instance) => send_message(Message::AddInstance(Box::new(instance))),
         Err(e) => {
             error!("Failed to update instance: {:#}", e);
             send_message(Message::InstanceMessage(
@@ -374,11 +359,11 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
         "[year]-[month]-[day] [hour]-[minute]-[second]",
     )?)?;
     let mut out_path = log_path.clone();
-    out_path.push(format!("{}.out", time));
+    out_path.push(format!("{time}.out"));
     let mut out = File::create(out_path)?;
 
     let mut err_path = log_path.clone();
-    err_path.push(format!("{}.err", time));
+    err_path.push(format!("{time}.err"));
     let mut err = File::create(err_path)?;
 
     info!(

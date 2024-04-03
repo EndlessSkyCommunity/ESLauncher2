@@ -18,7 +18,7 @@ pub fn install(
     mut instance_source: InstanceSource,
 ) -> Result<Instance> {
     info!("Installing to {}", destination.to_string_lossy());
-    if let InstanceType::Unknown = instance_type {
+    if instance_type == InstanceType::Unknown {
         return Err(anyhow!("Cannot install InstanceType::Unknown",));
     }
     send_progress_message(&name, "Preparing directories".into());
@@ -67,7 +67,7 @@ pub fn install(
     let mut executable_path = destination.clone();
     executable_path.push(instance_type.executable().unwrap());
 
-    if let InstanceType::AppImage = instance_type {
+    if instance_type == InstanceType::AppImage {
         fs::rename(&archive_file, &executable_path)?;
     } else if cfg!(target_os = "macos") && archive_file.to_string_lossy().contains("dmg") {
         send_progress_message(&name, "Processing DMG file".into());
@@ -81,7 +81,7 @@ pub fn install(
 
     // TODO: Remove this after a while, only exists for backwards compatibility with pre-cmake PRs
     if InstanceType::Windows == instance_type && !executable_path.exists() {
-        executable_path.set_file_name("EndlessSky.exe")
+        executable_path.set_file_name("EndlessSky.exe");
     }
 
     // upload-artifact doesn't preserve permissions, so we need to set the executable bit here
@@ -177,12 +177,12 @@ pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceTy
 
 #[cfg(unix)]
 fn chmod_x(file: &PathBuf) {
-    if let Err(e) = fs::set_permissions(&file, PermissionsExt::from_mode(0o755)) {
+    if let Err(e) = fs::set_permissions(file, PermissionsExt::from_mode(0o755)) {
         warn!(
             "Failed to set executable bit for {}: {}",
             file.to_string_lossy(),
             e
-        )
+        );
     }
 }
 

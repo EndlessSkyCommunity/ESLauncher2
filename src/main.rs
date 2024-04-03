@@ -92,7 +92,7 @@ pub enum Message {
     InstallFrameMessage(InstallFrameMessage),
     InstanceMessage(String, InstanceMessage),
     PluginMessage(String, PluginMessage),
-    AddInstance(Instance),
+    AddInstance(Box<Instance>),
     RemoveInstance(Option<String>),
     Dummy(()),
     FontLoaded(Result<(), font::Error>),
@@ -176,9 +176,9 @@ impl Application for ESLauncher {
                 let is_ready = instance.state.is_ready();
                 self.instances_frame
                     .instances
-                    .insert(instance.name.clone(), instance);
+                    .insert(instance.name.clone(), *instance);
                 if is_ready {
-                    instance::perform_save_instances(self.instances_frame.instances.clone())
+                    instance::perform_save_instances(self.instances_frame.instances.clone());
                 };
             }
             Message::RemoveInstance(option) => {
@@ -195,7 +195,7 @@ impl Application for ESLauncher {
                     _ => self.settings.music_state,
                 };
                 if let Err(e) = self.settings.save() {
-                    error!("Failed to save settings.json: {:#?}", e)
+                    error!("Failed to save settings.json: {:#?}", e);
                 };
             }
             Message::TabSelected(active_tab) => self.active_tab = active_tab,
@@ -203,7 +203,7 @@ impl Application for ESLauncher {
                 self.plugins_frame = plugins_frame::PluginsFrameState::from(plugins);
             }
             Message::Log(line) => self.log_buffer.push(line),
-            Message::Dummy(_) => (),
+            Message::Dummy(()) => (),
             Message::FontLoaded(_) => (),
         }
         Command::none()
@@ -228,17 +228,30 @@ impl Application for ESLauncher {
             .push::<Element<'_, Message>>(
                 Tab::Instances,
                 TabLabel::Text("Instances".into()),
-                Row::new()
-                    .push(self.instances_frame.view())
-                    .push(self.install_frame.view().map(Message::InstallFrameMessage))
-                    .spacing(50)
-                    .padding(15)
-                    .into(),
+                iced::widget::column([
+                    iced::widget::horizontal_rule(2).into(),
+                    Row::new()
+                        .push(self.instances_frame.view())
+                        .push(iced::widget::vertical_rule(2))
+                        .push(self.install_frame.view().map(Message::InstallFrameMessage))
+                        .spacing(10)
+                        .padding(iced::Padding {
+                            top: 0.0,
+                            right: 15.0,
+                            bottom: 0.0,
+                            left: 15.0,
+                        })
+                        .into(),
+                ])
+                .into(),
             )
             .push(
                 Tab::Plugins,
                 TabLabel::Text("Plugins".into()),
-                self.plugins_frame.view(),
+                iced::widget::column([
+                    iced::widget::horizontal_rule(2).into(),
+                    self.plugins_frame.view().into(),
+                ]),
             )
             .set_active_tab(&self.active_tab)
             .tab_bar_style(tab_bar());
@@ -265,6 +278,14 @@ impl Application for ESLauncher {
         let content = Column::new()
             .align_items(Alignment::Center)
             .push(tabs.height(Length::FillPortion(3)))
+            .push(
+                iced::widget::container(iced::widget::horizontal_rule(2)).padding(iced::Padding {
+                    top: 0.0,
+                    right: 10.0,
+                    bottom: 0.0,
+                    left: 10.0,
+                }),
+            )
             .push(
                 Scrollable::new(logbox)
                     .width(Length::Fill)
@@ -307,13 +328,21 @@ impl Application for ESLauncher {
         .height(Length::Fill)
         .into()
     }
+
+    fn theme(&self) -> Self::Theme {
+        iced::Theme::custom("LightModified".into(), {
+            let mut palette = iced::theme::Palette::LIGHT;
+            palette.primary = iced::Color::from_rgb(0.2, 0.2, 0.2);
+            palette
+        })
+    }
 }
 
 fn check_for_update() {
     thread::spawn(
         || match github::get_latest_release("EndlessSkyCommunity/ESLauncher2") {
             Ok(tag) => {
-                info!("The latest version of ESLauncher2 is {}", tag)
+                info!("The latest version of ESLauncher2 is {}", tag);
             }
             Err(e) => error!("Failed to fetch latest ESLauncher2 release: {}", e),
         },
@@ -360,8 +389,7 @@ pub fn send_message(message: Message) {
         Err(e) => {
             // Don't use an error log here because that may cause an endless loop of logs
             eprintln!(
-                "Failed to lock message queue:\n{}\nThe message was as follows:\n{:#?}",
-                e, message
+                "Failed to lock message queue:\n{e}\nThe message was as follows:\n{message:#?}"
             );
         }
     }

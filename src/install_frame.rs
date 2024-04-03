@@ -40,7 +40,7 @@ pub struct InstanceSource {
 impl Default for InstanceSource {
     fn default() -> Self {
         Self {
-            identifier: String::from(""),
+            identifier: String::new(),
             r#type: InstanceSourceType::Continuous,
         }
     }
@@ -52,7 +52,7 @@ impl InstanceSourceType {
 
 impl fmt::Display for InstanceSourceType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -72,19 +72,19 @@ impl InstallFrame {
                         Message::Dummy,
                     );
                 } else {
-                    error!("Could not get instances directory from AppDirs")
+                    error!("Could not get instances directory from AppDirs");
                 }
             }
             InstallFrameMessage::SourceTypeChanged(source_type) => self.source.r#type = source_type,
             InstallFrameMessage::NameChanged(name) => {
                 if let Some(invalid) = name.chars().rfind(|c| BLACKLISTED_CHARS.contains(c)) {
-                    error!("Invalid character: '{}'", invalid)
+                    error!("Invalid character: '{}'", invalid);
                 } else {
-                    self.name = name
+                    self.name = name;
                 }
             }
             InstallFrameMessage::SourceIdentifierChanged(identifier) => {
-                self.source.identifier = identifier
+                self.source.identifier = identifier;
             }
         }
         Command::none()
@@ -95,7 +95,7 @@ impl InstallFrame {
             Column::new().spacing(10).push(Text::new("Choose a Type:")),
             |column, source_type| {
                 column.push(Radio::new(
-                    format!("{:?}", source_type),
+                    format!("{source_type:?}"),
                     *source_type,
                     Some(self.source.r#type),
                     InstallFrameMessage::SourceTypeChanged,
@@ -119,7 +119,7 @@ impl InstallFrame {
                     InstanceType::AppImage
                 } else {
                     InstanceType::MacOS
-                }))
+                }));
         }
 
         Container::new(Scrollable::new(

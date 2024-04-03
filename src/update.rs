@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 
 pub async fn update_instance(instance: Instance) -> Result<Instance> {
-    if let InstanceType::Unknown = instance.instance_type {
+    if instance.instance_type == InstanceType::Unknown {
         return Err(anyhow!("Cannot update InstanceType::Unknown"));
     }
 
@@ -129,6 +129,7 @@ async fn bitar_update_archive(
     let mut target = OpenOptions::new()
         .read(true)
         .create(true)
+        .truncate(true)
         .write(true)
         .open(&target_path)
         .await?;

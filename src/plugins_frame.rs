@@ -44,20 +44,31 @@ impl PluginsFrameState {
                 ),
             ),
             Self::Ready { plugins } => {
-                let plugin_list = plugins.iter().fold(
-                    Column::new()
-                        .padding(20)
-                        .spacing(20)
-                        .align_items(Alignment::Center),
-                    |column, plugin| {
-                        let name = plugin.name.clone();
-                        column.push(
-                            plugin
-                                .view()
-                                .map(move |msg| Message::PluginMessage(name.clone(), msg)),
-                        )
-                    },
-                );
+                let plugin_list =
+                    plugins.iter().fold(
+                        Column::new()
+                            .padding(20)
+                            .spacing(5)
+                            .width(Length::Fill)
+                            .align_items(Alignment::Center),
+                        |column, plugin| {
+                            column
+                                .push(iced::widget::horizontal_rule(2).style(
+                                    iced::theme::Rule::from(|theme: &iced::Theme| {
+                                        let mut appearance =
+                                            iced::widget::rule::StyleSheet::appearance(
+                                                theme,
+                                                &Default::default(),
+                                            );
+                                        appearance.color.a *= 0.75;
+                                        appearance
+                                    }),
+                                ))
+                                .push(plugin.view().map(move |msg| {
+                                    Message::PluginMessage(plugin.name.clone(), msg)
+                                }))
+                        },
+                    );
 
                 Container::new(
                     Column::new()
@@ -66,7 +77,12 @@ impl PluginsFrameState {
                         .width(Length::Fill),
                 )
                 .width(Length::Fill)
-                .padding(30)
+                .padding(iced::Padding {
+                    top: 0.0,
+                    right: 30.0,
+                    bottom: 0.0,
+                    left: 30.0,
+                })
             }
         }
     }
@@ -77,13 +93,13 @@ pub enum PluginMessage {
     Install,
     Remove,
     OpenHREF,
-    WorkFinished(EspimPlugin),
+    WorkFinished(Box<EspimPlugin>),
 }
 
 #[derive(Debug, Clone)]
 pub enum PluginState {
     Working,
-    Idle { espim_plugin: EspimPlugin },
+    Idle { espim_plugin: Box<EspimPlugin> },
 }
 
 #[derive(Debug, Clone)]
@@ -101,15 +117,15 @@ impl Plugin {
                     let name = self.name.clone();
                     let plugin = espim_plugin.clone();
                     self.state = PluginState::Working;
-                    return Command::perform(perform_install(plugin), move |p| {
-                        Message::PluginMessage(name.clone(), PluginMessage::WorkFinished(p))
+                    return Command::perform(perform_install(*plugin), move |p| {
+                        Message::PluginMessage(name, PluginMessage::WorkFinished(Box::new(p)))
                     });
                 }
             }
             PluginMessage::Remove => {
                 if let PluginState::Idle { espim_plugin } = &mut self.state {
                     espim_plugin.remove().unwrap_or_else(|e| {
-                        error!("Failed to remove Plug-In {}: {}", self.name, e)
+                        error!("Failed to remove Plug-In {}: {}", self.name, e);
                     });
                 }
             }
@@ -193,18 +209,18 @@ impl Plugin {
                 let mut install_button =
                     button::Button::new(style::update_icon()).style(icon_button()); // TODO: Use other icon here?
                 if espim_plugin.is_available() {
-                    install_button = install_button.on_press(PluginMessage::Install)
+                    install_button = install_button.on_press(PluginMessage::Install);
                 }
 
                 let mut remove_button =
                     button::Button::new(style::delete_icon()).style(theme::Button::Destructive);
                 if espim_plugin.is_installed() {
-                    remove_button = remove_button.on_press(PluginMessage::Remove)
+                    remove_button = remove_button.on_press(PluginMessage::Remove);
                 }
 
                 let mut href_button = button::Button::new(style::href_icon()).style(icon_button()); // TODO: Use other icon here?
                 if espim_plugin.is_available() {
-                    href_button = href_button.on_press(PluginMessage::OpenHREF)
+                    href_button = href_button.on_press(PluginMessage::OpenHREF);
                 }
 
                 controls = controls
@@ -217,7 +233,7 @@ impl Plugin {
                     Text::new("Working...")
                         .size(14)
                         .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
-                )
+                );
             }
         };
         let header = Row::new()
@@ -241,10 +257,12 @@ pub async fn load_plugins() -> Vec<Plugin> {
                     .map_err(|e| debug!("failed to fetch icon: {}", e))
                     .ok();
                 plugins.push(Plugin {
-                    state: PluginState::Idle { espim_plugin: p },
+                    state: PluginState::Idle {
+                        espim_plugin: Box::new(p),
+                    },
                     name,
                     icon,
-                })
+                });
             }
         }
         Err(e) => {
@@ -300,13 +318,13 @@ pub async fn perform_install(mut plugin: EspimPlugin) -> EspimPlugin {
                 }
             }
             Err(e) => {
-                error!("Failed to get cache filename: {}", e)
+                error!("Failed to get cache filename: {}", e);
             }
         };
     }
 
     if let Err(e) = plugin.download() {
-        error!("Install failed: {:#}", e)
+        error!("Install failed: {:#}", e);
     }
     plugin
 }

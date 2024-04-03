@@ -28,7 +28,7 @@ pub fn spawn(initial_state: MusicState) -> Sender<MusicCommand> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         if let Err(e) = play(&rx, initial_state) {
-            error!("Music thread crashed: {:#}", e)
+            error!("Music thread crashed: {:#}", e);
         }
     });
     tx
@@ -46,16 +46,16 @@ fn play(rx: &Receiver<MusicCommand>, initial_state: MusicState) -> Result<()> {
             match cmd {
                 MusicCommand::Pause => {
                     state = MusicState::Paused;
-                    fade(&sink, true)
+                    fade(&sink, true);
                 }
                 MusicCommand::Play => {
                     state = MusicState::Playing;
-                    fade(&sink, false)
+                    fade(&sink, false);
                 }
                 MusicCommand::WeakPause => fade(&sink, true),
                 MusicCommand::WeakPlay => {
-                    if let MusicState::Playing = state {
-                        fade(&sink, false)
+                    if state == MusicState::Playing {
+                        fade(&sink, false);
                     }
                 }
             }
@@ -84,6 +84,6 @@ fn fade(sink: &Sink, out: bool) {
     }
 
     if out {
-        sink.pause()
+        sink.pause();
     }
 }

@@ -31,7 +31,7 @@ impl InstancesFrame {
     pub fn view(&self) -> Element<Message> {
         let instances_column = Column::new()
             .padding(20)
-            .spacing(20)
+            .spacing(5)
             .align_items(Alignment::Center);
         let instances_list: Element<_> = if self.instances.is_empty() {
             instances_column
@@ -53,12 +53,22 @@ impl InstancesFrame {
             self.instances
                 .values()
                 .fold(instances_column, |column, instance| {
-                    let name = instance.name.clone();
-                    column.push(
-                        instance
-                            .view()
-                            .map(move |message| Message::InstanceMessage(name.clone(), message)),
-                    )
+                    column
+                        .push(
+                            iced::widget::horizontal_rule(2).style(iced::theme::Rule::from(
+                                |theme: &iced::Theme| {
+                                    let mut appearance = iced::widget::rule::StyleSheet::appearance(
+                                        theme,
+                                        &Default::default(),
+                                    );
+                                    appearance.color.a *= 0.75;
+                                    appearance
+                                },
+                            )),
+                        )
+                        .push(instance.view().map(move |message| {
+                            Message::InstanceMessage(instance.name.clone(), message)
+                        }))
                 })
                 .into()
         };
