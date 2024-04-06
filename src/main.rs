@@ -28,7 +28,7 @@ use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
-use crate::settings::Settings;
+use crate::settings::{Settings, SettingsMessage};
 use crate::style::{icon_button, log_container, tab_bar};
 
 mod archive;
@@ -85,6 +85,7 @@ struct ESLauncher {
 pub enum Tab {
     Instances,
     Plugins,
+    Settings,
 }
 
 #[derive(Debug, Clone)]
@@ -92,6 +93,7 @@ pub enum Message {
     InstallFrameMessage(InstallFrameMessage),
     InstanceMessage(String, InstanceMessage),
     PluginMessage(String, PluginMessage),
+    SettingsMessage(SettingsMessage),
     AddInstance(Box<Instance>),
     RemoveInstance(Option<String>),
     Dummy(()),
@@ -172,6 +174,7 @@ impl Application for ESLauncher {
                     }
                 }
             }
+            Message::SettingsMessage(msg) => self.settings.update(msg),
             Message::AddInstance(instance) => {
                 let is_ready = instance.state.is_ready();
                 self.instances_frame
@@ -252,6 +255,11 @@ impl Application for ESLauncher {
                     iced::widget::horizontal_rule(2).into(),
                     self.plugins_frame.view().into(),
                 ]),
+            )
+            .push(
+                Tab::Settings,
+                TabLabel::Text("Settings".into()),
+                self.settings.view(),
             )
             .set_active_tab(&self.active_tab)
             .tab_bar_style(tab_bar());
