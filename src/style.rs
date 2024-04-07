@@ -40,14 +40,18 @@ pub fn folder_icon() -> Text<'static> {
 }
 
 pub fn icon_button() -> iced::theme::Button {
-    iced::theme::Button::Custom(Box::new(ButtonStyle::Icon))
+    iced::theme::Button::Custom(Box::new(LightButtonStyle::Icon))
 }
 pub fn text_button() -> iced::theme::Button {
-    iced::theme::Button::Custom(Box::new(ButtonStyle::Text))
+    iced::theme::Button::Custom(Box::new(LightButtonStyle::Text))
 }
 
-pub fn tab_bar() -> iced_aw::style::tab_bar::TabBarStyles {
-    iced_aw::style::tab_bar::TabBarStyles::Custom(Rc::new(CustomTabBar))
+pub fn tab_bar(dark_theme: bool   ) -> iced_aw::style::tab_bar::TabBarStyles {
+    if dark_theme {
+        iced_aw::style::tab_bar::TabBarStyles::Custom(Rc::new(DarkTabBar))
+    } else {
+        iced_aw::style::tab_bar::TabBarStyles::Custom(Rc::new(LightTabBar))
+    }
 }
 
 pub fn log_container(log: &str) -> iced::theme::Container {
@@ -55,12 +59,12 @@ pub fn log_container(log: &str) -> iced::theme::Container {
 }
 
 /// graphic design is my passion
-pub enum ButtonStyle {
+pub enum LightButtonStyle {
     Icon,
     Text,
 }
 
-impl button::StyleSheet for ButtonStyle {
+impl button::StyleSheet for LightButtonStyle {
     type Style = Theme;
 
     fn active(&self, _: &Self::Style) -> button::Appearance {
@@ -114,6 +118,65 @@ impl button::StyleSheet for ButtonStyle {
     }
 }
 
+pub enum DarkButtonStyle {
+    Icon,
+    Text,
+}
+
+impl button::StyleSheet for DarkButtonStyle {
+    type Style = Theme;
+
+    fn active(&self, _: &Self::Style) -> button::Appearance {
+        match self {
+            Self::Icon => button::Appearance {
+                text_color: Color::from_rgb(0.5, 0.5, 0.5).inverse(),
+                ..Default::default()
+            },
+            Self::Text => button::Appearance {
+                background: Some(Background::Color(Color::WHITE.inverse())),
+                border: Border {
+                    color: Color::from_rgb(0.8, 0.8, 0.8).inverse(),
+                    width: 0.3,
+                    radius: Radius::from(2.0),
+                },
+                shadow_offset: Vector::new(0.3, 0.3),
+                ..Default::default()
+            },
+        }
+    }
+
+    fn hovered(&self, style: &Self::Style) -> button::Appearance {
+        let active = self.active(style);
+
+        match self {
+            Self::Icon => button::Appearance {
+                text_color: Color::from_rgb(0.3, 0.3, 0.3).inverse(),
+                shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
+                ..active
+            },
+            Self::Text => button::Appearance {
+                border: Border {
+                    color: Color::from_rgb(0.4, 0.4, 0.4).inverse(),
+                    ..Default::default()
+                },
+                shadow_offset: active.shadow_offset + Vector::new(0.1, 0.3),
+                ..active
+            },
+        }
+    }
+
+    fn disabled(&self, style: &Self::Style) -> button::Appearance {
+        let active = self.active(style);
+        match self {
+            Self::Text => button::Appearance {
+                text_color: Color::from_rgb(0.5, 0.5, 0.5).inverse(),
+                ..active
+            },
+            _ => active,
+        }
+    }
+}
+
 pub struct LogContainer {
     background: Option<Color>,
 }
@@ -144,9 +207,9 @@ impl container::StyleSheet for LogContainer {
     }
 }
 
-pub struct CustomTabBar;
+pub struct LightTabBar;
 
-impl iced_aw::style::tab_bar::StyleSheet for CustomTabBar {
+impl iced_aw::style::tab_bar::StyleSheet for LightTabBar {
     type Style = Theme;
 
     fn active(&self, _: &Self::Style, is_active: bool) -> iced_aw::style::tab_bar::Appearance {
@@ -171,6 +234,50 @@ impl iced_aw::style::tab_bar::StyleSheet for CustomTabBar {
         iced_aw::style::tab_bar::Appearance {
             tab_label_background,
             tab_label_border_width: 0.,
+            ..Default::default()
+        }
+    }
+}
+
+pub struct DarkTabBar;
+
+impl iced_aw::style::tab_bar::StyleSheet for DarkTabBar {
+    type Style = Theme;
+
+    fn active(&self, _: &Self::Style, is_active: bool) -> iced_aw::style::tab_bar::Appearance {
+        let tab_label_background = Background::Color(if is_active {
+            Color::WHITE.inverse()
+        } else {
+            Color::from_rgb(0.87, 0.87, 0.87).inverse()
+        });
+        let text_color = if is_active {
+            Color::WHITE
+        } else {
+            Color::from_rgb(0.87, 0.87, 0.87)
+        };
+        iced_aw::style::tab_bar::Appearance {
+            tab_label_background,
+            tab_label_border_width: 0.,
+            text_color,
+            ..Default::default()
+        }
+    }
+
+    fn hovered(&self, _: &Self::Style, is_active: bool) -> iced_aw::style::tab_bar::Appearance {
+        let tab_label_background = Background::Color(if is_active {
+            Color::WHITE.inverse()
+        } else {
+            Color::from_rgb(0.94, 0.94, 0.94).inverse()
+        });
+        let text_color = if is_active {
+            Color::WHITE
+        } else {
+            Color::from_rgb(0.94, 0.94, 0.94)
+        };
+        iced_aw::style::tab_bar::Appearance {
+            tab_label_background,
+            tab_label_border_width: 0.,
+            text_color,
             ..Default::default()
         }
     }

@@ -174,7 +174,9 @@ impl Application for ESLauncher {
                     }
                 }
             }
-            Message::SettingsMessage(msg) => self.settings.update(msg),
+            Message::SettingsMessage(msg) => {
+                self.settings.update(msg)
+            },
             Message::AddInstance(instance) => {
                 let is_ready = instance.state.is_ready();
                 self.instances_frame
@@ -262,7 +264,7 @@ impl Application for ESLauncher {
                 self.settings.view(),
             )
             .set_active_tab(&self.active_tab)
-            .tab_bar_style(tab_bar());
+            .tab_bar_style(tab_bar(self.settings.dark_theme));
 
         let logbox = self.log_buffer.iter().fold(
             Column::new()
@@ -338,11 +340,15 @@ impl Application for ESLauncher {
     }
 
     fn theme(&self) -> Self::Theme {
-        iced::Theme::custom("LightModified".into(), {
-            let mut palette = iced::theme::Palette::LIGHT;
-            palette.primary = iced::Color::from_rgb(0.2, 0.2, 0.2);
-            palette
-        })
+        if self.settings.dark_theme {
+            Theme::Dark
+        } else {
+            iced::Theme::custom("LightModified".into(), {
+                let mut palette = iced::theme::Palette::LIGHT;
+                palette.primary = iced::Color::from_rgb(0.2, 0.2, 0.2);
+                palette
+            })
+        }
     }
 }
 
