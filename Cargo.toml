@@ -16,28 +16,28 @@ osx_minimum_system_version = "10.7"
 
 [dependencies]
 anyhow = "1.0"
-bitar = { version = "0.10", features=["rustls-tls"] }
+bitar = { version = "0.10", features = ["rustls-tls"] }
 time = "0.3"
 dmg = "0.1.2"
 espim = "0.2"
 flate2 = "1.0"
 fs_extra = "1.3.0"
 futures = "0.3"
-iced_aw = { version = "0.8", default-features = false, features = ["tabs"] }
+iced_aw = { git = "https://github.com/iced-rs/iced_aw.git", rev = "9ed46bffd0d819f22e07db6c282fbef733007df5", default-features = false, features = ["tabs", "icons"] }
 lazy_static = "1.4"
-log = { version="0.4.21", features=["std"] }
+log = { version = "0.4.21", features = ["std"] }
 open = "5"
 parse_link_header = "0.3"
 platform-dirs = "0.3.0"
 progress-streams = "1.1.0"
 regex = "1"
-rodio = { version="0.17", default-features = false, features=["vorbis"] }
+rodio = { version = "0.17", default-features = false, features = ["vorbis"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde-xml-rs = "0.6"
 simplelog = "0.12.2"
 tar = "0.4"
-tokio = { version="1", default-features = false, features=["fs"] }
+tokio = { version = "1", default-features = false, features = ["fs"] }
 ureq = { version = "2.9", default-features = false, features = ["json", "tls"] }
 version = "3"
 zip-extract = { version = "0.1.3", default-features = false, features = ["deflate"] }
