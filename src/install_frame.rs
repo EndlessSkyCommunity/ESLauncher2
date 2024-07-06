@@ -1,6 +1,6 @@
 use crate::instance::{get_instances_dir, InstanceType};
 use crate::settings::Settings;
-use crate::style::{self, text_button};
+use crate::style::{self, icon_button, text_button};
 use crate::{instance, Message};
 use core::fmt;
 use iced::widget::{
@@ -152,7 +152,11 @@ impl InstallFrame {
         }
 
         let custom_install_dir = Row::new()
-            .push(button(style::folder_icon()).on_press(InstallFrameMessage::CustomInstallRequest))
+            .push(
+                button(style::folder_icon())
+                    .style(icon_button())
+                    .on_press(InstallFrameMessage::CustomInstallRequest),
+            )
             .push(
                 Column::new()
                     .push(
@@ -166,6 +170,7 @@ impl InstallFrame {
                                 .then_some(custom_install_path)
                                 .flatten()
                                 .unwrap_or_else(|| get_instances_dir().unwrap_or_default())
+                                .join(&self.name)
                                 .to_string_lossy()
                                 .as_ref()
                         ))
@@ -173,6 +178,7 @@ impl InstallFrame {
                     ),
             )
             .align_items(Alignment::Center)
+            .width(Length::Fill)
             .spacing(10.0);
 
         Container::new(Scrollable::new(
