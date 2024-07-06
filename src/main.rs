@@ -100,6 +100,7 @@ pub enum Message {
     TabSelected(Tab),
     PluginFrameLoaded(Vec<plugins_frame::Plugin>),
     Log(String),
+    CustomInstallPath(PathBuf),
 }
 
 impl Application for ESLauncher {
@@ -155,7 +156,9 @@ impl Application for ESLauncher {
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
-            Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
+            Message::InstallFrameMessage(msg) => {
+                return self.install_frame.update(msg, &mut self.settings)
+            }
             Message::InstanceMessage(name, msg) => {
                 match self.instances_frame.instances.get_mut(&name) {
                     None => error!("Failed to find internal Instance with name {}", &name),
@@ -194,9 +197,7 @@ impl Application for ESLauncher {
                     MusicCommand::Play => MusicState::Playing,
                     _ => self.settings.music_state,
                 };
-                if let Err(e) = self.settings.save() {
-                    error!("Failed to save settings.json: {:#?}", e);
-                };
+                self.settings.save();
             }
             Message::TabSelected(active_tab) => self.active_tab = active_tab,
             Message::PluginFrameLoaded(plugins) => {
@@ -205,6 +206,10 @@ impl Application for ESLauncher {
             Message::Log(line) => self.log_buffer.push(line),
             Message::Dummy(()) => (),
             Message::FontLoaded(_) => (),
+            Message::CustomInstallPath(p) => {
+                self.settings.custom_install_dir = Some(p);
+                self.settings.save();
+            }
         }
         Command::none()
     }
@@ -233,7 +238,14 @@ impl Application for ESLauncher {
                     Row::new()
                         .push(self.instances_frame.view())
                         .push(iced::widget::vertical_rule(2))
-                        .push(self.install_frame.view().map(Message::InstallFrameMessage))
+                        .push(
+                            self.install_frame
+                                .view(
+                                    self.settings.custom_install_dir.clone(),
+                                    self.settings.use_custom_install_dir,
+                                )
+                                .map(Message::InstallFrameMessage),
+                        )
                         .spacing(10)
                         .padding(iced::Padding {
                             top: 0.0,

@@ -1,10 +1,15 @@
 use crate::instance::{get_instances_dir, InstanceType};
-use crate::style::text_button;
+use crate::settings::Settings;
+use crate::style::{self, text_button};
 use crate::{instance, Message};
 use core::fmt;
-use iced::widget::{Button, Column, Container, Radio, Scrollable, Text, TextInput};
+use iced::widget::{
+    button, checkbox, text, text_input, Button, Column, Container, Radio, Row, Scrollable, Text,
+    TextInput,
+};
 use iced::{alignment, Alignment, Command, Element, Length};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 // Characters that shall not be allowed to enter. This does not cover all cases!
 // One should expect the install process to fail on particularly exotic characters.
@@ -22,6 +27,8 @@ pub enum InstallFrameMessage {
     NameChanged(String),
     SourceIdentifierChanged(String),
     StartInstallation(InstanceType),
+    CustomInstallSet(bool),
+    CustomInstallRequest,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -57,10 +64,18 @@ impl fmt::Display for InstanceSourceType {
 }
 
 impl InstallFrame {
-    pub fn update(&mut self, message: InstallFrameMessage) -> Command<Message> {
+    pub fn update(
+        &mut self,
+        message: InstallFrameMessage,
+        settings: &mut Settings,
+    ) -> Command<Message> {
         match message {
             InstallFrameMessage::StartInstallation(instance_type) => {
-                if let Some(mut destination) = get_instances_dir() {
+                if let Some(mut destination) = settings
+                    .use_custom_install_dir
+                    .then_some(settings.custom_install_dir.clone())
+                    .unwrap_or(get_instances_dir())
+                {
                     destination.push(&self.name);
                     return Command::perform(
                         instance::perform_install(
@@ -86,11 +101,25 @@ impl InstallFrame {
             InstallFrameMessage::SourceIdentifierChanged(identifier) => {
                 self.source.identifier = identifier;
             }
+            InstallFrameMessage::CustomInstallRequest => {
+                return Command::perform(rfd::AsyncFileDialog::new().pick_folder(), |f| match f {
+                    Some(handle) => Message::CustomInstallPath(handle.path().to_path_buf()),
+                    None => Message::Dummy(()),
+                })
+            }
+            InstallFrameMessage::CustomInstallSet(f) => {
+                settings.use_custom_install_dir = f;
+                settings.save();
+            }
         }
         Command::none()
     }
 
-    pub fn view(&self) -> Element<InstallFrameMessage> {
+    pub fn view(
+        &self,
+        custom_install_path: Option<PathBuf>,
+        custom_install_enabled: bool,
+    ) -> Element<InstallFrameMessage> {
         let mut controls = InstanceSourceType::ALL.iter().fold(
             Column::new().spacing(10).push(Text::new("Choose a Type:")),
             |column, source_type| {
@@ -122,6 +151,30 @@ impl InstallFrame {
                 }));
         }
 
+        let custom_install_dir = Row::new()
+            .push(button(style::folder_icon()).on_press(InstallFrameMessage::CustomInstallRequest))
+            .push(
+                Column::new()
+                    .push(
+                        checkbox("Use custom install directory", custom_install_enabled)
+                            .on_toggle(|f| InstallFrameMessage::CustomInstallSet(f)),
+                    )
+                    .push(
+                        text(format!(
+                            "Installing to {}",
+                            custom_install_enabled
+                                .then_some(custom_install_path)
+                                .flatten()
+                                .unwrap_or_else(|| get_instances_dir().unwrap_or_default())
+                                .to_string_lossy()
+                                .as_ref()
+                        ))
+                        .size(10.0),
+                    ),
+            )
+            .align_items(Alignment::Center)
+            .spacing(10.0);
+
         Container::new(Scrollable::new(
             Column::new()
                 .padding(20)
@@ -136,6 +189,7 @@ impl InstallFrame {
                         .on_input(InstallFrameMessage::NameChanged)
                         .padding(10),
                 )
+                .push(custom_install_dir)
                 .push(controls)
                 .push(install_button)
                 .spacing(20)
