@@ -24,6 +24,7 @@ pub struct Settings {
     pub music_state: MusicState,
     pub dark_theme: bool,
     pub custom_install_dir: Option<PathBuf>,
+    #[serde(default)]
     pub use_custom_install_dir: bool,
 }
 
@@ -31,6 +32,17 @@ pub struct Settings {
 pub enum SettingsMessage {
     DarkTheme(bool),
     CustomInstallPath(CustomInstallPath),
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            music_state: Default::default(),
+            dark_theme: dark_light::detect().eq(&dark_light::Mode::Dark),
+            custom_install_dir: Default::default(),
+            use_custom_install_dir: Default::default(),
+        }
+    }
 }
 
 impl Settings {
@@ -188,6 +200,7 @@ impl Settings {
                     self.custom_install_dir = Some(p);
                 }
             },
+            SettingsMessage::DarkTheme(dark) => self.dark_theme = dark,
         };
         self.save();
 

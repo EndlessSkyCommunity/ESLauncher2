@@ -21,7 +21,6 @@ use iced::{
     alignment, font, Alignment, Application, Command, Element, Font, Length, Subscription, Theme,
 };
 use iced_aw::{TabLabel, Tabs};
-use settings::SettingsMessage;
 use std::collections::VecDeque;
 use std::sync::Mutex;
 
