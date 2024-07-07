@@ -21,6 +21,7 @@ use iced::{
     alignment, font, Alignment, Application, Command, Element, Font, Length, Subscription, Theme,
 };
 use iced_aw::{TabLabel, Tabs};
+use settings::SettingsMessage;
 use std::collections::VecDeque;
 use std::sync::Mutex;
 
@@ -85,6 +86,7 @@ struct ESLauncher {
 pub enum Tab {
     Instances,
     Plugins,
+    Settings,
 }
 
 #[derive(Debug, Clone)]
@@ -92,6 +94,7 @@ pub enum Message {
     InstallFrameMessage(InstallFrameMessage),
     InstanceMessage(String, InstanceMessage),
     PluginMessage(String, PluginMessage),
+    SettingsMessage(SettingsMessage),
     AddInstance(Box<Instance>),
     RemoveInstance(Option<String>),
     Dummy(()),
@@ -100,7 +103,6 @@ pub enum Message {
     TabSelected(Tab),
     PluginFrameLoaded(Vec<plugins_frame::Plugin>),
     Log(String),
-    CustomInstallPath(PathBuf),
 }
 
 impl Application for ESLauncher {
@@ -175,6 +177,7 @@ impl Application for ESLauncher {
                     }
                 }
             }
+            Message::SettingsMessage(msg) => return self.settings.update(msg),
             Message::AddInstance(instance) => {
                 let is_ready = instance.state.is_ready();
                 self.instances_frame
@@ -206,10 +209,6 @@ impl Application for ESLauncher {
             Message::Log(line) => self.log_buffer.push(line),
             Message::Dummy(()) => (),
             Message::FontLoaded(_) => (),
-            Message::CustomInstallPath(p) => {
-                self.settings.custom_install_dir = Some(p);
-                self.settings.save();
-            }
         }
         Command::none()
     }
@@ -238,14 +237,7 @@ impl Application for ESLauncher {
                     Row::new()
                         .push(self.instances_frame.view())
                         .push(iced::widget::vertical_rule(2))
-                        .push(
-                            self.install_frame
-                                .view(
-                                    self.settings.custom_install_dir.clone(),
-                                    self.settings.use_custom_install_dir,
-                                )
-                                .map(Message::InstallFrameMessage),
-                        )
+                        .push(self.install_frame.view().map(Message::InstallFrameMessage))
                         .spacing(10)
                         .padding(iced::Padding {
                             top: 0.0,
@@ -264,6 +256,11 @@ impl Application for ESLauncher {
                     iced::widget::horizontal_rule(2).into(),
                     self.plugins_frame.view().into(),
                 ]),
+            )
+            .push(
+                Tab::Settings,
+                TabLabel::Text("Settings".into()),
+                self.settings.view(),
             )
             .set_active_tab(&self.active_tab)
             .tab_bar_style(tab_bar());
