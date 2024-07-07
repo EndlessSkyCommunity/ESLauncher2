@@ -13,22 +13,24 @@ use serde::{Deserialize, Serialize};
 use std::{fs::File, path::PathBuf};
 
 #[derive(Clone, Debug)]
-pub enum SettingsMessage {
-    CustomInstallPath(CustomInstallPath),
-}
-
-#[derive(Clone, Debug)]
 pub enum CustomInstallPath {
     SetEnabled(bool),
     RequestPath,
     SetPath(PathBuf),
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Settings {
     pub music_state: MusicState,
+    pub dark_theme: bool,
     pub custom_install_dir: Option<PathBuf>,
     pub use_custom_install_dir: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum SettingsMessage {
+    DarkTheme(bool),
+    CustomInstallPath(CustomInstallPath),
 }
 
 impl Settings {

@@ -17,7 +17,7 @@ osx_minimum_system_version = "10.7"
 [dependencies]
 anyhow = "1.0"
 bitar = { version = "0.12", features = ["rustls-tls"] }
-time = "0.3"
+dark-light = "1.0"
 dmg = "0.1.2"
 espim = "0.2"
 flate2 = "1.0"
@@ -40,6 +40,7 @@ serde_json = "1.0"
 serde-xml-rs = "0.6"
 simplelog = "0.12.2"
 tar = "0.4"
+time = "0.3"
 tokio = { version = "1", default-features = false, features = ["fs"] }
 ureq = { version = "2.9", default-features = false, features = ["json", "tls"] }
 version = "3"

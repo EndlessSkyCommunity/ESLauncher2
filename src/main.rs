@@ -29,7 +29,7 @@ use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
-use crate::settings::Settings;
+use crate::settings::{Settings, SettingsMessage};
 use crate::style::{icon_button, log_container, tab_bar};
 
 mod archive;
