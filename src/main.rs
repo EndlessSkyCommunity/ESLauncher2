@@ -157,7 +157,9 @@ impl Application for ESLauncher {
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
-            Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
+            Message::InstallFrameMessage(msg) => {
+                return self.install_frame.update(msg, &mut self.settings)
+            }
             Message::InstanceMessage(name, msg) => {
                 match self.instances_frame.instances.get_mut(&name) {
                     None => error!("Failed to find internal Instance with name {}", &name),
@@ -174,7 +176,7 @@ impl Application for ESLauncher {
                     }
                 }
             }
-            Message::SettingsMessage(msg) => self.settings.update(msg),
+            Message::SettingsMessage(msg) => return self.settings.update(msg),
             Message::AddInstance(instance) => {
                 let is_ready = instance.state.is_ready();
                 self.instances_frame
@@ -197,9 +199,7 @@ impl Application for ESLauncher {
                     MusicCommand::Play => MusicState::Playing,
                     _ => self.settings.music_state,
                 };
-                if let Err(e) = self.settings.save() {
-                    error!("Failed to save settings.json: {:#?}", e);
-                };
+                self.settings.save();
             }
             Message::TabSelected(active_tab) => self.active_tab = active_tab,
             Message::PluginFrameLoaded(plugins) => {

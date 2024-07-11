@@ -1,4 +1,5 @@
 use crate::instance::{get_instances_dir, InstanceType};
+use crate::settings::Settings;
 use crate::style::text_button;
 use crate::{instance, Message};
 use core::fmt;
@@ -57,10 +58,18 @@ impl fmt::Display for InstanceSourceType {
 }
 
 impl InstallFrame {
-    pub fn update(&mut self, message: InstallFrameMessage) -> Command<Message> {
+    pub fn update(
+        &mut self,
+        message: InstallFrameMessage,
+        settings: &mut Settings,
+    ) -> Command<Message> {
         match message {
             InstallFrameMessage::StartInstallation(instance_type) => {
-                if let Some(mut destination) = get_instances_dir() {
+                if let Some(mut destination) = if settings.use_custom_install_dir {
+                    settings.custom_install_dir.clone()
+                } else {
+                    get_instances_dir()
+                } {
                     destination.push(&self.name);
                     return Command::perform(
                         instance::perform_install(
