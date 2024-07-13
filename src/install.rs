@@ -170,7 +170,7 @@ pub fn choose_artifact<A: Artifact>(artifacts: Vec<A>, instance_type: InstanceTy
         }
     }
     Err(anyhow!(
-        "Couldn't match any asset against for {:#?}",
+        "Couldn't match any asset against {:#?}",
         instance_type
     ))
 }
