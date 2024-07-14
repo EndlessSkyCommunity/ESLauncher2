@@ -19,7 +19,7 @@ A program for organizing Endless Sky installations.
 - For Arch Linux, there's also an AUR package [`eslauncher2`](https://aur.archlinux.org/packages/eslauncher2) maintained by @DisableGraphics.
 
 ### Additional instructions for Mac
-**Important**: the security mechanisms of newer MacOS system do not allow to run
+**Important**: the security mechanisms of newer MacOS systems do not allow running
 unsigned applications. Therefore, please follow the steps below the first time
 you run the launcher on MacOS.
 
