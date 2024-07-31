@@ -961,7 +961,6 @@ dependencies = [
  "futures",
  "iced",
  "iced_aw",
- "lazy_static",
  "log",
  "open",
  "parse_link_header",
