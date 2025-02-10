@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: hecrj/setup-rust-action@v1
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
           set -x
@@ -73,7 +73,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: hecrj/setup-rust-action@v1
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Enable static CRT linkage
         run: |
           mkdir .cargo
@@ -101,7 +101,7 @@ jobs:
     runs-on: macOS-latest
     steps:
       - uses: hecrj/setup-rust-action@v1
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Build binary
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.14
