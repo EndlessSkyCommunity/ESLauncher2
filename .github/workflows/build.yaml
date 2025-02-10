@@ -36,25 +36,25 @@ jobs:
           mv *.rpm eslauncher2.rpm
           mv *.pkg.tar.zst eslauncher2.pkg.tar.zst
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: eslauncher2-x86_64-unknown-linux-gnu
           path: eslauncher2-x86_64-unknown-linux-gnu
       - name: Upload DEB
         if: ${{ !startsWith(github.ref, 'refs/heads/dependabot') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: eslauncher2.deb
           path: eslauncher2.deb
       - name: Upload RPM
         if: ${{ !startsWith(github.ref, 'refs/heads/dependabot') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: eslauncher2.rpm
           path: eslauncher2.rpm
       - name: Upload ArchLinux package
         if: ${{ !startsWith(github.ref, 'refs/heads/dependabot') }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: eslauncher2.pkg.tar.zst
           path: eslauncher2.pkg.tar.zst
@@ -84,7 +84,7 @@ jobs:
           cargo build --verbose --release
           mv target/release/eslauncher2.exe eslauncher2-x86_64-pc-windows-msvc.exe
       - name: Archive binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: eslauncher2-x86_64-pc-windows-msvc
           path: eslauncher2-x86_64-pc-windows-msvc.exe
@@ -124,7 +124,7 @@ jobs:
           cd target/release/bundle/osx
           zip -r ESLauncher2.app.zip ESLauncher2.app
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ESLauncher2.app.zip
           path: target/release/bundle/osx
