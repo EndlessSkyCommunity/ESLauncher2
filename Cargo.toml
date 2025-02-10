@@ -1,6 +1,6 @@
 [package]
 name = "eslauncher2"
-version = "0.9.6"
+version = "0.9.7"
 authors = ["M*C*O <mcofficer@gmx.de>", "EndlessSkyCommunity"]
 edition = "2021"
 build = "build.rs"
