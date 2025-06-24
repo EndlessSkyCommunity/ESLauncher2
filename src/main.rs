@@ -2,9 +2,9 @@
 #![windows_subsystem = "windows"] // Don't show console on windows
 
 #[macro_use]
-extern crate log;
-#[macro_use]
 extern crate anyhow;
+#[macro_use]
+extern crate log;
 #[macro_use]
 extern crate version;
 
@@ -265,7 +265,10 @@ impl Application for ESLauncher {
             .push(
                 Tab::Settings,
                 TabLabel::Text("Settings".into()),
-                self.settings.view(),
+                iced::widget::column([
+                    iced::widget::horizontal_rule(2).into(),
+                    self.settings.view().into(),
+                ]),
             )
             .set_active_tab(&self.active_tab)
             .tab_bar_style(tab_bar());
