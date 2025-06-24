@@ -1,7 +1,8 @@
 use crate::install_frame::InstanceSource;
 use crate::music::MusicCommand;
+use crate::settings::Settings;
 use crate::style::icon_button;
-use crate::{get_data_dir, install, send_message, style, update, Message};
+use crate::{install, send_message, style, update, Message};
 use anyhow::Result;
 use iced::widget::{Button, Column, ProgressBar, Row, Space, Text};
 use iced::{alignment, theme, Alignment, Element, Length};
@@ -403,16 +404,14 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
 #[derive(Serialize, Deserialize)]
 struct InstancesContainer(Vec<Instance>);
 
-pub fn perform_save_instances(instances: BTreeMap<String, Instance>) {
-    if let Err(e) = save_instances(instances) {
+pub fn perform_save_instances(instances: BTreeMap<String, Instance>, settings: &Settings) {
+    if let Err(e) = save_instances(instances, settings) {
         error!("Failed to save instances: {:#}", e);
     };
 }
 
-fn save_instances(instances: BTreeMap<String, Instance>) -> Result<()> {
-    let mut instances_file =
-        get_data_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
-    instances_file.push("instances.json");
+fn save_instances(instances: BTreeMap<String, Instance>, settings: &Settings) -> Result<()> {
+    let instances_file = settings.install_dir.join("instances.json");
     debug!("Saving to {}", instances_file.to_string_lossy());
 
     let file = File::create(instances_file)?;
@@ -424,10 +423,8 @@ fn save_instances(instances: BTreeMap<String, Instance>) -> Result<()> {
     Ok(())
 }
 
-pub fn load_instances() -> Result<Vec<Instance>> {
-    let mut instances_file =
-        get_data_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
-    instances_file.push("instances.json");
+pub fn load_instances(settings: &Settings) -> Result<Vec<Instance>> {
+    let instances_file = settings.install_dir.join("instances.json");
     debug!("Loading from {}", instances_file.to_string_lossy());
 
     if instances_file.exists() {

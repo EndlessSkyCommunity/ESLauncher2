@@ -132,7 +132,7 @@ impl Application for ESLauncher {
             Self {
                 music_sender,
                 install_frame: install_frame::InstallFrame::default(),
-                instances_frame: instances_frame::InstancesFrame::default(),
+                instances_frame: instances_frame::InstancesFrame::new(&settings),
                 plugins_frame: plugins_frame_state,
                 message_receiver: MessageReceiver {},
                 log_buffer: vec![],
@@ -183,13 +183,19 @@ impl Application for ESLauncher {
                     .instances
                     .insert(instance.name.clone(), *instance);
                 if is_ready {
-                    instance::perform_save_instances(self.instances_frame.instances.clone());
+                    instance::perform_save_instances(
+                        self.instances_frame.instances.clone(),
+                        &self.settings,
+                    );
                 };
             }
             Message::RemoveInstance(option) => {
                 if let Some(name) = option {
                     self.instances_frame.instances.remove(&name);
-                    instance::perform_save_instances(self.instances_frame.instances.clone());
+                    instance::perform_save_instances(
+                        self.instances_frame.instances.clone(),
+                        &self.settings,
+                    );
                 }
             }
             Message::MusicMessage(cmd) => {

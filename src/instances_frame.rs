@@ -1,4 +1,5 @@
 use crate::instance::{load_instances, Instance};
+use crate::settings::Settings;
 use crate::Message;
 use iced::widget::{Column, Container, Scrollable, Text};
 use iced::{alignment, theme, Alignment, Color, Element, Length};
@@ -9,9 +10,9 @@ pub struct InstancesFrame {
     pub instances: BTreeMap<String, Instance>,
 }
 
-impl Default for InstancesFrame {
-    fn default() -> Self {
-        let instances = match load_instances() {
+impl InstancesFrame {
+    pub fn new(settings: &Settings) -> Self {
+        let instances = match load_instances(settings) {
             Ok(vec) => {
                 let mut map = BTreeMap::new();
                 for i in vec {
@@ -26,8 +27,7 @@ impl Default for InstancesFrame {
         };
         Self { instances }
     }
-}
-impl InstancesFrame {
+
     pub fn view(&self) -> Element<Message> {
         let instances_column = Column::new()
             .padding(20)
