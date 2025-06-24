@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use time::OffsetDateTime;
+use ureq::Error;
 
 #[derive(Deserialize, Debug)]
 pub struct Repo {
@@ -214,17 +215,20 @@ pub fn get_release_assets(release_id: i64) -> Result<Vec<ReleaseAsset>> {
 
 fn make_request<T: DeserializeOwned>(url: &str) -> Result<T> {
     debug!("Requesting {}", url);
-    let res = ureq::get(url).set("User-Agent", "ESLauncher2").call()?;
-    check_ratelimit(&res);
-    if res.status() >= 400 {
-        warn!(
-            "Got unexpected status code '{} {}' for {}",
-            res.status(),
-            res.status_text(),
-            url,
-        );
+    let res = ureq::get(url).set("User-Agent", "ESLauncher2").call();
+    match res {
+        Ok(res) => {
+            check_ratelimit(&res);
+            Ok(res.into_json()?)
+        }
+        Err(err) => match err {
+            Error::Status(status, res) => {
+                check_ratelimit(&res);
+                bail!("Got bad response with code {status}")
+            }
+            Error::Transport(e) => bail!(e),
+        },
     }
-    Ok(res.into_json()?)
 }
 
 fn make_paginated_request<T: DeserializeOwned>(url: &str) -> Result<Vec<T>> {
