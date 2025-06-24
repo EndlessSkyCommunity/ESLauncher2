@@ -3,7 +3,7 @@ use crate::{get_data_dir, style, Message};
 use anyhow::{Context, Result};
 use iced::advanced::graphics::core::Element;
 use iced::widget::text_input::StyleSheet;
-use iced::widget::{checkbox, container, row, text, Text};
+use iced::widget::{container, row, text, Checkbox, Text};
 use iced::{
     widget::{button, Column, Container, Row},
     Length,
@@ -12,26 +12,22 @@ use iced::{Alignment, Command, Padding, Renderer};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, path::PathBuf};
 
-#[derive(Clone, Debug)]
-pub enum CustomInstallPath {
-    SetEnabled(bool),
-    RequestPath,
-    SetPath(PathBuf),
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Settings {
     pub music_state: MusicState,
     pub dark_theme: bool,
-    pub custom_install_dir: Option<PathBuf>,
-    #[serde(default)]
-    pub use_custom_install_dir: bool,
+    #[serde(default = "default_install_dir")]
+    pub install_dir: PathBuf,
+}
+fn default_install_dir() -> PathBuf {
+    get_data_dir().unwrap().join("instances")
 }
 
 #[derive(Debug, Clone)]
 pub enum SettingsMessage {
     DarkTheme(bool),
-    CustomInstallPath(CustomInstallPath),
+    RequestInstallPath,
+    SetInstallPath(PathBuf),
 }
 
 impl Default for Settings {
@@ -39,8 +35,7 @@ impl Default for Settings {
         Self {
             music_state: Default::default(),
             dark_theme: dark_light::detect().eq(&dark_light::Mode::Dark),
-            custom_install_dir: Default::default(),
-            use_custom_install_dir: Default::default(),
+            install_dir: default_install_dir(),
         }
     }
 }
@@ -71,17 +66,15 @@ impl Settings {
             return Self::default();
         }
 
-        match File::open(settings_file)
+        File::open(settings_file)
             .with_context(|| "Failed to open settings.json")
             .and_then(|f| {
                 serde_json::from_reader(f).with_context(|| "Failed to deserialize settings.json")
-            }) {
-            Ok(s) => s,
-            Err(e) => {
+            })
+            .unwrap_or_else(|e| {
                 warn!("{:#?}", e);
                 Self::default()
-            }
-        }
+            })
     }
 
     pub fn view(&self) -> Container<Message> {
@@ -90,19 +83,8 @@ impl Settings {
             content: impl Into<Element<'a, Message, iced::Theme, Renderer>>,
             enabled: bool,
         ) -> impl Into<Element<'a, Message, iced::Theme, Renderer>> {
-            let setting_spacer = || {
-                iced::widget::horizontal_rule(2).style(iced::theme::Rule::from(
-                    |theme: &iced::Theme| {
-                        let mut appearance =
-                            iced::widget::rule::StyleSheet::appearance(theme, &Default::default());
-                        appearance.color.a *= 0.75;
-                        appearance
-                    },
-                ))
-            };
             let container = container(
                 Column::new()
-                    .push(setting_spacer())
                     .push(
                         Row::new()
                             .push(Text::new(label))
@@ -128,40 +110,38 @@ impl Settings {
                 )))
             }
         }
-        let btn = button(style::folder_icon().size(12.0))
-            .on_press_maybe(
-                self.use_custom_install_dir
-                    .then_some(Message::SettingsMessage(
-                        SettingsMessage::CustomInstallPath(CustomInstallPath::RequestPath),
-                    )),
-            )
+
+        let install_dir_picker = button(style::folder_icon().size(12.0))
+            .on_press(Message::SettingsMessage(
+                SettingsMessage::RequestInstallPath,
+            ))
             // .style(icon_button())
             .padding(Padding::from([2, 0]));
+        let install_dir_reset_btn = if self.install_dir.eq(&default_install_dir()) {
+            None
+        } else {
+            Some(
+                button(style::reset_icon().size(12.0))
+                    .on_press(Message::SettingsMessage(SettingsMessage::SetInstallPath(
+                        default_install_dir(),
+                    )))
+                    .padding(Padding::from([2, 0])),
+            )
+        };
+
         Container::new(
             Column::new()
                 .push(settings_row(
-                    "Use custom install directory",
-                    checkbox("", self.use_custom_install_dir).on_toggle(|f| {
-                        Message::SettingsMessage(SettingsMessage::CustomInstallPath(
-                            CustomInstallPath::SetEnabled(f),
-                        ))
-                    }),
-                    true,
-                ))
-                .push(settings_row(
-                    "Custom install directory",
+                    "Install directory",
                     row!(
                         text(format!(
                             "Installing to {}",
-                            self.custom_install_dir
-                                .clone()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .as_ref()
+                            self.install_dir.to_string_lossy(),
                         ))
                         .size(12.0),
-                        btn,
+                        install_dir_picker
                     )
+                    .push_maybe(install_dir_reset_btn)
                     .align_items(Alignment::Center)
                     .spacing(10.0)
                     .padding(Padding {
@@ -170,7 +150,13 @@ impl Settings {
                         bottom: 0.0,
                         left: 0.0,
                     }),
-                    self.use_custom_install_dir,
+                    true,
+                ))
+                .push(settings_row(
+                    "Dark Theme",
+                    Checkbox::new("", self.dark_theme)
+                        .on_toggle(|v| Message::SettingsMessage(SettingsMessage::DarkTheme(v))),
+                    true,
                 ))
                 .spacing(10.0),
         )
@@ -179,27 +165,17 @@ impl Settings {
 
     pub fn update(&mut self, message: SettingsMessage) -> Command<Message> {
         match message {
-            SettingsMessage::CustomInstallPath(custom_install_path) => match custom_install_path {
-                CustomInstallPath::RequestPath => {
-                    return Command::perform(
-                        rfd::AsyncFileDialog::new().pick_folder(),
-                        |f| match f {
-                            Some(handle) => {
-                                Message::SettingsMessage(SettingsMessage::CustomInstallPath(
-                                    CustomInstallPath::SetPath(handle.path().to_path_buf()),
-                                ))
-                            }
-                            None => Message::Dummy(()),
-                        },
-                    )
-                }
-                CustomInstallPath::SetEnabled(f) => {
-                    self.use_custom_install_dir = f;
-                }
-                CustomInstallPath::SetPath(p) => {
-                    self.custom_install_dir = Some(p);
-                }
-            },
+            SettingsMessage::RequestInstallPath => {
+                return Command::perform(rfd::AsyncFileDialog::new().pick_folder(), |f| match f {
+                    Some(handle) => Message::SettingsMessage(SettingsMessage::SetInstallPath(
+                        handle.path().to_path_buf(),
+                    )),
+                    None => Message::Dummy(()),
+                })
+            }
+            SettingsMessage::SetInstallPath(p) => {
+                self.install_dir = p;
+            }
             SettingsMessage::DarkTheme(dark) => self.dark_theme = dark,
         };
         self.save();

@@ -209,7 +209,7 @@ impl Instance {
         let mut debug_button = Button::new(style::debug_icon()).style(icon_button());
         let mut play_button = Button::new(style::play_icon()).style(icon_button());
         let mut update_button = Button::new(style::update_icon()).style(icon_button());
-        let folder_button = Button::new(style::folder_icon())
+        let folder_button = Button::new(style::reset_icon())
             .style(icon_button())
             .on_press(InstanceMessage::Folder);
         let mut delete_button = Button::new(style::delete_icon()).style(theme::Button::Destructive);
@@ -400,12 +400,6 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
     Ok(())
 }
 
-pub fn get_instances_dir() -> Option<PathBuf> {
-    let mut dir = get_data_dir()?;
-    dir.push("instances");
-    Some(dir)
-}
-
 #[derive(Serialize, Deserialize)]
 struct InstancesContainer(Vec<Instance>);
 
@@ -417,7 +411,7 @@ pub fn perform_save_instances(instances: BTreeMap<String, Instance>) {
 
 fn save_instances(instances: BTreeMap<String, Instance>) -> Result<()> {
     let mut instances_file =
-        get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
+        get_data_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
     instances_file.push("instances.json");
     debug!("Saving to {}", instances_file.to_string_lossy());
 
@@ -432,7 +426,7 @@ fn save_instances(instances: BTreeMap<String, Instance>) -> Result<()> {
 
 pub fn load_instances() -> Result<Vec<Instance>> {
     let mut instances_file =
-        get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
+        get_data_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
     instances_file.push("instances.json");
     debug!("Loading from {}", instances_file.to_string_lossy());
 

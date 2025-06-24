@@ -39,6 +39,10 @@ pub fn folder_icon() -> Text<'static> {
     icon('\u{E930}')
 }
 
+pub fn reset_icon() -> Text<'static> {
+    icon('\u{E965}')
+}
+
 pub fn icon_button() -> iced::theme::Button {
     iced::theme::Button::Custom(Box::new(ButtonStyle::Icon))
 }

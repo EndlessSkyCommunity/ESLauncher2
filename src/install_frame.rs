@@ -1,4 +1,4 @@
-use crate::instance::{get_instances_dir, InstanceType};
+use crate::instance::InstanceType;
 use crate::settings::Settings;
 use crate::style::text_button;
 use crate::{instance, Message};
@@ -65,24 +65,15 @@ impl InstallFrame {
     ) -> Command<Message> {
         match message {
             InstallFrameMessage::StartInstallation(instance_type) => {
-                if let Some(mut destination) = if settings.use_custom_install_dir {
-                    settings.custom_install_dir.clone()
-                } else {
-                    get_instances_dir()
-                } {
-                    destination.push(&self.name);
-                    return Command::perform(
-                        instance::perform_install(
-                            destination,
-                            self.name.clone(),
-                            instance_type,
-                            self.source.clone(),
-                        ),
-                        Message::Dummy,
-                    );
-                } else {
-                    error!("Could not get instances directory from AppDirs");
-                }
+                return Command::perform(
+                    instance::perform_install(
+                        settings.install_dir.join(&self.name),
+                        self.name.clone(),
+                        instance_type,
+                        self.source.clone(),
+                    ),
+                    Message::Dummy,
+                );
             }
             InstallFrameMessage::SourceTypeChanged(source_type) => self.source.r#type = source_type,
             InstallFrameMessage::NameChanged(name) => {
