@@ -60,7 +60,7 @@ features = [
     "advanced",
     "image",
     "tokio",
-    #    "wgpu",       # TODO: tiny-skia backend panics with text in rows: https://github.com/iced-rs/iced/issues/2332
+    # "wgpu", # TODO: tiny-skia backend panics when elements are resized to 0 width: https://github.com/iced-rs/iced/pull/2977
 ]
 
 [target.'cfg(windows)'.build-dependencies]

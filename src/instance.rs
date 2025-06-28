@@ -210,7 +210,7 @@ impl Instance {
         let mut debug_button = Button::new(style::debug_icon()).style(icon_button());
         let mut play_button = Button::new(style::play_icon()).style(icon_button());
         let mut update_button = Button::new(style::update_icon()).style(icon_button());
-        let folder_button = Button::new(style::reset_icon())
+        let folder_button = Button::new(style::folder_icon())
             .style(icon_button())
             .on_press(InstanceMessage::Folder);
         let mut delete_button = Button::new(style::delete_icon()).style(theme::Button::Destructive);
