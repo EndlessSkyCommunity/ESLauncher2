@@ -146,20 +146,20 @@ impl Instance {
         }
     }
 
-    pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
+    pub fn update(&mut self, message: InstanceMessage) -> iced::Task<Message> {
         match message {
             InstanceMessage::Play(do_debug) => {
                 let name1 = self.name.clone(); // (Jett voice)
                 let name2 = self.name.clone(); // "Yikes!"
 
-                iced::Command::batch(vec![
-                    iced::Command::perform(dummy(), move |()| {
+                iced::Task::batch(vec![
+                    iced::Task::perform(dummy(), move |()| {
                         Message::InstanceMessage(
                             name1,
                             InstanceMessage::StateChanged(InstanceState::Playing),
                         )
                     }),
-                    iced::Command::perform(
+                    iced::Task::perform(
                         perform_play(
                             self.path.clone(),
                             self.executable.clone(),
@@ -177,8 +177,8 @@ impl Instance {
             }
             InstanceMessage::Update => {
                 let name = self.name.clone();
-                iced::Command::batch(vec![
-                    iced::Command::perform(dummy(), move |()| {
+                iced::Task::batch(vec![
+                    iced::Task::perform(dummy(), move |()| {
                         Message::InstanceMessage(
                             name,
                             InstanceMessage::StateChanged(InstanceState::Working(
@@ -186,21 +186,21 @@ impl Instance {
                             )),
                         )
                     }),
-                    iced::Command::perform(perform_update(self.clone()), Message::Dummy),
+                    iced::Task::perform(perform_update(self.clone()), Message::Dummy),
                 ])
             }
             InstanceMessage::Folder => {
-                iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
+                iced::Task::perform(open_folder(self.path.clone()), Message::Dummy)
             }
             InstanceMessage::Delete => {
                 let name = self.name.clone();
-                iced::Command::perform(delete(self.path.clone()), move |_| {
+                iced::Task::perform(delete(self.path.clone()), move |_| {
                     Message::RemoveInstance(Some(name))
                 })
             }
             InstanceMessage::StateChanged(state) => {
                 self.state = state;
-                iced::Command::none()
+                iced::Task::none()
             }
         }
     }

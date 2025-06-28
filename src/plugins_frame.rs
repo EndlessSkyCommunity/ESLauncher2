@@ -4,7 +4,7 @@ use anyhow::Context;
 use anyhow::Result;
 use espim::Plugin as EspimPlugin;
 use iced::widget::{button, image, Column, Container, Image, Row, Scrollable, Space, Text};
-use iced::{alignment, theme, Alignment, Color, Command, Element, Length};
+use iced::{alignment, theme, Alignment, Color, Element, Length, Task};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::fs::File;
@@ -22,10 +22,10 @@ pub enum PluginsFrameState {
 }
 
 impl PluginsFrameState {
-    pub fn new() -> (Self, Command<Message>) {
+    pub fn new() -> (Self, Task<Message>) {
         (
             Self::Loading,
-            Command::perform(load_plugins(), Message::PluginFrameLoaded),
+            Task::perform(load_plugins(), Message::PluginFrameLoaded),
         )
     }
 
@@ -110,14 +110,14 @@ pub struct Plugin {
 }
 
 impl Plugin {
-    pub fn update(&mut self, message: PluginMessage) -> Command<Message> {
+    pub fn update(&mut self, message: PluginMessage) -> Task<Message> {
         match message {
             PluginMessage::Install => {
                 if let PluginState::Idle { espim_plugin } = &mut self.state {
                     let name = self.name.clone();
                     let plugin = espim_plugin.clone();
                     self.state = PluginState::Working;
-                    return Command::perform(perform_install(*plugin), move |p| {
+                    return Task::perform(perform_install(*plugin), move |p| {
                         Message::PluginMessage(name, PluginMessage::WorkFinished(Box::new(p)))
                     });
                 }
@@ -151,7 +151,7 @@ impl Plugin {
                 };
             }
         }
-        Command::none()
+        Task::none()
     }
 
     fn view(&self) -> Element<PluginMessage> {

@@ -8,7 +8,7 @@ use iced::{
     widget::{button, Column, Container, Row},
     Length,
 };
-use iced::{Alignment, Command, Padding, Renderer};
+use iced::{Alignment, Padding, Renderer, Task};
 use serde::{Deserialize, Serialize};
 use std::{fs::File, path::PathBuf};
 
@@ -163,10 +163,10 @@ impl Settings {
         .padding(100.0)
     }
 
-    pub fn update(&mut self, message: SettingsMessage) -> Command<Message> {
+    pub fn update(&mut self, message: SettingsMessage) -> Task<Message> {
         match message {
             SettingsMessage::RequestInstallPath => {
-                return Command::perform(rfd::AsyncFileDialog::new().pick_folder(), |f| match f {
+                return Task::perform(rfd::AsyncFileDialog::new().pick_folder(), |f| match f {
                     Some(handle) => Message::SettingsMessage(SettingsMessage::SetInstallPath(
                         handle.path().to_path_buf(),
                     )),
@@ -180,6 +180,6 @@ impl Settings {
         };
         self.save();
 
-        Command::none()
+        Task::none()
     }
 }

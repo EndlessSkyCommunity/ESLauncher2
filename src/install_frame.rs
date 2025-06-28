@@ -4,7 +4,7 @@ use crate::style::text_button;
 use crate::{instance, Message};
 use core::fmt;
 use iced::widget::{Button, Column, Container, Radio, Scrollable, Text, TextInput};
-use iced::{alignment, Alignment, Command, Element, Length};
+use iced::{alignment, Alignment, Element, Length, Task};
 use serde::{Deserialize, Serialize};
 
 // Characters that shall not be allowed to enter. This does not cover all cases!
@@ -62,10 +62,10 @@ impl InstallFrame {
         &mut self,
         message: InstallFrameMessage,
         settings: &mut Settings,
-    ) -> Command<Message> {
+    ) -> Task<Message> {
         match message {
             InstallFrameMessage::StartInstallation(instance_type) => {
-                return Command::perform(
+                return Task::perform(
                     instance::perform_install(
                         settings.install_dir.join(&self.name),
                         self.name.clone(),
@@ -87,7 +87,7 @@ impl InstallFrame {
                 self.source.identifier = identifier;
             }
         }
-        Command::none()
+        Task::none()
     }
 
     pub fn view(&self) -> Element<InstallFrameMessage> {

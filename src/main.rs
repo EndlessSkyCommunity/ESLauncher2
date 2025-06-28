@@ -45,6 +45,8 @@ mod settings;
 mod style;
 mod update;
 
+// TODO: investigate use cases for Task::then
+
 // Yes, this is terrible abuse of globals.
 // I spent hours and hours trying to find a better solution:
 // - async_channel
@@ -142,7 +144,7 @@ impl ESLauncher {
                 active_tab: Tab::Instances,
                 settings,
             },
-            Command::batch(vec![
+            Task::batch(vec![
                 plugins_frame_cmd,
                 font::load(include_bytes!("../assets/IcoMoon-Free.ttf").as_slice())
                     .map(Message::FontLoaded),
@@ -152,7 +154,7 @@ impl ESLauncher {
         )
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::InstallFrameMessage(msg) => {
                 return self.install_frame.update(msg, &mut self.settings)
@@ -212,7 +214,7 @@ impl ESLauncher {
             Message::Dummy(()) => (),
             Message::FontLoaded(_) => (),
         }
-        Command::none()
+        Task::none()
     }
 
     /// Subscriptions are created from Recipes.
