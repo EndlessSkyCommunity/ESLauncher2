@@ -93,7 +93,7 @@ impl Settings {
                                     .align_x(iced::alignment::Horizontal::Right)
                                     .width(Length::Fill),
                             )
-                            .align_items(Alignment::Center),
+                            .align_y(Alignment::Center),
                     )
                     .spacing(10.0),
             );
@@ -142,7 +142,7 @@ impl Settings {
                         install_dir_picker
                     )
                     .push_maybe(install_dir_reset_btn)
-                    .align_items(Alignment::Center)
+                    .align_y(Alignment::Center)
                     .spacing(10.0)
                     .padding(Padding {
                         top: 0.0,
