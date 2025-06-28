@@ -23,9 +23,8 @@ espim = "0.2"
 flate2 = "1.0"
 fs_extra = "1.3.0"
 futures = "0.3"
-iced_aw = { git = "https://github.com/iced-rs/iced_aw.git", rev = "9ed46bffd0d819f22e07db6c282fbef733007df5", default-features = false, features = [
+iced_aw = { version = "0.12.2", default-features = false, features = [
     "tabs",
-    "icons",
 ] }
 lazy_static = "1.5"
 log = { version = "0.4.22", features = ["std"] }
@@ -53,7 +52,7 @@ rfd = { version = "0.14.1", default-features = false, features = [
 ] }
 
 [dependencies.iced]
-version = "0.12.1"
+version = "0.13.1"
 default-features = false
 features = [
     "web-colors",
