@@ -18,7 +18,7 @@ use iced::advanced::subscription::EventStream;
 use iced::advanced::Hasher;
 use iced::widget::{Button, Column, Container, Row, Scrollable, Space, Text};
 use iced::{
-    alignment, font, Alignment, Application, Command, Element, Font, Length, Subscription, Theme,
+    alignment, font, Alignment, Application, Element, Font, Length, Subscription, Task, Theme,
 };
 use iced_aw::{TabLabel, Tabs};
 use std::collections::VecDeque;
@@ -66,7 +66,14 @@ mod update;
 static MESSAGE_QUEUE: Mutex<VecDeque<Message>> = Mutex::new(VecDeque::new());
 
 pub fn main() -> iced::Result {
-    ESLauncher::run(iced::Settings::default())
+    iced::application(
+        format!("ESLauncher2 v{}", version!()),
+        ESLauncher::update,
+        ESLauncher::view,
+    )
+    .subscription(ESLauncher::subscription)
+    .theme(ESLauncher::theme)
+    .run_with(|| ESLauncher::new())
 }
 
 #[derive(Debug)]
@@ -104,12 +111,8 @@ pub enum Message {
     Log(String),
 }
 
-impl Application for ESLauncher {
-    type Executor = iced::executor::Default;
-    type Message = Message;
-    type Flags = ();
-
-    fn new(_flag: ()) -> (Self, Command<Message>) {
+impl ESLauncher {
+    fn new() -> (Self, Task<Message>) {
         logger::init();
         info!("Starting ESLauncher2 v{}", version!());
         if cfg!(target_os = "macos") {
@@ -149,13 +152,7 @@ impl Application for ESLauncher {
         )
     }
 
-    fn title(&self) -> String {
-        format!("ESLauncher2 v{}", version!())
-    }
-
-    type Theme = Theme;
-
-    fn update(&mut self, message: Self::Message) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::InstallFrameMessage(msg) => {
                 return self.install_frame.update(msg, &mut self.settings)
@@ -232,7 +229,7 @@ impl Application for ESLauncher {
         Subscription::from_recipe(self.message_receiver.clone())
     }
 
-    fn view(&self) -> Element<'_, Self::Message> {
+    fn view(&self) -> Element<'_, Message> {
         let tabs = Tabs::new(Message::TabSelected)
             .push::<Element<'_, Message>>(
                 Tab::Instances,
@@ -346,8 +343,8 @@ impl Application for ESLauncher {
         .into()
     }
 
-    fn theme(&self) -> Self::Theme {
-        iced::Theme::custom("LightModified".into(), {
+    fn theme(&self) -> Theme {
+        Theme::custom("LightModified".into(), {
             let mut palette = iced::theme::Palette::LIGHT;
             palette.primary = iced::Color::from_rgb(0.2, 0.2, 0.2);
             palette
