@@ -77,7 +77,13 @@ impl button::Catalog for ButtonStyle {
     }
 
     fn style(&self, class: &Self::Class<'_>, status: button::Status) -> button::Style {
-        let active = self.style(class, button::Status::Active);
+        let active = if button::Status::Active == status {
+            // Avoid Stack overflow
+            button::Style::default()
+        } else {
+            self.style(class, button::Status::Active)
+        };
+
         match status {
             button::Status::Active => match self {
                 Self::Icon => button::Style {
@@ -153,7 +159,7 @@ impl container::Catalog for LogContainer {
     type Class<'a> = LogContainer;
 
     fn default<'a>() -> Self::Class<'a> {
-        LogContainer::default()
+        LogContainer { background: None }
     }
 
     fn style(&self, _: &Self::Class<'_>) -> container::Style {
@@ -171,7 +177,7 @@ impl tab_bar::Catalog for CustomTabBar {
     type Class<'a> = CustomTabBar;
 
     fn default<'a>() -> Self::Class<'a> {
-        CustomTabBar::default()
+        CustomTabBar {}
     }
 
     fn style(&self, class: &Self::Class<'_>, status: tab_bar::Status) -> tab_bar::Style {
