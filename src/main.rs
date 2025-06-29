@@ -324,13 +324,7 @@ impl ESLauncher {
         Container::new(
             Column::new()
                 .align_x(Alignment::Start)
-                .push(
-                    Container::new(content)
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .center_x()
-                        .center_y(),
-                )
+                .push(Container::new(content).center(Length::Fill))
                 .push(music_controls.height(Length::Shrink)),
         )
         .width(Length::Fill)
