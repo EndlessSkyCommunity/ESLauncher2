@@ -114,7 +114,7 @@ impl Settings {
             .on_press(Message::SettingsMessage(
                 SettingsMessage::RequestInstallPath,
             ))
-            // .style(icon_button())
+            // .style(icon_button)
             .padding(Padding::from([2, 0]));
         let install_dir_reset_btn = if self.install_dir.eq(&default_install_dir()) {
             None

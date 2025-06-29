@@ -207,11 +207,11 @@ impl Instance {
 
     pub fn view(&self) -> Element<InstanceMessage> {
         // Buttons
-        let mut debug_button = Button::new(style::debug_icon()).style(icon_button());
+        let mut debug_button = Button::new(style::debug_icon()).style(icon_button);
         let mut play_button = Button::new(style::play_icon());
-        let mut update_button = Button::new(style::update_icon()).style(icon_button());
+        let mut update_button = Button::new(style::update_icon()).style(icon_button);
         let folder_button = Button::new(style::folder_icon())
-            .style(icon_button())
+            .style(icon_button)
             .on_press(InstanceMessage::Folder);
         let mut delete_button = Button::new(style::delete_icon()).style(theme::Button::Destructive);
 

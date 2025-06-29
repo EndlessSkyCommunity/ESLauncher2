@@ -207,7 +207,7 @@ impl Plugin {
                 );
 
                 let mut install_button =
-                    button::Button::new(style::update_icon()).style(icon_button()); // TODO: Use other icon here?
+                    button::Button::new(style::update_icon()).style(icon_button); // TODO: Use other icon here?
                 if espim_plugin.is_available() {
                     install_button = install_button.on_press(PluginMessage::Install);
                 }
@@ -218,7 +218,7 @@ impl Plugin {
                     remove_button = remove_button.on_press(PluginMessage::Remove);
                 }
 
-                let mut href_button = button::Button::new(style::href_icon()).style(icon_button()); // TODO: Use other icon here?
+                let mut href_button = button::Button::new(style::href_icon()).style(icon_button); // TODO: Use other icon here?
                 if espim_plugin.is_available() {
                     href_button = href_button.on_press(PluginMessage::OpenHREF);
                 }

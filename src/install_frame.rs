@@ -110,7 +110,7 @@ impl InstallFrame {
             );
         }
 
-        let mut install_button = Button::new(Text::new("Install")).style(text_button());
+        let mut install_button = Button::new(Text::new("Install")).style(text_button);
         if !self.name.trim().is_empty() {
             install_button =
                 install_button.on_press(InstallFrameMessage::StartInstallation(if cfg!(windows) {

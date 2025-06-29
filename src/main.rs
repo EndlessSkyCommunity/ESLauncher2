@@ -270,7 +270,7 @@ impl ESLauncher {
                 ]),
             )
             .set_active_tab(&self.active_tab)
-            .tab_bar_style(tab_bar());
+            .tab_bar_style(tab_bar);
 
         let logbox = self.log_buffer.iter().fold(
             Column::new()
@@ -318,7 +318,7 @@ impl ESLauncher {
                     MusicState::Playing => style::pause_icon(),
                     MusicState::Paused => style::play_icon(),
                 })
-                .style(icon_button())
+                .style(icon_button)
                 .on_press(Message::MusicMessage(
                     match self.settings.music_state {
                         MusicState::Playing => MusicCommand::Pause,

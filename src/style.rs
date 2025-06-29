@@ -1,6 +1,6 @@
 use iced::border::Radius;
 use iced::widget::{button, container, Text};
-use iced::{alignment, Background, Border, Color, Font, Length, Shadow, Vector};
+use iced::{alignment, Background, Border, Color, Font, Length, Shadow, Theme, Vector};
 use iced_aw::tab_bar;
 
 fn icon(unicode: char) -> Text<'static> {
@@ -43,24 +43,24 @@ pub fn reset_icon() -> Text<'static> {
     icon('\u{E965}')
 }
 
-// TODO: This is whack. Status is hardcoded, and generally this doesn't feel like intended
-pub fn icon_button() -> button::Style {
+// TODO: This is whack. doesn't feel like intended => rethink
+pub fn icon_button(_theme: &Theme, status: button::Status) -> button::Style {
     use button::Catalog;
-    ButtonStyle::Icon.style(&ButtonStyle::Icon, button::Status::Active)
+    ButtonStyle::Icon.style(&ButtonStyle::Icon, status)
 }
-pub fn text_button() -> button::Style {
+pub fn text_button(_theme: &Theme, status: button::Status) -> button::Style {
     use button::Catalog;
-    ButtonStyle::Text.style(&ButtonStyle::Text, button::Status::Active)
+    ButtonStyle::Text.style(&ButtonStyle::Text, status)
 }
 
-pub fn tab_bar() -> tab_bar::Style {
+pub fn tab_bar(_theme: &Theme, status: tab_bar::Status) -> tab_bar::Style {
     use tab_bar::Catalog;
-    CustomTabBar::default().style(&CustomTabBar::default(), tab_bar::Status::Active)
+    CustomTabBar::default().style(&CustomTabBar::default(), status)
 }
 
-pub fn log_container(log: &str) -> container::Style {
+pub fn log_container(log: &str) -> container::StyleFn<Theme> {
     use container::Catalog;
-    LogContainer::from(log).style(&LogContainer::default())
+    Box::new(move |_| LogContainer::from(log).style(&LogContainer::default()))
 }
 
 /// graphic design is my passion
