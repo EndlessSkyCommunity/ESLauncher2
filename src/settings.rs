@@ -2,7 +2,6 @@ use crate::music::MusicState;
 use crate::{get_data_dir, style, Message};
 use anyhow::{Context, Result};
 use iced::advanced::graphics::core::Element;
-use iced::widget::text_input::StyleSheet;
 use iced::widget::{container, row, text, Checkbox, Text};
 use iced::{
     widget::{button, Column, Container, Row},
