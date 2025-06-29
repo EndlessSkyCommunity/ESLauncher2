@@ -249,7 +249,7 @@ pub async fn load_plugins() -> Vec<Plugin> {
             for p in retrieved {
                 let name = String::from(p.name());
                 let icon = load_icon_cached(&p)
-                    .map(image::Handle::from_memory)
+                    .map(image::Handle::from_bytes)
                     .map_err(|e| debug!("failed to fetch icon: {}", e))
                     .ok();
                 plugins.push(Plugin {
