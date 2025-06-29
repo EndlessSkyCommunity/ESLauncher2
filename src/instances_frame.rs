@@ -1,7 +1,7 @@
 use crate::instance::{load_instances, Instance};
 use crate::settings::Settings;
 use crate::Message;
-use iced::widget::{Column, Container, Scrollable, Text};
+use iced::widget::{container, rule, Column, Container, Scrollable, Text};
 use iced::{alignment, theme, Alignment, Color, Element, Length};
 use std::collections::BTreeMap;
 
@@ -55,16 +55,11 @@ impl InstancesFrame {
                 .fold(instances_column, |column, instance| {
                     column
                         .push(
-                            iced::widget::horizontal_rule(2).style(iced::theme::Rule::from(
-                                |theme: &iced::Theme| {
-                                    let mut appearance = iced::widget::rule::StyleSheet::appearance(
-                                        theme,
-                                        &Default::default(),
-                                    );
-                                    appearance.color.a *= 0.75;
-                                    appearance
-                                },
-                            )),
+                            iced::widget::horizontal_rule(2).style(|theme: &iced::Theme| {
+                                let mut style = rule::default(theme);
+                                style.color.a *= 0.75;
+                                style
+                            }),
                         )
                         .push(instance.view().map(move |message| {
                             Message::InstanceMessage(instance.name.clone(), message)

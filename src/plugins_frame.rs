@@ -3,7 +3,7 @@ use crate::{get_data_dir, style, Message};
 use anyhow::Context;
 use anyhow::Result;
 use espim::Plugin as EspimPlugin;
-use iced::widget::{button, image, Column, Container, Image, Row, Scrollable, Space, Text};
+use iced::widget::{button, image, rule, Column, Container, Image, Row, Scrollable, Space, Text};
 use iced::{alignment, theme, Alignment, Color, Element, Length, Task};
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -54,15 +54,11 @@ impl PluginsFrameState {
                         |column, plugin| {
                             column
                                 .push(iced::widget::horizontal_rule(2).style(
-                                    iced::theme::Rule::from(|theme: &iced::Theme| {
-                                        let mut appearance =
-                                            iced::widget::rule::StyleSheet::appearance(
-                                                theme,
-                                                &Default::default(),
-                                            );
-                                        appearance.color.a *= 0.75;
-                                        appearance
-                                    }),
+                                    |theme: &iced::Theme| {
+                                        let mut style = rule::default(theme);
+                                        style.color.a *= 0.75;
+                                        style
+                                    },
                                 ))
                                 .push(plugin.view().map(move |msg| {
                                     Message::PluginMessage(plugin.name.clone(), msg)

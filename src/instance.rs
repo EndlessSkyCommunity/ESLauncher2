@@ -213,7 +213,8 @@ impl Instance {
         let folder_button = Button::new(style::folder_icon())
             .style(icon_button)
             .on_press(InstanceMessage::Folder);
-        let mut delete_button = Button::new(style::delete_icon()).style(theme::Button::Destructive);
+        let mut delete_button = Button::new(style::delete_icon());
+        // TODO: .style(theme::Button::Destructive);
 
         if self.state.is_ready() {
             debug_button = debug_button.on_press(InstanceMessage::Play(true));

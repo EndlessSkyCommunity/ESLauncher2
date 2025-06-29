@@ -80,9 +80,8 @@ impl Settings {
         fn settings_row<'a>(
             label: &'a str,
             content: impl Into<Element<'a, Message, iced::Theme, Renderer>>,
-            enabled: bool,
         ) -> impl Into<Element<'a, Message, iced::Theme, Renderer>> {
-            let container = container(
+            container(
                 Column::new()
                     .push(
                         Row::new()
@@ -95,19 +94,7 @@ impl Settings {
                             .align_y(Alignment::Center),
                     )
                     .spacing(10.0),
-            );
-            if enabled {
-                container
-            } else {
-                container.style(iced::theme::Container::Custom(Box::new(
-                    |theme: &iced::Theme| container::Appearance {
-                        text_color: Some(
-                            theme.disabled(&iced::theme::TextInput::Default).icon_color,
-                        ),
-                        ..Default::default()
-                    },
-                )))
-            }
+            )
         }
 
         let install_dir_picker = button(style::folder_icon().size(12.0))
@@ -149,13 +136,11 @@ impl Settings {
                         bottom: 0.0,
                         left: 0.0,
                     }),
-                    true,
                 ))
                 .push(settings_row(
                     "Dark Theme",
                     Checkbox::new("", self.dark_theme)
                         .on_toggle(|v| Message::SettingsMessage(SettingsMessage::DarkTheme(v))),
-                    true,
                 ))
                 .spacing(10.0),
         )
