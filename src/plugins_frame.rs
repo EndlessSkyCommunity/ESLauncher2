@@ -110,11 +110,13 @@ impl Plugin {
         match message {
             PluginMessage::Install => {
                 if let PluginState::Idle { espim_plugin } = &mut self.state {
-                    let name = self.name.clone();
                     let plugin = espim_plugin.clone();
                     self.state = PluginState::Working;
                     return Task::perform(perform_install(*plugin), move |p| {
-                        Message::PluginMessage(name, PluginMessage::WorkFinished(Box::new(p)))
+                        Message::PluginMessage(
+                            p.name().into(),
+                            PluginMessage::WorkFinished(Box::new(p)),
+                        )
                     });
                 }
             }

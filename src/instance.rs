@@ -13,6 +13,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::Arc;
 use time::{format_description, OffsetDateTime};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -150,15 +151,13 @@ impl Instance {
         match message {
             InstanceMessage::Play(do_debug) => {
                 let name1 = self.name.clone(); // (Jett voice)
-                let name2 = self.name.clone(); // "Yikes!"
+                let name2 = Arc::new(self.name.clone()); // "Yikes!"
 
                 iced::Task::batch(vec![
-                    iced::Task::perform(dummy(), move |()| {
-                        Message::InstanceMessage(
-                            name1,
-                            InstanceMessage::StateChanged(InstanceState::Playing),
-                        )
-                    }),
+                    iced::Task::done(Message::InstanceMessage(
+                        name1,
+                        InstanceMessage::StateChanged(InstanceState::Playing),
+                    )),
                     iced::Task::perform(
                         perform_play(
                             self.path.clone(),
@@ -168,7 +167,7 @@ impl Instance {
                         ),
                         move |()| {
                             Message::InstanceMessage(
-                                name2,
+                                name2.to_string(),
                                 InstanceMessage::StateChanged(InstanceState::Ready),
                             )
                         },
@@ -178,26 +177,19 @@ impl Instance {
             InstanceMessage::Update => {
                 let name = self.name.clone();
                 iced::Task::batch(vec![
-                    iced::Task::perform(dummy(), move |()| {
-                        Message::InstanceMessage(
-                            name,
-                            InstanceMessage::StateChanged(InstanceState::Working(
-                                "Updating".into(),
-                            )),
-                        )
-                    }),
+                    iced::Task::done(Message::InstanceMessage(
+                        name,
+                        InstanceMessage::StateChanged(InstanceState::Working("Updating".into())),
+                    )),
                     iced::Task::perform(perform_update(self.clone()), Message::Dummy),
                 ])
             }
             InstanceMessage::Folder => {
                 iced::Task::perform(open_folder(self.path.clone()), Message::Dummy)
             }
-            InstanceMessage::Delete => {
-                let name = self.name.clone();
-                iced::Task::perform(delete(self.path.clone()), move |_| {
-                    Message::RemoveInstance(Some(name))
-                })
-            }
+            InstanceMessage::Delete => iced::Task::perform(self.clone().delete(), move |name| {
+                Message::RemoveInstance(name)
+            }),
             InstanceMessage::StateChanged(state) => {
                 self.state = state;
                 iced::Task::none()
@@ -283,9 +275,17 @@ impl Instance {
             })
             .into()
     }
-}
 
-async fn dummy() {}
+    pub async fn delete(self) -> Option<String> {
+        if fs::remove_dir_all(&self.path).is_ok() {
+            info!("Removed {}", self.path.to_string_lossy());
+            Some(self.name.clone())
+        } else {
+            error!("Failed to remove {}", self.path.to_string_lossy());
+            None
+        }
+    }
+}
 
 pub async fn perform_install(
     path: PathBuf,
@@ -317,16 +317,6 @@ pub async fn open_folder(path: PathBuf) {
     info!("Opening {} in file explorer", path.to_string_lossy());
     if let Err(e) = open::that(path.as_path()) {
         error!("Failed to open path: {}", e);
-    }
-}
-
-pub async fn delete(path: PathBuf) -> Option<PathBuf> {
-    if fs::remove_dir_all(&path).is_ok() {
-        info!("Removed {}", path.to_string_lossy());
-        Some(path)
-    } else {
-        error!("Failed to remove {}", path.to_string_lossy());
-        None
     }
 }
 
