@@ -183,12 +183,17 @@ impl tab_bar::Catalog for CustomTabBar {
     fn style(&self, class: &Self::Class<'_>, status: tab_bar::Status) -> tab_bar::Style {
         match status {
             tab_bar::Status::Active => tab_bar::Style {
+                tab_label_background: Background::Color(Color::from_rgb(1., 1., 1.)),
+                tab_label_border_width: 0.,
+                ..Default::default()
+            },
+            tab_bar::Status::Disabled => tab_bar::Style {
                 tab_label_background: Background::Color(Color::from_rgb(0.87, 0.87, 0.87)),
                 tab_label_border_width: 0.,
                 ..Default::default()
             },
             tab_bar::Status::Hovered => tab_bar::Style {
-                tab_label_background: Background::Color(Color::from_rgb(0.94, 0.94, 0.94)),
+                tab_label_background: Background::Color(Color::from_rgb(0.97, 0.97, 0.97)),
                 tab_label_border_width: 0.,
                 ..Default::default()
             },
