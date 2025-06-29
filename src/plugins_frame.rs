@@ -36,11 +36,11 @@ impl PluginsFrameState {
     pub fn view(&self) -> Container<Message> {
         match self {
             Self::Loading => Container::new(
-                Column::new().align_items(Alignment::Center).push(
+                Column::new().align_x(Alignment::Center).push(
                     Text::new("Loading...")
                         .width(Length::Fill)
                         .style(theme::Text::Color(Color::from_rgb(0.7, 0.7, 0.7)))
-                        .horizontal_alignment(alignment::Horizontal::Center),
+                        .align_x(alignment::Horizontal::Center),
                 ),
             ),
             Self::Ready { plugins } => {
@@ -50,7 +50,7 @@ impl PluginsFrameState {
                             .padding(20)
                             .spacing(5)
                             .width(Length::Fill)
-                            .align_items(Alignment::Center),
+                            .align_x(Alignment::Center),
                         |column, plugin| {
                             column
                                 .push(iced::widget::horizontal_rule(2).style(
@@ -159,7 +159,7 @@ impl Plugin {
         const ICON_DIMENSION: f32 = 64.;
         let mut icon_container = Row::new()
             .width(Length::Fixed(ICON_DIMENSION))
-            .align_items(Alignment::Center);
+            .align_y(Alignment::Center);
         if let Some(icon) = &self.icon {
             icon_container = icon_container.push(
                 Image::new(icon.clone())
@@ -168,8 +168,8 @@ impl Plugin {
             );
         }
         let mut textbox = Column::new().width(Length::Fill);
-        let mut titlebox = Column::new()
-            .push(Text::new(&self.name).vertical_alignment(alignment::Vertical::Center));
+        let mut titlebox =
+            Column::new().push(Text::new(&self.name).align_y(alignment::Vertical::Center));
         let mut infos = Column::new();
 
         let mut controls = Row::new().spacing(10);

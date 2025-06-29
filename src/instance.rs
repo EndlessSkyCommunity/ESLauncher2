@@ -226,7 +226,7 @@ impl Instance {
         Row::new()
             .spacing(10)
             .padding(10)
-            .align_items(Alignment::Start)
+            .align_y(Alignment::Start)
             .width(Length::Fill)
             .push(
                 Column::new()
@@ -243,10 +243,10 @@ impl Instance {
             .push(Space::new(Length::Fill, Length::Shrink))
             .push({
                 if let InstanceState::Working(progress) = &self.state {
-                    let mut status_field = Column::new().align_items(Alignment::Center).push(
+                    let mut status_field = Column::new().align_x(Alignment::Center).push(
                         Text::new(&progress.status)
                             .size(16)
-                            .horizontal_alignment(alignment::Horizontal::Center),
+                            .align_x(alignment::Horizontal::Center),
                     );
                     if let (Some(done), Some(total)) = (progress.done, progress.total) {
                         status_field = status_field.push(
@@ -264,7 +264,7 @@ impl Instance {
                                 progress.units.as_ref().unwrap_or(&String::new())
                             ))
                             .size(12)
-                            .horizontal_alignment(alignment::Horizontal::Center),
+                            .align_x(alignment::Horizontal::Center),
                         );
                     }
                     Row::new()

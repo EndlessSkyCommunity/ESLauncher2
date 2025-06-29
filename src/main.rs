@@ -269,14 +269,14 @@ impl ESLauncher {
             Column::new()
                 .spacing(1)
                 .padding(15)
-                .align_items(Alignment::Start),
+                .align_x(Alignment::Start),
             |column, log| {
                 column.push(
                     Container::new(
                         Text::new(log)
                             .size(11)
                             .font(Font::with_name("DejaVu Sans Mono"))
-                            .horizontal_alignment(alignment::Horizontal::Left),
+                            .align_x(alignment::Horizontal::Left),
                     )
                     .style(log_container(log))
                     .width(Length::Fill),
@@ -285,7 +285,7 @@ impl ESLauncher {
         );
 
         let content = Column::new()
-            .align_items(Alignment::Center)
+            .align_x(Alignment::Center)
             .push(tabs.height(Length::FillPortion(3)))
             .push(
                 iced::widget::container(iced::widget::horizontal_rule(2)).padding(iced::Padding {
@@ -303,7 +303,7 @@ impl ESLauncher {
 
         let music_controls = Row::new()
             .width(Length::Fill)
-            .align_items(Alignment::Center)
+            .align_y(Alignment::Center)
             .padding(8)
             .push(Space::new(Length::Fill, Length::Shrink))
             .push(
@@ -323,7 +323,7 @@ impl ESLauncher {
 
         Container::new(
             Column::new()
-                .align_items(Alignment::Start)
+                .align_x(Alignment::Start)
                 .push(
                     Container::new(content)
                         .width(Length::Fill)

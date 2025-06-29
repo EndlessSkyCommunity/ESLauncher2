@@ -127,7 +127,7 @@ impl InstallFrame {
                 .padding(20)
                 .push(
                     Text::new("Install")
-                        .horizontal_alignment(alignment::Horizontal::Center)
+                        .align_x(alignment::Horizontal::Center)
                         .width(Length::Fill)
                         .size(26),
                 )
@@ -139,7 +139,7 @@ impl InstallFrame {
                 .push(controls)
                 .push(install_button)
                 .spacing(20)
-                .align_items(Alignment::End),
+                .align_x(Alignment::End),
         ))
         .width(Length::FillPortion(2))
         .into()
