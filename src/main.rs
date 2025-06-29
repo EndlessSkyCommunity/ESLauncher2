@@ -14,22 +14,19 @@ use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
 
-use iced::advanced::subscription::EventStream;
-use iced::advanced::Hasher;
-use iced::widget::{Button, Column, Container, Row, Scrollable, Space, Text};
-use iced::{
-    alignment, font, Alignment, Application, Element, Font, Length, Subscription, Task, Theme,
-};
-use iced_aw::{TabLabel, Tabs};
-use std::collections::VecDeque;
-use std::sync::Mutex;
-
 use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
 use crate::settings::{Settings, SettingsMessage};
 use crate::style::{icon_button, log_container, tab_bar};
+use iced::advanced::subscription;
+use iced::advanced::subscription::{EventStream, Hasher};
+use iced::widget::{Button, Column, Container, Row, Scrollable, Space, Text};
+use iced::{alignment, font, Alignment, Element, Font, Length, Subscription, Task, Theme};
+use iced_aw::{TabLabel, Tabs};
+use std::collections::VecDeque;
+use std::sync::Mutex;
 
 mod archive;
 mod github;
@@ -68,14 +65,10 @@ mod update;
 static MESSAGE_QUEUE: Mutex<VecDeque<Message>> = Mutex::new(VecDeque::new());
 
 pub fn main() -> iced::Result {
-    iced::application(
-        format!("ESLauncher2 v{}", version!()),
-        ESLauncher::update,
-        ESLauncher::view,
-    )
-    .subscription(ESLauncher::subscription)
-    .theme(ESLauncher::theme)
-    .run_with(|| ESLauncher::new())
+    iced::application(ESLauncher::title, ESLauncher::update, ESLauncher::view)
+        .subscription(ESLauncher::subscription)
+        .theme(ESLauncher::theme)
+        .run_with(|| ESLauncher::new())
 }
 
 #[derive(Debug)]
@@ -228,7 +221,7 @@ impl ESLauncher {
     /// the first the Subscription never stops returning values (unless something catastrophic happens),
     /// so the cloned Recipe just gets dropped without being turned into a Subscription.
     fn subscription(&self) -> Subscription<Message> {
-        Subscription::from_recipe(self.message_receiver.clone())
+        subscription::from_recipe(self.message_receiver.clone())
     }
 
     fn view(&self) -> Element<'_, Message> {
@@ -345,6 +338,10 @@ impl ESLauncher {
         .into()
     }
 
+    fn title(&self) -> String {
+        format!("ESLauncher2 v{}", version!())
+    }
+
     fn theme(&self) -> Theme {
         Theme::custom("LightModified".into(), {
             let mut palette = iced::theme::Palette::LIGHT;
@@ -372,7 +369,7 @@ fn get_data_dir() -> Option<PathBuf> {
 #[derive(Debug, Clone)]
 pub struct MessageReceiver {}
 
-impl iced::advanced::subscription::Recipe for MessageReceiver {
+impl subscription::Recipe for MessageReceiver {
     type Output = Message;
 
     fn hash(&self, state: &mut Hasher) {
