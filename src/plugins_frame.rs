@@ -39,7 +39,7 @@ impl PluginsFrameState {
                 Column::new().align_x(Alignment::Center).push(
                     Text::new("Loading...")
                         .width(Length::Fill)
-                        .style(theme::Text::Color(Color::from_rgb(0.7, 0.7, 0.7)))
+                        .color(Color::from_rgb(0.7, 0.7, 0.7))
                         .align_x(alignment::Horizontal::Center),
                 ),
             ),
@@ -185,7 +185,7 @@ impl Plugin {
                             String::from("Not installed")
                         })
                         .size(14)
-                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     )
                     .push(
                         Text::new(if espim_plugin.is_available() {
@@ -194,7 +194,7 @@ impl Plugin {
                             String::from("Unavailable")
                         })
                         .size(14)
-                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     );
                 infos = infos.push(Space::with_height(5)).push(
                     Text::new(
@@ -203,7 +203,7 @@ impl Plugin {
                             .unwrap_or("Not available".to_string()),
                     )
                     .size(14)
-                    .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                    .color(Color::from_rgb(0.6, 0.6, 0.6)),
                 );
 
                 let mut install_button =
@@ -212,8 +212,8 @@ impl Plugin {
                     install_button = install_button.on_press(PluginMessage::Install);
                 }
 
-                let mut remove_button =
-                    button::Button::new(style::delete_icon()).style(theme::Button::Destructive);
+                let mut remove_button = button::Button::new(style::delete_icon());
+                // TODO .style(theme::Button::Destructive);
                 if espim_plugin.is_installed() {
                     remove_button = remove_button.on_press(PluginMessage::Remove);
                 }
@@ -232,7 +232,7 @@ impl Plugin {
                 infos = infos.push(
                     Text::new("Working...")
                         .size(14)
-                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
                 );
             }
         };
