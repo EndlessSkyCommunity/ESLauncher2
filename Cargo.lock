@@ -1205,6 +1205,7 @@ dependencies = [
  "futures",
  "iced",
  "iced_aw",
+ "iced_dialog",
  "lazy_static",
  "log",
  "open",
@@ -1912,6 +1913,16 @@ dependencies = [
  "smol_str",
  "thiserror",
  "web-time",
+]
+
+[[package]]
+name = "iced_dialog"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6971903dccd5d5602d128b3bcedf59bddb304014ad133893aba813ec813da80"
+dependencies = [
+ "iced_core",
+ "iced_widget",
 ]
 
 [[package]]

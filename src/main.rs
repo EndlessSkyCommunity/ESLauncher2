@@ -22,10 +22,12 @@ use crate::settings::{Settings, SettingsMessage};
 use crate::style::{icon_button, log_container, tab_bar};
 use iced::advanced::subscription;
 use iced::advanced::subscription::{EventStream, Hasher};
-use iced::widget::{Button, Column, Container, Row, Scrollable, Space, Text};
+use iced::widget::{text, Button, Column, Container, Row, Scrollable, Space, Text};
 use iced::{alignment, font, Alignment, Element, Font, Length, Subscription, Task, Theme};
 use iced_aw::{TabLabel, Tabs};
+use iced_dialog::dialog;
 use std::collections::VecDeque;
+use std::fmt::Debug;
 use std::sync::Mutex;
 
 mod archive;
@@ -81,6 +83,7 @@ struct ESLauncher {
     log_buffer: Vec<String>,
     active_tab: Tab,
     settings: Settings,
+    dialog: Option<DialogSpec>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -104,6 +107,15 @@ pub enum Message {
     TabSelected(Tab),
     PluginFrameLoaded(Vec<plugins_frame::Plugin>),
     Log(String),
+    OpenDialog(DialogSpec),
+    DialogClosed(Box<Message>), // boxed to avoid recursive size calculation
+}
+
+#[derive(Debug, Clone)]
+pub struct DialogSpec {
+    title: Option<String>,
+    content: String,
+    buttons: Vec<(String, Message)>,
 }
 
 impl ESLauncher {
@@ -136,6 +148,7 @@ impl ESLauncher {
                 log_buffer: vec![],
                 active_tab: Tab::Instances,
                 settings,
+                dialog: None,
             },
             Task::batch(vec![
                 plugins_frame_cmd,
@@ -206,6 +219,11 @@ impl ESLauncher {
             Message::Log(line) => self.log_buffer.push(line),
             Message::Dummy(()) => (),
             Message::FontLoaded(_) => (),
+            Message::OpenDialog(spec) => self.dialog = Some(spec),
+            Message::DialogClosed(msg) => {
+                self.dialog = None;
+                return Task::done(*msg);
+            }
         }
         Task::none()
     }
@@ -218,7 +236,7 @@ impl ESLauncher {
     /// the old Subscription will keep running, otherwise a new one will be created.
     ///
     /// Having to clone the receiver is unfortunate, but there aren't actually multiple receivers being used:
-    /// the first the Subscription never stops returning values (unless something catastrophic happens),
+    /// the first Subscription never stops returning values (unless something catastrophic happens),
     /// so the cloned Recipe just gets dropped without being turned into a Subscription.
     fn subscription(&self) -> Subscription<Message> {
         subscription::from_recipe(self.message_receiver.clone())
@@ -321,15 +339,30 @@ impl ESLauncher {
             )
             .push(Text::new("Endless Sky Prototype by JimmyZenith").size(13));
 
-        Container::new(
+        let base = Container::new(
             Column::new()
                 .align_x(Alignment::Start)
                 .push(Container::new(content).center(Length::Fill))
                 .push(music_controls.height(Length::Shrink)),
         )
         .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        .height(Length::Fill);
+
+        if let Some(spec) = &self.dialog {
+            let mut dialog = dialog(true, base, &*spec.content).height(300);
+            if let Some(title) = &spec.title {
+                dialog = dialog.title(title);
+            }
+            for (content, msg) in &spec.buttons {
+                dialog = dialog.push_button(iced_dialog::button(
+                    content,
+                    Message::DialogClosed(Box::new(msg.clone())),
+                ));
+            }
+            dialog.into()
+        } else {
+            dialog(false, base, text("")).into()
+        }
     }
 
     fn title(&self) -> String {

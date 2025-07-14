@@ -1,5 +1,5 @@
 use crate::music::MusicState;
-use crate::{get_data_dir, style, Message};
+use crate::{get_data_dir, style, DialogSpec, Message};
 use anyhow::{Context, Result};
 use iced::advanced::graphics::core::Element;
 use iced::widget::{container, row, text, Checkbox, Text};
@@ -9,6 +9,7 @@ use iced::{
 };
 use iced::{Alignment, Padding, Renderer, Task};
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use std::{fs::File, path::PathBuf};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -27,6 +28,7 @@ pub enum SettingsMessage {
     DarkTheme(bool),
     RequestInstallPath,
     SetInstallPath(PathBuf),
+    MoveInstallPath(PathBuf),
 }
 
 impl Default for Settings {
@@ -108,7 +110,7 @@ impl Settings {
         } else {
             Some(
                 button(style::reset_icon().size(12.0))
-                    .on_press(Message::SettingsMessage(SettingsMessage::SetInstallPath(
+                    .on_press(Message::OpenDialog(move_dir_dialog_spec(
                         default_install_dir(),
                     )))
                     .padding(Padding::from([2, 0])),
@@ -151,19 +153,83 @@ impl Settings {
         match message {
             SettingsMessage::RequestInstallPath => {
                 return Task::perform(rfd::AsyncFileDialog::new().pick_folder(), |f| match f {
-                    Some(handle) => Message::SettingsMessage(SettingsMessage::SetInstallPath(
-                        handle.path().to_path_buf(),
-                    )),
+                    Some(handle) => {
+                        Message::OpenDialog(move_dir_dialog_spec(handle.path().to_path_buf()))
+                    }
                     None => Message::Dummy(()),
                 })
             }
             SettingsMessage::SetInstallPath(p) => {
                 self.install_dir = p;
+                // TODO: reload instances
+            }
+            SettingsMessage::MoveInstallPath(new) => {
+                let move_dir = move_install_dir(self.install_dir.clone(), new.clone());
+                let message_when_done = move |_| {
+                    Message::DialogClosed(Box::new(Message::SettingsMessage(
+                        SettingsMessage::SetInstallPath(new.clone()),
+                    )))
+                };
+                return Task::done(Message::OpenDialog(move_in_progress_dialog_spec()))
+                    .chain(Task::perform(move_dir, message_when_done));
             }
             SettingsMessage::DarkTheme(dark) => self.dark_theme = dark,
         };
         self.save();
 
         Task::none()
+    }
+}
+
+async fn move_install_dir(source: PathBuf, dest: PathBuf) {
+    info!("STUB: Moving install dir");
+    tokio::time::sleep(Duration::from_secs(3)).await;
+}
+
+fn move_dir_dialog_spec(new_dir: PathBuf) -> DialogSpec {
+    let mut warning = "".into();
+    match std::fs::read_dir(&new_dir) {
+        Ok(r) => {
+            let count = r.count();
+            if count > 0 {
+                warning = format!(
+                    "\nWARNING: Found {count} existing items in the directory.\n\
+                    If you select Yes, these will be deleted!\n\
+                    If you select No, ESLauncher2 might run into problems later."
+                );
+            }
+        }
+        Err(e) => {
+            warning = format!(
+                "\nWARNING: Failed to read the output directory ({e}), it might not be readable.\n\
+                If you select Yes, the program will try to wipe the folder!\n\
+                Regardless of what you select, errors may follow."
+            )
+        }
+    };
+
+    let buttons = vec![
+        (
+            "Yes".into(),
+            Message::SettingsMessage(SettingsMessage::MoveInstallPath(new_dir.clone())),
+        ),
+        (
+            "No".into(),
+            Message::SettingsMessage(SettingsMessage::SetInstallPath(new_dir)),
+        ),
+        ("Cancel".into(), Message::Dummy(())),
+    ];
+    DialogSpec {
+        title: None,
+        content: format!("Should ESLauncher move your instances to the new folder?{warning}"),
+        buttons,
+    }
+}
+
+fn move_in_progress_dialog_spec() -> DialogSpec {
+    DialogSpec {
+        title: None,
+        content: "Moving install dir, please be patient...".into(),
+        buttons: vec![],
     }
 }
