@@ -101,6 +101,7 @@ pub fn init() {
         .add_filter_ignore_str("iced_wgpu::renderer") // STOP
         .add_filter_ignore_str("wgpu_native::device") // SPAMMING
         .add_filter_ignore_str("wgpu_native::command") // AAAAAH
+        .add_filter_ignore_str("cosmic_text::buffer")
         .add_filter_ignore_str("gfx_backend_metal::device") // spammy thing on mac
         .add_filter_ignore_str("hyper::proto")
         .build();
