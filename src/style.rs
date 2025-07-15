@@ -174,9 +174,9 @@ impl From<&str> for LogContainer {
     fn from(log: &str) -> Self {
         Self {
             background: if log.starts_with("WARN") {
-                Some(Color::new(1., 1., 0.5, 0.5))
+                Some(Color::from_rgba(1.0, 1.0, 0.5, 0.5))
             } else if log.starts_with("ERROR") {
-                Some(Color::new(1., 0.5, 0.5, 0.5))
+                Some(Color::from_rgba(1.0, 0.5, 0.5, 0.5))
             } else {
                 None
             },

@@ -69,10 +69,11 @@ mod update;
 static MESSAGE_QUEUE: Mutex<VecDeque<Message>> = Mutex::new(VecDeque::new());
 
 pub fn main() -> iced::Result {
-    iced::application(ESLauncher::title, ESLauncher::update, ESLauncher::view)
+    iced::application(ESLauncher::new, ESLauncher::update, ESLauncher::view)
+        .title(ESLauncher::title)
         .subscription(ESLauncher::subscription)
         .theme(ESLauncher::theme)
-        .run_with(|| ESLauncher::new())
+        .run()
 }
 
 type SharedSettings = Arc<RwLock<Settings>>;
@@ -168,7 +169,7 @@ impl ESLauncher {
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
-        match message {
+        match dbg!(message) {
             Message::InstallFrameMessage(msg) => {
                 return self.install_frame.update(msg, self.settings.clone())
             }
@@ -351,7 +352,7 @@ impl ESLauncher {
         .height(Length::Fill);
 
         if let Some(spec) = &self.dialog {
-            let mut dialog = dialog(true, base, &*spec.content).height(300);
+            let mut dialog = dialog(true, base, &*spec.content);
             if let Some(title) = &spec.title {
                 dialog = dialog.title(title);
             }
