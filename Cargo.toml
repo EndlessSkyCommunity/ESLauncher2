@@ -17,6 +17,7 @@ osx_minimum_system_version = "10.7"
 [dependencies]
 anyhow = "1.0"
 bitar = { version = "0.12", features = ["rustls-tls"] }
+cp_r = "0.5"
 dark-light = "1.0"
 dmg = "0.1.2"
 espim = "0.2"
@@ -60,8 +61,8 @@ features = [
     "advanced",
     "image",
     "tokio",
-    #"tiny-skia"
-    "wgpu", # TODO: tiny-skia backend panics when elements are resized to 0 width: https://github.com/iced-rs/iced/pull/2977
+    "tiny-skia"
+    #    "wgpu", # TODO: tiny-skia backend panics when elements are resized to 0 width: https://github.com/iced-rs/iced/pull/2977
 ]
 
 [target.'cfg(windows)'.build-dependencies]

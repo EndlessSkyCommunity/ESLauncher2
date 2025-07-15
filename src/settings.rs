@@ -1,6 +1,8 @@
+use crate::instance::{load_instances, save_instances};
 use crate::music::MusicState;
-use crate::{get_data_dir, style, DialogSpec, Message};
+use crate::{get_data_dir, send_message, style, DialogSpec, Message};
 use anyhow::{Context, Result};
+use cp_r::CopyStats;
 use iced::advanced::graphics::core::Element;
 use iced::widget::{container, row, text, Checkbox, Text};
 use iced::{
@@ -161,17 +163,17 @@ impl Settings {
             }
             SettingsMessage::SetInstallPath(p) => {
                 self.install_dir = p;
-                // TODO: reload instances
+                return Task::done(Message::ReloadInstances());
             }
             SettingsMessage::MoveInstallPath(new) => {
-                let move_dir = move_install_dir(self.install_dir.clone(), new.clone());
+                let move_install_dir = move_install_dir(self.install_dir.clone(), new.clone());
                 let message_when_done = move |_| {
                     Message::DialogClosed(Box::new(Message::SettingsMessage(
                         SettingsMessage::SetInstallPath(new.clone()),
                     )))
                 };
-                return Task::done(Message::OpenDialog(move_in_progress_dialog_spec()))
-                    .chain(Task::perform(move_dir, message_when_done));
+                return Task::done(Message::OpenDialog(move_in_progress_dialog_spec(None)))
+                    .chain(Task::perform(move_install_dir, message_when_done));
             }
             SettingsMessage::DarkTheme(dark) => self.dark_theme = dark,
         };
@@ -182,30 +184,74 @@ impl Settings {
 }
 
 async fn move_install_dir(source: PathBuf, dest: PathBuf) {
-    info!("STUB: Moving install dir");
-    tokio::time::sleep(Duration::from_secs(3)).await;
+    if let Err(e) = try_move_install_dir(source, dest).await {
+        error!("Error while moving install dir: {e:#?}")
+    }
+}
+
+async fn try_move_install_dir(source: PathBuf, dest: PathBuf) -> Result<()> {
+    // Users can't choose empty directories, but the reset button can
+    if tokio::fs::try_exists(&dest).await? {
+        tokio::fs::remove_dir_all(&dest)
+            .await
+            .with_context(|| "Failed to remove destination directory")?;
+    }
+
+    let source_clone = source.clone();
+    let dest_clone = dest.clone();
+    let stats = tokio::task::spawn_blocking(move || {
+        cp_r::CopyOptions::new()
+            .create_destination(true)
+            .after_entry_copied(|_, _, s| {
+                send_message(Message::OpenDialog(move_in_progress_dialog_spec(Some(s))));
+                Ok(())
+            })
+            .copy_tree(source_clone, dest_clone)
+    })
+    .await
+    .with_context(|| "Copy task failed")?
+    .with_context(|| "Failed to copy files")?;
+
+    info!("Patching instance paths");
+    let mut instances = load_instances(&dest)?;
+    for i in &mut instances {
+        let name = i.path.file_name().unwrap();
+        i.executable = dest.join(i.executable.strip_prefix(&i.path)?);
+        i.path = dest.join(name);
+    }
+    save_instances(instances, &dest)?;
+
+    info!("Removing old directory");
+    tokio::fs::remove_dir_all(&source)
+        .await
+        .with_context(|| "Failed to remove former install dir")?;
+
+    info!("Install dir moved successfully");
+    send_message(Message::OpenDialog(DialogSpec {
+        title: None,
+        content: format!(
+            "Success!\n Moved {} files, {} folders",
+            stats.files, stats.dirs
+        ),
+        buttons: vec![],
+    }));
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    Ok(())
 }
 
 fn move_dir_dialog_spec(new_dir: PathBuf) -> DialogSpec {
-    let mut warning = "".into();
-    match std::fs::read_dir(&new_dir) {
-        Ok(r) => {
-            let count = r.count();
-            if count > 0 {
-                warning = format!(
-                    "\nWARNING: Found {count} existing items in the directory.\n\
-                    If you select Yes, these will be deleted!\n\
-                    If you select No, ESLauncher2 might run into problems later."
-                );
-            }
-        }
-        Err(e) => {
-            warning = format!(
-                "\nWARNING: Failed to read the output directory ({e}), it might not be readable.\n\
-                If you select Yes, the program will try to wipe the folder!\n\
-                Regardless of what you select, errors may follow."
-            )
-        }
+    let items = std::fs::read_dir(&new_dir)
+        .map(|r| r.count())
+        .unwrap_or_default();
+    let warning = if items > 0 {
+        format!(
+            "\nWARNING: Found {items} existing items in the directory.\n\
+            If you select Yes, these will be deleted!\n\
+            If you select No, ESLauncher2 might run into problems later."
+        )
+    } else {
+        String::default()
     };
 
     let buttons = vec![
@@ -226,10 +272,16 @@ fn move_dir_dialog_spec(new_dir: PathBuf) -> DialogSpec {
     }
 }
 
-fn move_in_progress_dialog_spec() -> DialogSpec {
+fn move_in_progress_dialog_spec(stats: Option<&CopyStats>) -> DialogSpec {
+    let items = if let Some(stats) = stats {
+        stats.dirs + stats.files + stats.symlinks
+    } else {
+        0
+    };
+    let content = format!("Moving install dir, please be patient...\n{items} items");
     DialogSpec {
         title: None,
-        content: "Moving install dir, please be patient...".into(),
+        content,
         buttons: vec![],
     }
 }

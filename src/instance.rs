@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
 use time::{format_description, OffsetDateTime};
@@ -396,26 +396,23 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
 struct InstancesContainer(Vec<Instance>);
 
 pub fn perform_save_instances(instances: BTreeMap<String, Instance>, settings: &Settings) {
-    if let Err(e) = save_instances(instances, settings) {
+    if let Err(e) = save_instances(instances.values().cloned().collect(), &settings.install_dir) {
         error!("Failed to save instances: {:#}", e);
     };
 }
 
-fn save_instances(instances: BTreeMap<String, Instance>, settings: &Settings) -> Result<()> {
-    let instances_file = settings.install_dir.join("instances.json");
+pub fn save_instances(instances: Vec<Instance>, install_dir: &Path) -> Result<()> {
+    let instances_file = install_dir.join("instances.json");
     debug!("Saving to {}", instances_file.to_string_lossy());
 
     let file = File::create(instances_file)?;
 
-    serde_json::to_writer_pretty(
-        file,
-        &InstancesContainer(instances.values().cloned().collect()),
-    )?;
+    serde_json::to_writer_pretty(file, &InstancesContainer(instances))?;
     Ok(())
 }
 
-pub fn load_instances(settings: &Settings) -> Result<Vec<Instance>> {
-    let instances_file = settings.install_dir.join("instances.json");
+pub fn load_instances(install_dir: &Path) -> Result<Vec<Instance>> {
+    let instances_file = install_dir.join("instances.json");
     debug!("Loading from {}", instances_file.to_string_lossy());
 
     if instances_file.exists() {

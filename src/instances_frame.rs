@@ -12,7 +12,7 @@ pub struct InstancesFrame {
 
 impl InstancesFrame {
     pub fn new(settings: &Settings) -> Self {
-        let instances = match load_instances(settings) {
+        let instances = match load_instances(&settings.install_dir) {
             Ok(vec) => {
                 let mut map = BTreeMap::new();
                 for i in vec {

@@ -16,6 +16,7 @@ use std::time::Duration;
 
 use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
+use crate::instances_frame::InstancesFrame;
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
 use crate::settings::{Settings, SettingsMessage};
@@ -101,6 +102,7 @@ pub enum Message {
     SettingsMessage(SettingsMessage),
     AddInstance(Box<Instance>),
     RemoveInstance(Option<String>),
+    ReloadInstances(),
     Dummy(()),
     FontLoaded(Result<(), font::Error>),
     MusicMessage(MusicCommand),
@@ -202,6 +204,9 @@ impl ESLauncher {
                         &self.settings,
                     );
                 }
+            }
+            Message::ReloadInstances() => {
+                self.instances_frame = InstancesFrame::new(&self.settings);
             }
             Message::MusicMessage(cmd) => {
                 self.music_sender.send(cmd).ok();
