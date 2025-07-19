@@ -31,6 +31,7 @@ iced_dialog = "0.13.0"
 lazy_static = "1.5"
 log = { version = "0.4.22", features = ["std"] }
 open = "5"
+parking_lot = "0.12"
 parse_link_header = "0.4"
 platform-dirs = "0.3.0"
 progress-streams = "1.1.0"

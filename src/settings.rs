@@ -1,6 +1,6 @@
 use crate::instance::{load_instances, save_instances};
 use crate::music::MusicState;
-use crate::{get_data_dir, send_message, style, DialogSpec, Message};
+use crate::{get_data_dir, send_message, style, DialogSpec, Message, SharedSettings};
 use anyhow::{Context, Result};
 use cp_r::CopyStats;
 use iced::advanced::graphics::core::Element;
@@ -23,14 +23,6 @@ pub struct Settings {
 }
 fn default_install_dir() -> PathBuf {
     get_data_dir().unwrap().join("instances")
-}
-
-#[derive(Debug, Clone)]
-pub enum SettingsMessage {
-    DarkTheme(bool),
-    RequestInstallPath,
-    SetInstallPath(PathBuf),
-    MoveInstallPath(PathBuf),
 }
 
 impl Default for Settings {
@@ -79,7 +71,24 @@ impl Settings {
                 Self::default()
             })
     }
+}
 
+#[derive(Debug)]
+pub struct SettingsFrame {
+    settings: SharedSettings,
+}
+
+#[derive(Debug, Clone)]
+pub enum SettingsMessage {
+    DarkTheme(bool),
+    RequestInstallPath,
+    SetInstallPath(PathBuf),
+    MoveInstallPath(PathBuf),
+}
+impl SettingsFrame {
+    pub fn new(settings: SharedSettings) -> Self {
+        Self { settings }
+    }
     pub fn view(&self) -> Container<Message> {
         fn settings_row<'a>(
             label: &'a str,
@@ -107,7 +116,7 @@ impl Settings {
             ))
             // .style(icon_button)
             .padding(Padding::from([2, 0]));
-        let install_dir_reset_btn = if self.install_dir.eq(&default_install_dir()) {
+        let install_dir_reset_btn = if self.settings.read().install_dir.eq(&default_install_dir()) {
             None
         } else {
             Some(
@@ -126,7 +135,7 @@ impl Settings {
                     row!(
                         text(format!(
                             "Installing to {}",
-                            self.install_dir.to_string_lossy(),
+                            self.settings.read().install_dir.to_string_lossy(),
                         ))
                         .size(12.0),
                         install_dir_picker
@@ -143,7 +152,7 @@ impl Settings {
                 ))
                 .push(settings_row(
                     "Dark Theme",
-                    Checkbox::new("", self.dark_theme)
+                    Checkbox::new("", self.settings.read().dark_theme)
                         .on_toggle(|v| Message::SettingsMessage(SettingsMessage::DarkTheme(v))),
                 ))
                 .spacing(10.0),
@@ -162,11 +171,12 @@ impl Settings {
                 })
             }
             SettingsMessage::SetInstallPath(p) => {
-                self.install_dir = p;
+                self.settings.write().install_dir = p;
                 return Task::done(Message::ReloadInstances());
             }
             SettingsMessage::MoveInstallPath(new) => {
-                let move_install_dir = move_install_dir(self.install_dir.clone(), new.clone());
+                let move_install_dir =
+                    move_install_dir(self.settings.read().install_dir.clone(), new.clone());
                 let message_when_done = move |_| {
                     Message::DialogClosed(Box::new(Message::SettingsMessage(
                         SettingsMessage::SetInstallPath(new.clone()),
@@ -175,9 +185,9 @@ impl Settings {
                 return Task::done(Message::OpenDialog(move_in_progress_dialog_spec(None)))
                     .chain(Task::perform(move_install_dir, message_when_done));
             }
-            SettingsMessage::DarkTheme(dark) => self.dark_theme = dark,
+            SettingsMessage::DarkTheme(dark) => self.settings.write().dark_theme = dark,
         };
-        self.save();
+        self.settings.read().save();
 
         Task::none()
     }

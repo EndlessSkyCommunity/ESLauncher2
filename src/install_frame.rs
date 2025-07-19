@@ -1,7 +1,6 @@
 use crate::instance::InstanceType;
-use crate::settings::Settings;
 use crate::style::text_button;
-use crate::{instance, Message};
+use crate::{instance, Message, SharedSettings};
 use core::fmt;
 use iced::widget::{Button, Column, Container, Radio, Scrollable, Text, TextInput};
 use iced::{alignment, Alignment, Element, Length, Task};
@@ -61,13 +60,13 @@ impl InstallFrame {
     pub fn update(
         &mut self,
         message: InstallFrameMessage,
-        settings: &mut Settings,
+        settings: SharedSettings,
     ) -> Task<Message> {
         match message {
             InstallFrameMessage::StartInstallation(instance_type) => {
                 return Task::perform(
                     instance::perform_install(
-                        settings.install_dir.join(&self.name),
+                        settings.read().install_dir.join(&self.name),
                         self.name.clone(),
                         instance_type,
                         self.source.clone(),

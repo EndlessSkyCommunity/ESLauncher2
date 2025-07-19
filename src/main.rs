@@ -8,6 +8,7 @@ extern crate log;
 #[macro_use]
 extern crate version;
 
+use parking_lot::{Mutex, RwLock};
 use std::hash::Hash;
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
@@ -19,7 +20,7 @@ use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
 use crate::instances_frame::InstancesFrame;
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
-use crate::settings::{Settings, SettingsMessage};
+use crate::settings::{Settings, SettingsFrame, SettingsMessage};
 use crate::style::{icon_button, log_container, tab_bar};
 use iced::advanced::subscription;
 use iced::advanced::subscription::{EventStream, Hasher};
@@ -29,7 +30,7 @@ use iced_aw::{TabLabel, Tabs};
 use iced_dialog::dialog;
 use std::collections::VecDeque;
 use std::fmt::Debug;
-use std::sync::Mutex;
+use std::sync::Arc;
 
 mod archive;
 mod github;
@@ -74,16 +75,19 @@ pub fn main() -> iced::Result {
         .run_with(|| ESLauncher::new())
 }
 
+type SharedSettings = Arc<RwLock<Settings>>;
+
 #[derive(Debug)]
 struct ESLauncher {
     music_sender: Sender<MusicCommand>,
     install_frame: install_frame::InstallFrame,
-    instances_frame: instances_frame::InstancesFrame,
+    instances_frame: InstancesFrame,
     plugins_frame: plugins_frame::PluginsFrameState,
     message_receiver: MessageReceiver,
     log_buffer: Vec<String>,
     active_tab: Tab,
-    settings: Settings,
+    settings: SharedSettings,
+    settings_frame: SettingsFrame,
     dialog: Option<DialogSpec>,
 }
 
@@ -134,8 +138,8 @@ impl ESLauncher {
             info!("  running on target environment other");
         }
 
-        let settings = Settings::load();
-        let music_sender = music::spawn(settings.music_state);
+        let settings = Arc::new(RwLock::new(Settings::load()));
+        let music_sender = music::spawn(settings.read().music_state);
 
         check_for_update();
 
@@ -144,11 +148,12 @@ impl ESLauncher {
             Self {
                 music_sender,
                 install_frame: install_frame::InstallFrame::default(),
-                instances_frame: instances_frame::InstancesFrame::new(&settings),
+                instances_frame: InstancesFrame::new(settings.clone()),
                 plugins_frame: plugins_frame_state,
                 message_receiver: MessageReceiver {},
                 log_buffer: vec![],
                 active_tab: Tab::Instances,
+                settings_frame: SettingsFrame::new(settings.clone()),
                 settings,
                 dialog: None,
             },
@@ -165,7 +170,7 @@ impl ESLauncher {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::InstallFrameMessage(msg) => {
-                return self.install_frame.update(msg, &mut self.settings)
+                return self.install_frame.update(msg, self.settings.clone())
             }
             Message::InstanceMessage(name, msg) => {
                 match self.instances_frame.instances.get_mut(&name) {
@@ -183,7 +188,7 @@ impl ESLauncher {
                     }
                 }
             }
-            Message::SettingsMessage(msg) => return self.settings.update(msg),
+            Message::SettingsMessage(msg) => return self.settings_frame.update(msg),
             Message::AddInstance(instance) => {
                 let is_ready = instance.state.is_ready();
                 self.instances_frame
@@ -206,16 +211,17 @@ impl ESLauncher {
                 }
             }
             Message::ReloadInstances() => {
-                self.instances_frame = InstancesFrame::new(&self.settings);
+                self.instances_frame = InstancesFrame::new(self.settings.clone());
             }
             Message::MusicMessage(cmd) => {
                 self.music_sender.send(cmd).ok();
-                self.settings.music_state = match cmd {
+                let mut guard = self.settings.write();
+                guard.music_state = match cmd {
                     MusicCommand::Pause => MusicState::Paused,
                     MusicCommand::Play => MusicState::Playing,
-                    _ => self.settings.music_state,
+                    _ => guard.music_state,
                 };
-                self.settings.save();
+                guard.save();
             }
             Message::TabSelected(active_tab) => self.active_tab = active_tab,
             Message::PluginFrameLoaded(plugins) => {
@@ -282,7 +288,7 @@ impl ESLauncher {
                 TabLabel::Text("Settings".into()),
                 iced::widget::column([
                     iced::widget::horizontal_rule(2).into(),
-                    self.settings.view().into(),
+                    self.settings_frame.view().into(),
                 ]),
             )
             .set_active_tab(&self.active_tab)
@@ -330,13 +336,13 @@ impl ESLauncher {
             .padding(8)
             .push(Space::new(Length::Fill, Length::Shrink))
             .push(
-                Button::new(match self.settings.music_state {
+                Button::new(match self.settings.read().music_state {
                     MusicState::Playing => style::pause_icon(),
                     MusicState::Paused => style::play_icon(),
                 })
                 .style(icon_button)
                 .on_press(Message::MusicMessage(
-                    match self.settings.music_state {
+                    match self.settings.read().music_state {
                         MusicState::Playing => MusicCommand::Pause,
                         MusicState::Paused => MusicCommand::Play,
                     },
@@ -416,11 +422,7 @@ impl subscription::Recipe for MessageReceiver {
             let mut interval = tokio::time::interval(Duration::from_millis(10));
             loop {
                 interval.tick().await;
-                if let Some(msg) = MESSAGE_QUEUE
-                    .try_lock()
-                    .ok()
-                    .and_then(|mut q| q.pop_front())
-                {
+                if let Some(msg) = MESSAGE_QUEUE.try_lock().and_then(|mut q| q.pop_front()) {
                     return Some((msg, state));
                 }
             }
@@ -429,15 +431,7 @@ impl subscription::Recipe for MessageReceiver {
 }
 
 pub fn send_message(message: Message) {
-    match crate::MESSAGE_QUEUE.lock() {
-        Ok(mut queue) => queue.push_back(message),
-        Err(e) => {
-            // Don't use an error log here because that may cause an endless loop of logs
-            eprintln!(
-                "Failed to lock message queue:\n{e}\nThe message was as follows:\n{message:#?}"
-            );
-        }
-    }
+    MESSAGE_QUEUE.lock().push_back(message);
 }
 
 pub fn send_progress_message(instance_name: &str, progress: Progress) {

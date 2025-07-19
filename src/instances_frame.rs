@@ -1,6 +1,5 @@
 use crate::instance::{load_instances, Instance};
-use crate::settings::Settings;
-use crate::Message;
+use crate::{Message, SharedSettings};
 use iced::widget::{container, rule, Column, Container, Scrollable, Text};
 use iced::{alignment, theme, Alignment, Color, Element, Length};
 use std::collections::BTreeMap;
@@ -11,8 +10,8 @@ pub struct InstancesFrame {
 }
 
 impl InstancesFrame {
-    pub fn new(settings: &Settings) -> Self {
-        let instances = match load_instances(&settings.install_dir) {
+    pub fn new(settings: SharedSettings) -> Self {
+        let instances = match load_instances(&settings.read().install_dir) {
             Ok(vec) => {
                 let mut map = BTreeMap::new();
                 for i in vec {

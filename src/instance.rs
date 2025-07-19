@@ -1,8 +1,7 @@
 use crate::install_frame::InstanceSource;
 use crate::music::MusicCommand;
-use crate::settings::Settings;
 use crate::style::icon_button;
-use crate::{install, send_message, style, update, Message};
+use crate::{install, send_message, style, update, Message, SharedSettings};
 use anyhow::Result;
 use iced::widget::{Button, Column, ProgressBar, Row, Space, Text};
 use iced::{alignment, theme, Alignment, Element, Length};
@@ -395,8 +394,11 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
 #[derive(Serialize, Deserialize)]
 struct InstancesContainer(Vec<Instance>);
 
-pub fn perform_save_instances(instances: BTreeMap<String, Instance>, settings: &Settings) {
-    if let Err(e) = save_instances(instances.values().cloned().collect(), &settings.install_dir) {
+pub fn perform_save_instances(instances: BTreeMap<String, Instance>, settings: &SharedSettings) {
+    if let Err(e) = save_instances(
+        instances.values().cloned().collect(),
+        &settings.read().install_dir,
+    ) {
         error!("Failed to save instances: {:#}", e);
     };
 }
