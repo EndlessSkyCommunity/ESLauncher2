@@ -5,15 +5,13 @@ use anyhow::Result;
 use espim::Plugin as EspimPlugin;
 use iced::widget::{button, image, rule, Column, Container, Image, Row, Scrollable, Space, Text};
 use iced::{alignment, theme, Alignment, Color, Element, Length, Task};
-use lazy_static::lazy_static;
 use regex::Regex;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::sync::LazyLock;
 
-lazy_static! {
-    static ref CACHE_FILENAME_REGEX: Regex = Regex::new(r"[^\w.-]").unwrap();
-}
+static CACHE_FILENAME_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^\w.-]").unwrap());
 
 #[derive(Debug, Clone)]
 pub enum PluginsFrameState {

@@ -28,7 +28,6 @@ iced_aw = { version = "0.12.2", default-features = false, features = [
     "tabs",
 ] }
 iced_dialog = "0.13.0"
-lazy_static = "1.5"
 log = { version = "0.4.22", features = ["std"] }
 open = "5"
 parking_lot = "0.12"
