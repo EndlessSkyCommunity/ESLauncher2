@@ -27,7 +27,7 @@ impl InstanceType {
     pub fn archive_matches(self, archive_name: &str) -> bool {
         match self {
             Self::MacOS => archive_name.contains("mac") || archive_name.ends_with(".dmg"),
-            Self::Windows => archive_name.contains("win64"),
+            Self::Windows => archive_name.contains("win64") && archive_name.ends_with(".zip"),
             Self::Linux => archive_name.ends_with(".tar.gz"),
             Self::AppImage => archive_name.contains(".AppImage"),
             Self::Unknown => false,
