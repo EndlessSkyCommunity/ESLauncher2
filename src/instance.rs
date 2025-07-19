@@ -1,7 +1,7 @@
 use crate::install_frame::InstanceSource;
 use crate::music::MusicCommand;
 use crate::style::icon_button;
-use crate::{get_data_dir, install, send_message, style, update, Message};
+use crate::{install, send_message, style, update, Message, SharedSettings};
 use anyhow::Result;
 use iced::widget::{Button, Column, ProgressBar, Row, Space, Text};
 use iced::{alignment, theme, Alignment, Element, Length};
@@ -10,8 +10,9 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::Arc;
 use time::{format_description, OffsetDateTime};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -145,20 +146,18 @@ impl Instance {
         }
     }
 
-    pub fn update(&mut self, message: InstanceMessage) -> iced::Command<Message> {
+    pub fn update(&mut self, message: InstanceMessage) -> iced::Task<Message> {
         match message {
             InstanceMessage::Play(do_debug) => {
                 let name1 = self.name.clone(); // (Jett voice)
-                let name2 = self.name.clone(); // "Yikes!"
+                let name2 = Arc::new(self.name.clone()); // "Yikes!"
 
-                iced::Command::batch(vec![
-                    iced::Command::perform(dummy(), move |()| {
-                        Message::InstanceMessage(
-                            name1,
-                            InstanceMessage::StateChanged(InstanceState::Playing),
-                        )
-                    }),
-                    iced::Command::perform(
+                iced::Task::batch(vec![
+                    iced::Task::done(Message::InstanceMessage(
+                        name1,
+                        InstanceMessage::StateChanged(InstanceState::Playing),
+                    )),
+                    iced::Task::perform(
                         perform_play(
                             self.path.clone(),
                             self.executable.clone(),
@@ -167,7 +166,7 @@ impl Instance {
                         ),
                         move |()| {
                             Message::InstanceMessage(
-                                name2,
+                                name2.to_string(),
                                 InstanceMessage::StateChanged(InstanceState::Ready),
                             )
                         },
@@ -176,43 +175,37 @@ impl Instance {
             }
             InstanceMessage::Update => {
                 let name = self.name.clone();
-                iced::Command::batch(vec![
-                    iced::Command::perform(dummy(), move |()| {
-                        Message::InstanceMessage(
-                            name,
-                            InstanceMessage::StateChanged(InstanceState::Working(
-                                "Updating".into(),
-                            )),
-                        )
-                    }),
-                    iced::Command::perform(perform_update(self.clone()), Message::Dummy),
+                iced::Task::batch(vec![
+                    iced::Task::done(Message::InstanceMessage(
+                        name,
+                        InstanceMessage::StateChanged(InstanceState::Working("Updating".into())),
+                    )),
+                    iced::Task::perform(perform_update(self.clone()), Message::Dummy),
                 ])
             }
             InstanceMessage::Folder => {
-                iced::Command::perform(open_folder(self.path.clone()), Message::Dummy)
+                iced::Task::perform(open_folder(self.path.clone()), Message::Dummy)
             }
-            InstanceMessage::Delete => {
-                let name = self.name.clone();
-                iced::Command::perform(delete(self.path.clone()), move |_| {
-                    Message::RemoveInstance(Some(name))
-                })
-            }
+            InstanceMessage::Delete => iced::Task::perform(self.clone().delete(), move |name| {
+                Message::RemoveInstance(name)
+            }),
             InstanceMessage::StateChanged(state) => {
                 self.state = state;
-                iced::Command::none()
+                iced::Task::none()
             }
         }
     }
 
     pub fn view(&self) -> Element<InstanceMessage> {
         // Buttons
-        let mut debug_button = Button::new(style::debug_icon()).style(icon_button());
-        let mut play_button = Button::new(style::play_icon()).style(icon_button());
-        let mut update_button = Button::new(style::update_icon()).style(icon_button());
+        let mut debug_button = Button::new(style::debug_icon()).style(icon_button);
+        let mut play_button = Button::new(style::play_icon());
+        let mut update_button = Button::new(style::update_icon()).style(icon_button);
         let folder_button = Button::new(style::folder_icon())
-            .style(icon_button())
+            .style(icon_button)
             .on_press(InstanceMessage::Folder);
-        let mut delete_button = Button::new(style::delete_icon()).style(theme::Button::Destructive);
+        let mut delete_button = Button::new(style::delete_icon());
+        // TODO: .style(theme::Button::Destructive);
 
         if self.state.is_ready() {
             debug_button = debug_button.on_press(InstanceMessage::Play(true));
@@ -225,7 +218,7 @@ impl Instance {
         Row::new()
             .spacing(10)
             .padding(10)
-            .align_items(Alignment::Start)
+            .align_y(Alignment::Start)
             .width(Length::Fill)
             .push(
                 Column::new()
@@ -242,10 +235,10 @@ impl Instance {
             .push(Space::new(Length::Fill, Length::Shrink))
             .push({
                 if let InstanceState::Working(progress) = &self.state {
-                    let mut status_field = Column::new().align_items(Alignment::Center).push(
+                    let mut status_field = Column::new().align_x(Alignment::Center).push(
                         Text::new(&progress.status)
                             .size(16)
-                            .horizontal_alignment(alignment::Horizontal::Center),
+                            .align_x(alignment::Horizontal::Center),
                     );
                     if let (Some(done), Some(total)) = (progress.done, progress.total) {
                         status_field = status_field.push(
@@ -263,7 +256,7 @@ impl Instance {
                                 progress.units.as_ref().unwrap_or(&String::new())
                             ))
                             .size(12)
-                            .horizontal_alignment(alignment::Horizontal::Center),
+                            .align_x(alignment::Horizontal::Center),
                         );
                     }
                     Row::new()
@@ -281,9 +274,17 @@ impl Instance {
             })
             .into()
     }
-}
 
-async fn dummy() {}
+    pub async fn delete(self) -> Option<String> {
+        if fs::remove_dir_all(&self.path).is_ok() {
+            info!("Removed {}", self.path.to_string_lossy());
+            Some(self.name.clone())
+        } else {
+            error!("Failed to remove {}", self.path.to_string_lossy());
+            None
+        }
+    }
+}
 
 pub async fn perform_install(
     path: PathBuf,
@@ -315,16 +316,6 @@ pub async fn open_folder(path: PathBuf) {
     info!("Opening {} in file explorer", path.to_string_lossy());
     if let Err(e) = open::that(path.as_path()) {
         error!("Failed to open path: {}", e);
-    }
-}
-
-pub async fn delete(path: PathBuf) -> Option<PathBuf> {
-    if fs::remove_dir_all(&path).is_ok() {
-        info!("Removed {}", path.to_string_lossy());
-        Some(path)
-    } else {
-        error!("Failed to remove {}", path.to_string_lossy());
-        None
     }
 }
 
@@ -400,40 +391,30 @@ pub async fn play(path: PathBuf, executable: PathBuf, name: String, do_debug: bo
     Ok(())
 }
 
-pub fn get_instances_dir() -> Option<PathBuf> {
-    let mut dir = get_data_dir()?;
-    dir.push("instances");
-    Some(dir)
-}
-
 #[derive(Serialize, Deserialize)]
 struct InstancesContainer(Vec<Instance>);
 
-pub fn perform_save_instances(instances: BTreeMap<String, Instance>) {
-    if let Err(e) = save_instances(instances) {
+pub fn perform_save_instances(instances: BTreeMap<String, Instance>, settings: &SharedSettings) {
+    if let Err(e) = save_instances(
+        instances.values().cloned().collect(),
+        &settings.read().install_dir,
+    ) {
         error!("Failed to save instances: {:#}", e);
     };
 }
 
-fn save_instances(instances: BTreeMap<String, Instance>) -> Result<()> {
-    let mut instances_file =
-        get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
-    instances_file.push("instances.json");
+pub fn save_instances(instances: Vec<Instance>, install_dir: &Path) -> Result<()> {
+    let instances_file = install_dir.join("instances.json");
     debug!("Saving to {}", instances_file.to_string_lossy());
 
     let file = File::create(instances_file)?;
 
-    serde_json::to_writer_pretty(
-        file,
-        &InstancesContainer(instances.values().cloned().collect()),
-    )?;
+    serde_json::to_writer_pretty(file, &InstancesContainer(instances))?;
     Ok(())
 }
 
-pub fn load_instances() -> Result<Vec<Instance>> {
-    let mut instances_file =
-        get_instances_dir().ok_or_else(|| anyhow!("Failed to get Instances dir"))?;
-    instances_file.push("instances.json");
+pub fn load_instances(install_dir: &Path) -> Result<Vec<Instance>> {
+    let instances_file = install_dir.join("instances.json");
     debug!("Loading from {}", instances_file.to_string_lossy());
 
     if instances_file.exists() {

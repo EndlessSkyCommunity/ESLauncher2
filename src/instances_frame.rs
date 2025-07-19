@@ -1,6 +1,6 @@
 use crate::instance::{load_instances, Instance};
-use crate::Message;
-use iced::widget::{Column, Container, Scrollable, Text};
+use crate::{Message, SharedSettings};
+use iced::widget::{container, rule, Column, Container, Scrollable, Text};
 use iced::{alignment, theme, Alignment, Color, Element, Length};
 use std::collections::BTreeMap;
 
@@ -9,9 +9,9 @@ pub struct InstancesFrame {
     pub instances: BTreeMap<String, Instance>,
 }
 
-impl Default for InstancesFrame {
-    fn default() -> Self {
-        let instances = match load_instances() {
+impl InstancesFrame {
+    pub fn new(settings: SharedSettings) -> Self {
+        let instances = match load_instances(&settings.read().install_dir) {
             Ok(vec) => {
                 let mut map = BTreeMap::new();
                 for i in vec {
@@ -26,26 +26,25 @@ impl Default for InstancesFrame {
         };
         Self { instances }
     }
-}
-impl InstancesFrame {
+
     pub fn view(&self) -> Element<Message> {
         let instances_column = Column::new()
             .padding(20)
             .spacing(5)
-            .align_items(Alignment::Center);
+            .align_x(Alignment::Center);
         let instances_list: Element<_> = if self.instances.is_empty() {
             instances_column
                 .push(
                     Text::new("No Instances yet")
-                        .style(theme::Text::Color(Color::from_rgb8(150, 150, 150)))
-                        .horizontal_alignment(alignment::Horizontal::Center)
+                        .color(Color::from_rgb8(150, 150, 150))
+                        .align_x(alignment::Horizontal::Center)
                         .width(Length::Fill),
                 )
                 .push(
                     Text::new("ESLauncher allows you to install multiple instances of Endless Sky. Instances are installations which ESLauncher automatically updates. Install your first instance by typing a name like 'newest' in the box to the right and choosing which version of the game to install.")
                         .size(16)
-                         .style(theme::Text::Color(Color::from_rgb8(150, 150, 150)))
-                        .horizontal_alignment(alignment::Horizontal::Center)
+                         .color(Color::from_rgb8(150, 150, 150))
+                        .align_x(alignment::Horizontal::Center)
                         .width(Length::Fill),
                 )
                 .into()
@@ -55,16 +54,11 @@ impl InstancesFrame {
                 .fold(instances_column, |column, instance| {
                     column
                         .push(
-                            iced::widget::horizontal_rule(2).style(iced::theme::Rule::from(
-                                |theme: &iced::Theme| {
-                                    let mut appearance = iced::widget::rule::StyleSheet::appearance(
-                                        theme,
-                                        &Default::default(),
-                                    );
-                                    appearance.color.a *= 0.75;
-                                    appearance
-                                },
-                            )),
+                            iced::widget::horizontal_rule(2).style(|theme: &iced::Theme| {
+                                let mut style = rule::default(theme);
+                                style.color.a *= 0.75;
+                                style
+                            }),
                         )
                         .push(instance.view().map(move |message| {
                             Message::InstanceMessage(instance.name.clone(), message)
@@ -77,7 +71,7 @@ impl InstancesFrame {
                 .push(
                     Text::new("Instances")
                         .size(26)
-                        .horizontal_alignment(alignment::Horizontal::Center)
+                        .align_x(alignment::Horizontal::Center)
                         .width(Length::Fill),
                 )
                 .push(instances_list)
