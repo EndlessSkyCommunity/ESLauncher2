@@ -59,6 +59,7 @@ version = "0.13.1"
 default-features = false
 features = [
     "web-colors",
+    "auto-detect-theme",
     "advanced",
     "image",
     "tokio",

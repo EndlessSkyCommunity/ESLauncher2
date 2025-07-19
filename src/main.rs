@@ -381,11 +381,8 @@ impl ESLauncher {
     }
 
     fn theme(&self) -> Theme {
-        Theme::custom("LightModified".into(), {
-            let mut palette = iced::theme::Palette::LIGHT;
-            palette.primary = iced::Color::from_rgb(0.2, 0.2, 0.2);
-            palette
-        })
+        let theme = &self.settings.read().theme;
+        theme.into()
     }
 }
 

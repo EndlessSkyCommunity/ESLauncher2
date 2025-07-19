@@ -4,20 +4,24 @@ use crate::{get_data_dir, send_message, style, DialogSpec, Message, SharedSettin
 use anyhow::{Context, Result};
 use cp_r::CopyStats;
 use iced::advanced::graphics::core::Element;
-use iced::widget::{container, row, text, Checkbox, Text};
+use iced::widget::{combo_box, container, row, text, Text};
 use iced::{
     widget::{button, Column, Container, Row},
-    Length,
+    Length, Theme,
 };
 use iced::{Alignment, Padding, Renderer, Task};
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Display, Formatter};
+use std::iter::Iterator;
+use std::sync::LazyLock;
 use std::time::Duration;
 use std::{fs::File, path::PathBuf};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Settings {
     pub music_state: MusicState,
-    pub dark_theme: bool,
+    #[serde(default)]
+    pub theme: SelectableTheme,
     #[serde(default = "default_install_dir")]
     pub install_dir: PathBuf,
 }
@@ -29,7 +33,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             music_state: Default::default(),
-            dark_theme: dark_light::detect().eq(&dark_light::Mode::Dark),
+            theme: SelectableTheme::default(),
             install_dir: default_install_dir(),
         }
     }
@@ -73,27 +77,94 @@ impl Settings {
     }
 }
 
+#[derive(Default, Debug, Clone, Deserialize, Serialize)]
+#[serde(from = "Option<String>", into = "Option<String>")]
+pub enum SelectableTheme {
+    #[default]
+    Autodetect,
+    Preset(Theme),
+}
+
+impl From<Option<String>> for SelectableTheme {
+    fn from(value: Option<String>) -> Self {
+        value
+            .map(|s| {
+                Theme::ALL
+                    .iter()
+                    .find(|t| t.to_string() == s)
+                    .cloned()
+                    .unwrap_or_else(|| {
+                        warn!("Got unknown theme {s} from config, falling back to default");
+                        Theme::default()
+                    })
+            })
+            .map(|t| Self::Preset(t.clone()))
+            .unwrap_or_default()
+    }
+}
+
+impl From<SelectableTheme> for Option<String> {
+    fn from(st: SelectableTheme) -> Option<String> {
+        match st {
+            SelectableTheme::Autodetect => None,
+            SelectableTheme::Preset(t) => Some(t.to_string()),
+        }
+    }
+}
+
+impl Display for SelectableTheme {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SelectableTheme::Autodetect => write!(f, "Detect from System"),
+            SelectableTheme::Preset(t) => Display::fmt(&t, f),
+        }
+    }
+}
+
+impl From<&SelectableTheme> for Theme {
+    fn from(st: &SelectableTheme) -> Theme {
+        match st {
+            SelectableTheme::Autodetect => Theme::default(),
+            SelectableTheme::Preset(t) => t.clone(),
+        }
+    }
+}
+pub static ALL_SELECTABLE_THEMES: LazyLock<Vec<SelectableTheme>> = LazyLock::new(|| {
+    let mut vec = vec![SelectableTheme::Autodetect];
+    vec.extend(
+        Theme::ALL
+            .iter()
+            .map(|t| SelectableTheme::Preset(t.clone())),
+    );
+    vec
+});
+
 #[derive(Debug)]
 pub struct SettingsFrame {
     settings: SharedSettings,
+    theme_selector_state: combo_box::State<SelectableTheme>,
 }
 
 #[derive(Debug, Clone)]
 pub enum SettingsMessage {
-    DarkTheme(bool),
+    ThemeSelected(SelectableTheme),
     RequestInstallPath,
     SetInstallPath(PathBuf),
     MoveInstallPath(PathBuf),
 }
 impl SettingsFrame {
     pub fn new(settings: SharedSettings) -> Self {
-        Self { settings }
+        let theme_selector_state = combo_box::State::new(ALL_SELECTABLE_THEMES.to_vec());
+        Self {
+            settings,
+            theme_selector_state,
+        }
     }
     pub fn view(&self) -> Container<Message> {
         fn settings_row<'a>(
             label: &'a str,
-            content: impl Into<Element<'a, Message, iced::Theme, Renderer>>,
-        ) -> impl Into<Element<'a, Message, iced::Theme, Renderer>> {
+            content: impl Into<Element<'a, Message, Theme, Renderer>>,
+        ) -> impl Into<Element<'a, Message, Theme, Renderer>> {
             container(
                 Column::new()
                     .push(
@@ -151,9 +222,13 @@ impl SettingsFrame {
                     }),
                 ))
                 .push(settings_row(
-                    "Dark Theme",
-                    Checkbox::new("", self.settings.read().dark_theme)
-                        .on_toggle(|v| Message::SettingsMessage(SettingsMessage::DarkTheme(v))),
+                    "Theme",
+                    combo_box(
+                        &self.theme_selector_state,
+                        "Please select a theme",
+                        Some(&self.settings.read().theme),
+                        |st| Message::SettingsMessage(SettingsMessage::ThemeSelected(st)),
+                    ),
                 ))
                 .spacing(10.0),
         )
@@ -185,7 +260,7 @@ impl SettingsFrame {
                 return Task::done(Message::OpenDialog(move_in_progress_dialog_spec(None)))
                     .chain(Task::perform(move_install_dir, message_when_done));
             }
-            SettingsMessage::DarkTheme(dark) => self.settings.write().dark_theme = dark,
+            SettingsMessage::ThemeSelected(st) => self.settings.write().theme = st,
         };
         self.settings.read().save();
 
