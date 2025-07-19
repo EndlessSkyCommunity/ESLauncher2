@@ -1202,7 +1202,7 @@ checksum = "a0474425d51df81997e2f90a21591180b38eccf27292d755f3e30750225c175b"
 
 [[package]]
 name = "eslauncher2"
-version = "0.9.7"
+version = "0.9.9"
 dependencies = [
  "anyhow",
  "bitar",
