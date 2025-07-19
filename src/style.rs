@@ -1,6 +1,6 @@
 use iced::border::Radius;
 use iced::widget::{button, container, Text};
-use iced::{alignment, Background, Border, Color, Font, Length, Shadow, Theme, Vector};
+use iced::{alignment, color, Background, Border, Color, Font, Length, Shadow, Theme, Vector};
 use iced_aw::tab_bar;
 
 fn icon(unicode: char) -> Text<'static> {
@@ -53,9 +53,38 @@ pub fn text_button(_theme: &Theme, status: button::Status) -> button::Style {
     ButtonStyle::Text.style(&ButtonStyle::Text, status)
 }
 
-pub fn tab_bar(_theme: &Theme, status: tab_bar::Status) -> tab_bar::Style {
-    use tab_bar::Catalog;
-    CustomTabBar::default().style(&CustomTabBar::default(), status)
+pub fn tab_bar(theme: &Theme, status: tab_bar::Status) -> tab_bar::Style {
+    use iced_aw::tab_bar::*;
+    let background = theme.palette().background;
+    let primary = theme.extended_palette().primary;
+    let secondary = theme.extended_palette().secondary;
+
+    let default = Style {
+        tab_label_background: background.into(),
+        tab_label_border_color: secondary.weak.color,
+        text_color: theme.palette().text,
+        ..Default::default()
+    };
+
+    match status {
+        Status::Active => Style {
+            tab_label_background: primary.base.color.into(),
+            text_color: primary.base.text,
+            ..default
+        },
+        Status::Hovered => Style {
+            tab_label_background: primary.weak.color.into(),
+            text_color: primary.weak.text,
+            ..default
+        },
+        Status::Disabled => Style { ..default },
+        _ => Style {
+            // We don't use these - make it jarring, so if we ever do, it's noticeable
+            tab_label_background: color!(0xff0000).into(),
+            text_color: color!(0x00ff00),
+            ..default
+        },
+    }
 }
 
 pub fn log_container(log: &str) -> container::StyleFn<Theme> {
@@ -167,37 +196,6 @@ impl container::Catalog for LogContainer {
             text_color: Some(Color::from_rgb(0.6, 0.6, 0.6)),
             background: self.background.map(Background::Color),
             ..Default::default()
-        }
-    }
-}
-
-pub struct CustomTabBar;
-
-impl tab_bar::Catalog for CustomTabBar {
-    type Class<'a> = CustomTabBar;
-
-    fn default<'a>() -> Self::Class<'a> {
-        CustomTabBar {}
-    }
-
-    fn style(&self, class: &Self::Class<'_>, status: tab_bar::Status) -> tab_bar::Style {
-        match status {
-            tab_bar::Status::Active => tab_bar::Style {
-                tab_label_background: Background::Color(Color::from_rgb(1., 1., 1.)),
-                tab_label_border_width: 0.,
-                ..Default::default()
-            },
-            tab_bar::Status::Disabled => tab_bar::Style {
-                tab_label_background: Background::Color(Color::from_rgb(0.87, 0.87, 0.87)),
-                tab_label_border_width: 0.,
-                ..Default::default()
-            },
-            tab_bar::Status::Hovered => tab_bar::Style {
-                tab_label_background: Background::Color(Color::from_rgb(0.97, 0.97, 0.97)),
-                tab_label_border_width: 0.,
-                ..Default::default()
-            },
-            _ => Default::default(),
         }
     }
 }

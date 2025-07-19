@@ -258,38 +258,29 @@ impl ESLauncher {
             .push::<Element<'_, Message>>(
                 Tab::Instances,
                 TabLabel::Text("Instances".into()),
-                iced::widget::column([
-                    iced::widget::horizontal_rule(2).into(),
-                    Row::new()
-                        .push(self.instances_frame.view())
-                        .push(iced::widget::vertical_rule(2))
-                        .push(self.install_frame.view().map(Message::InstallFrameMessage))
-                        .spacing(10)
-                        .padding(iced::Padding {
-                            top: 0.0,
-                            right: 15.0,
-                            bottom: 0.0,
-                            left: 15.0,
-                        })
-                        .into(),
-                ])
+                iced::widget::column([Row::new()
+                    .push(self.instances_frame.view())
+                    .push(iced::widget::vertical_rule(2))
+                    .push(self.install_frame.view().map(Message::InstallFrameMessage))
+                    .spacing(10)
+                    .padding(iced::Padding {
+                        top: 0.0,
+                        right: 15.0,
+                        bottom: 0.0,
+                        left: 15.0,
+                    })
+                    .into()])
                 .into(),
             )
             .push(
                 Tab::Plugins,
                 TabLabel::Text("Plugins".into()),
-                iced::widget::column([
-                    iced::widget::horizontal_rule(2).into(),
-                    self.plugins_frame.view().into(),
-                ]),
+                iced::widget::column([self.plugins_frame.view().into()]),
             )
             .push(
                 Tab::Settings,
                 TabLabel::Text("Settings".into()),
-                iced::widget::column([
-                    iced::widget::horizontal_rule(2).into(),
-                    self.settings_frame.view().into(),
-                ]),
+                iced::widget::column([self.settings_frame.view().into()]),
             )
             .set_active_tab(&self.active_tab)
             .tab_bar_style(tab_bar);
