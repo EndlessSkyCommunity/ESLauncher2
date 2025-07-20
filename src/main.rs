@@ -21,13 +21,13 @@ use crate::instances_frame::InstancesFrame;
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
 use crate::settings::{Settings, SettingsFrame, SettingsMessage};
-use crate::style::{icon_button, log_container, tab_bar};
+use crate::style::{icon_button, log_container};
 use iced::advanced::subscription;
 use iced::advanced::subscription::{EventStream, Hasher};
-use iced::widget::{text, Button, Column, Container, Row, Scrollable, Space, Text};
+use iced::widget::{column, row, text, Button, Column, Container, Row, Scrollable, Space, Text};
 use iced::{alignment, font, Alignment, Element, Font, Length, Subscription, Task, Theme};
-use iced_aw::{TabLabel, Tabs};
-use iced_dialog::dialog;
+// use iced_aw::{TabLabel, Tabs};
+use iced_dialog::{button, dialog};
 use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -255,36 +255,67 @@ impl ESLauncher {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        let tabs = Tabs::new(Message::TabSelected)
-            .push::<Element<'_, Message>>(
-                Tab::Instances,
-                TabLabel::Text("Instances".into()),
-                iced::widget::column([Row::new()
-                    .push(self.instances_frame.view())
-                    .push(iced::widget::vertical_rule(2))
-                    .push(self.install_frame.view().map(Message::InstallFrameMessage))
-                    .spacing(10)
-                    .padding(iced::Padding {
-                        top: 0.0,
-                        right: 15.0,
-                        bottom: 0.0,
-                        left: 15.0,
-                    })
-                    .into()])
-                .into(),
-            )
-            .push(
-                Tab::Plugins,
-                TabLabel::Text("Plugins".into()),
-                iced::widget::column([self.plugins_frame.view().into()]),
-            )
-            .push(
-                Tab::Settings,
-                TabLabel::Text("Settings".into()),
-                iced::widget::column([self.settings_frame.view().into()]),
-            )
-            .set_active_tab(&self.active_tab)
-            .tab_bar_style(tab_bar);
+        // let tabs = Tabs::new(Message::TabSelected)
+        //     .push::<Element<'_, Message>>(
+        //         Tab::Instances,
+        //         TabLabel::Text("Instances".into()),
+        //         iced::widget::column([
+        //             Row::new()
+        //                 .push(self.instances_frame.view())
+        //                 .push(iced::widget::vertical_rule(2))
+        //                 .push(self.install_frame.view().map(Message::InstallFrameMessage))
+        //                 .spacing(10)
+        //                 .padding(iced::Padding {
+        //                     top: 0.0,
+        //                     right: 15.0,
+        //                     bottom: 0.0,
+        //                     left: 15.0,
+        //                 })
+        //                 .into(),
+        //         ])
+        //         .into(),
+        //     )
+        //     .push(
+        //         Tab::Plugins,
+        //         TabLabel::Text("Plugins".into()),
+        //         iced::widget::column([
+        //             self.plugins_frame.view().into(),
+        //         ]),
+        //     )
+        //     .push(
+        //         Tab::Settings,
+        //         TabLabel::Text("Settings".into()),
+        //         iced::widget::column([
+        //             self.settings.view().into(),
+        //         ]),
+        //     )
+        //     .set_active_tab(&self.active_tab)
+        //     .tab_bar_style(tab_bar);
+        let show_tab = match self.active_tab {
+            Tab::Instances => iced::widget::column([Row::new()
+                .push(self.instances_frame.view())
+                .push(iced::widget::vertical_rule(2))
+                .push(self.install_frame.view().map(Message::InstallFrameMessage))
+                .spacing(10)
+                .padding(iced::Padding {
+                    top: 0.0,
+                    right: 15.0,
+                    bottom: 0.0,
+                    left: 15.0,
+                })
+                .into()]),
+            Tab::Plugins => iced::widget::column([self.plugins_frame.view().into()]),
+            Tab::Settings => iced::widget::column([self.settings_frame.view().into()]),
+        };
+        let tab_buttons = row![
+            button("Instances", Message::TabSelected(Tab::Instances)),
+            button("Plugins", Message::TabSelected(Tab::Plugins)),
+            button("Settings", Message::TabSelected(Tab::Settings))
+        ]
+        .width(Length::Fill);
+        let tabs = column![tab_buttons, show_tab];
+        // all of the above is a workaround, since iced_aw doesn't track the iced development branch
+        // TODO: return to TabBar when possible; consider if we need iced_aw at all
 
         let logbox = self.log_buffer.iter().fold(
             Column::new()

@@ -1,7 +1,7 @@
 use iced::border::Radius;
 use iced::widget::{button, container, Text};
 use iced::{alignment, color, Background, Border, Color, Font, Length, Shadow, Theme, Vector};
-use iced_aw::tab_bar;
+// use iced_aw::tab_bar;
 
 fn icon(unicode: char) -> Text<'static> {
     Text::new(unicode.to_string())
@@ -53,39 +53,39 @@ pub fn text_button(_theme: &Theme, status: button::Status) -> button::Style {
     ButtonStyle::Text.style(&ButtonStyle::Text, status)
 }
 
-pub fn tab_bar(theme: &Theme, status: tab_bar::Status) -> tab_bar::Style {
-    use iced_aw::tab_bar::*;
-    let background = theme.palette().background;
-    let primary = theme.extended_palette().primary;
-    let secondary = theme.extended_palette().secondary;
-
-    let default = Style {
-        tab_label_background: background.into(),
-        tab_label_border_color: secondary.weak.color,
-        text_color: theme.palette().text,
-        ..Default::default()
-    };
-
-    match status {
-        Status::Active => Style {
-            tab_label_background: primary.base.color.into(),
-            text_color: primary.base.text,
-            ..default
-        },
-        Status::Hovered => Style {
-            tab_label_background: primary.weak.color.into(),
-            text_color: primary.weak.text,
-            ..default
-        },
-        Status::Disabled => Style { ..default },
-        _ => Style {
-            // We don't use these - make it jarring, so if we ever do, it's noticeable
-            tab_label_background: color!(0xff0000).into(),
-            text_color: color!(0x00ff00),
-            ..default
-        },
-    }
-}
+// pub fn tab_bar(theme: &Theme, status: tab_bar::Status) -> tab_bar::Style {
+//     use iced_aw::tab_bar::*;
+//     let background = theme.palette().background;
+//     let primary = theme.extended_palette().primary;
+//     let secondary = theme.extended_palette().secondary;
+//
+//     let default = Style {
+//         tab_label_background: background.into(),
+//         tab_label_border_color: secondary.weak.color,
+//         text_color: theme.palette().text,
+//         ..Default::default()
+//     };
+//
+//     match status {
+//         Status::Active => Style {
+//             tab_label_background: primary.base.color.into(),
+//             text_color: primary.base.text,
+//             ..default
+//         },
+//         Status::Hovered => Style {
+//             tab_label_background: primary.weak.color.into(),
+//             text_color: primary.weak.text,
+//             ..default
+//         },
+//         Status::Disabled => Style { ..default },
+//         _ => Style {
+//             // We don't use these - make it jarring, so if we ever do, it's noticeable
+//             tab_label_background: color!(0xff0000).into(),
+//             text_color: color!(0x00ff00),
+//             ..default
+//         },
+//     }
+// }
 
 pub fn log_container(log: &str) -> container::StyleFn<Theme> {
     use container::Catalog;
