@@ -372,7 +372,8 @@ impl ESLauncher {
     }
 
     fn theme(&self) -> Theme {
-        let theme = &self.settings.read().theme;
+        let guard = &self.settings.read();
+        let theme = guard.theme_preview.as_ref().unwrap_or_else(|| &guard.theme);
         theme.into()
     }
 }

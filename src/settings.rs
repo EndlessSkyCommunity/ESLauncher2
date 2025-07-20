@@ -22,6 +22,8 @@ pub struct Settings {
     pub music_state: MusicState,
     #[serde(default)]
     pub theme: SelectableTheme,
+    #[serde(skip)]
+    pub theme_preview: Option<SelectableTheme>,
     #[serde(default = "default_install_dir")]
     pub install_dir: PathBuf,
 }
@@ -34,6 +36,7 @@ impl Default for Settings {
         Self {
             music_state: Default::default(),
             theme: SelectableTheme::default(),
+            theme_preview: None,
             install_dir: default_install_dir(),
         }
     }
@@ -148,6 +151,7 @@ pub struct SettingsFrame {
 #[derive(Debug, Clone)]
 pub enum SettingsMessage {
     ThemeSelected(SelectableTheme),
+    ThemePreviewed(Option<SelectableTheme>),
     RequestInstallPath,
     SetInstallPath(PathBuf),
     MoveInstallPath(PathBuf),
@@ -227,7 +231,13 @@ impl SettingsFrame {
                         "Please select a theme",
                         Some(&self.settings.read().theme),
                         |st| Message::SettingsMessage(SettingsMessage::ThemeSelected(st)),
-                    ),
+                    )
+                    .on_option_hovered(|st| {
+                        Message::SettingsMessage(SettingsMessage::ThemePreviewed(Some(st)))
+                    })
+                    .on_close(Message::SettingsMessage(
+                        SettingsMessage::ThemePreviewed(None),
+                    )),
                 ))
                 .spacing(10.0),
         )
@@ -259,7 +269,14 @@ impl SettingsFrame {
                 return Task::done(Message::OpenDialog(move_in_progress_dialog_spec(None)))
                     .chain(Task::perform(move_install_dir, message_when_done));
             }
-            SettingsMessage::ThemeSelected(st) => self.settings.write().theme = st,
+            SettingsMessage::ThemeSelected(theme) => {
+                let mut guard = self.settings.write();
+                guard.theme_preview = None;
+                guard.theme = theme;
+            }
+            SettingsMessage::ThemePreviewed(theme_maybe) => {
+                self.settings.write().theme_preview = theme_maybe
+            }
         };
         self.settings.read().save();
 
