@@ -4,7 +4,7 @@ use crate::{get_data_dir, send_message, style, DialogSpec, Message, SharedSettin
 use anyhow::{Context, Result};
 use cp_r::CopyStats;
 use iced::advanced::graphics::core::Element;
-use iced::widget::{combo_box, container, row, text, Text};
+use iced::widget::{combo_box, container, horizontal_space, row, text, Text};
 use iced::{
     widget::{button, Column, Container, Row},
     Length, Theme,
@@ -170,10 +170,9 @@ impl SettingsFrame {
                     .push(
                         Row::new()
                             .push(Text::new(label))
+                            .push(horizontal_space())
                             .push(
-                                container(content)
-                                    .align_x(iced::alignment::Horizontal::Right)
-                                    .width(Length::Fill),
+                                container(content).align_x(iced::alignment::Horizontal::Right), // .width(Length::Fill),
                             )
                             .align_y(Alignment::Center),
                     )
