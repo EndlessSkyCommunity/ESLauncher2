@@ -339,7 +339,11 @@ async fn try_move_install_dir(
     let mut instances = load_instances(&dest)?;
     for i in &mut instances {
         let name = i.path.file_name().unwrap();
-        i.executable = dest.join(i.executable.strip_prefix(&i.path)?);
+        i.executable = i.executable.strip_prefix(&i.path)
+            .map(|exe| dest.join(exe))
+            .inspect_err(|e| {
+            warn!("Failed to patch instance paths for instance '{}', you might have to re-install it", name.to_string_lossy())
+        }).unwrap_or_else(|_| i.executable.clone());
         i.path = dest.join(name);
     }
     save_instances(instances, &dest)?;
