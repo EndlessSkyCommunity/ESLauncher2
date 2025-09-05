@@ -1384,6 +1384,7 @@ dependencies = [
  "serde-xml-rs",
  "serde_json",
  "simplelog",
+ "sipper",
  "tar",
  "time",
  "tokio",
@@ -2149,6 +2150,7 @@ dependencies = [
  "iced_debug",
  "iced_futures",
  "raw-window-handle",
+ "sipper",
  "thiserror 1.0.69",
 ]
 
@@ -4364,6 +4366,16 @@ dependencies = [
  "log",
  "termcolor",
  "time",
+]
+
+[[package]]
+name = "sipper"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1bccb4192828b3d9a08e0b5a73f17795080dfb278b50190216e3ae2132cf4f95"
+dependencies = [
+ "futures",
+ "pin-project-lite",
 ]
 
 [[package]]

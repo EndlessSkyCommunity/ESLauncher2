@@ -3,7 +3,9 @@ use crate::music::MusicState;
 use crate::{get_data_dir, send_message, style, DialogSpec, Message, SharedSettings};
 use anyhow::{Context, Result};
 use cp_r::CopyStats;
+use futures::join;
 use iced::advanced::graphics::core::Element;
+use iced::task::{sipper, Sipper};
 use iced::widget::{combo_box, container, horizontal_space, row, text, Text};
 use iced::{
     widget::{button, Column, Container, Row},
@@ -11,6 +13,7 @@ use iced::{
 };
 use iced::{Alignment, Padding, Renderer, Task};
 use serde::{Deserialize, Serialize};
+use sipper::Sender;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::Iterator;
 use std::sync::LazyLock;
@@ -259,15 +262,8 @@ impl SettingsFrame {
                 return Task::done(Message::ReloadInstances());
             }
             SettingsMessage::MoveInstallPath(new) => {
-                let move_install_dir =
-                    move_install_dir(self.settings.read().install_dir.clone(), new.clone());
-                let message_when_done = move |_| {
-                    Message::DialogClosed(Box::new(Message::SettingsMessage(
-                        SettingsMessage::SetInstallPath(new.clone()),
-                    )))
-                };
-                return Task::done(Message::OpenDialog(move_in_progress_dialog_spec(None)))
-                    .chain(Task::perform(move_install_dir, message_when_done));
+                let sipper = move_install_dir(self.settings.clone(), new.clone());
+                return Task::sip(sipper, Message::OpenDialog, Message::OpenDialog);
             }
             SettingsMessage::ThemeSelected(theme) => {
                 let mut guard = self.settings.write();
@@ -284,13 +280,28 @@ impl SettingsFrame {
     }
 }
 
-async fn move_install_dir(source: PathBuf, dest: PathBuf) {
-    if let Err(e) = try_move_install_dir(source, dest).await {
-        error!("Error while moving install dir: {e:#?}")
-    }
+fn move_install_dir(
+    settings: SharedSettings,
+    dest: PathBuf,
+) -> impl Sipper<DialogSpec, DialogSpec> {
+    sipper(move |sender| async move {
+        let res = try_move_install_dir(sender, settings, dest).await;
+        res.unwrap_or_else(|e| {
+            error!("Error while moving install dir: {e:#?}");
+            DialogSpec {
+                title: Some("Error".into()),
+                content: format!("An error occured during the operation:\n{e:#?}"),
+                buttons: vec![("Close".into(), Message::Dummy(()))],
+            }
+        })
+    })
 }
 
-async fn try_move_install_dir(source: PathBuf, dest: PathBuf) -> Result<()> {
+async fn try_move_install_dir(
+    mut sender: Sender<DialogSpec>,
+    settings: SharedSettings,
+    dest: PathBuf,
+) -> Result<DialogSpec> {
     // Users can't choose empty directories, but the reset button can
     if tokio::fs::try_exists(&dest).await? {
         tokio::fs::remove_dir_all(&dest)
@@ -298,20 +309,31 @@ async fn try_move_install_dir(source: PathBuf, dest: PathBuf) -> Result<()> {
             .with_context(|| "Failed to remove destination directory")?;
     }
 
+    let source = settings.read().install_dir.clone();
     let source_clone = source.clone();
     let dest_clone = dest.clone();
-    let stats = tokio::task::spawn_blocking(move || {
+
+    let (tokio_tx, mut tokio_rx) = tokio::sync::mpsc::channel(1024);
+    let cp_r_fut = tokio::task::spawn_blocking(move || {
         cp_r::CopyOptions::new()
             .create_destination(true)
             .after_entry_copied(|_, _, s| {
-                send_message(Message::OpenDialog(move_in_progress_dialog_spec(Some(s))));
+                tokio_tx
+                    .blocking_send(move_in_progress_dialog_spec(Some(s)))
+                    .expect("cp_r thread tried to send updates to closed channel");
                 Ok(())
             })
             .copy_tree(source_clone, dest_clone)
-    })
-    .await
-    .with_context(|| "Copy task failed")?
-    .with_context(|| "Failed to copy files")?;
+    });
+    let read_updates_fut = async {
+        while let Some(s) = tokio_rx.recv().await {
+            sender.send(s).await
+        }
+    };
+    let (stats_result, _) = join!(cp_r_fut, read_updates_fut);
+    let stats = stats_result
+        .with_context(|| "Copy task failed")?
+        .with_context(|| "Failed to copy files")?;
 
     info!("Patching instance paths");
     let mut instances = load_instances(&dest)?;
@@ -327,18 +349,16 @@ async fn try_move_install_dir(source: PathBuf, dest: PathBuf) -> Result<()> {
         .await
         .with_context(|| "Failed to remove former install dir")?;
 
+    settings.write().install_dir = dest;
     info!("Install dir moved successfully");
-    send_message(Message::OpenDialog(DialogSpec {
+    Ok(DialogSpec {
         title: None,
         content: format!(
             "Success!\n Moved {} files, {} folders",
             stats.files, stats.dirs
         ),
-        buttons: vec![],
-    }));
-    tokio::time::sleep(Duration::from_secs(2)).await;
-
-    Ok(())
+        buttons: vec![("Close".into(), Message::ReloadInstances())],
+    })
 }
 
 fn move_dir_dialog_spec(new_dir: PathBuf) -> DialogSpec {
