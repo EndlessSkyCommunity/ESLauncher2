@@ -44,7 +44,7 @@ pub fn get_pr(id: u16) -> Result<PR> {
     ))
 }
 
-pub fn unblock_artifact_download(artifact_id: u32) -> String {
+pub fn unblock_artifact_download(artifact_id: u64) -> String {
     format!("https://artifact-unblocker.mcofficer.workers.dev/artifact/{artifact_id}",)
 }
 
@@ -56,7 +56,7 @@ struct Workflows {
 #[derive(Deserialize, Debug)]
 pub struct Workflow {
     name: String,
-    pub(crate) id: u32,
+    pub(crate) id: u64,
 }
 
 pub fn get_cd_workflow() -> Result<Workflow> {
@@ -84,7 +84,7 @@ pub struct WorkflowRun {
 }
 
 pub fn get_latest_workflow_run(
-    workflow_id: u32,
+    workflow_id: u64,
     branch: &str,
     head_repo_id: u32,
 ) -> Result<WorkflowRun> {
@@ -114,7 +114,7 @@ struct WorkflowRunArtifacts {
 
 #[derive(Deserialize, Debug)]
 pub struct WorkflowRunArtifact {
-    pub id: u32,
+    pub id: u64,
     pub size_in_bytes: u32,
     name: String,
     expired: bool,
