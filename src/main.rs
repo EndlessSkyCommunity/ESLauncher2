@@ -2,34 +2,35 @@
 #![windows_subsystem = "windows"] // Don't show console on windows
 
 #[macro_use]
-extern crate log;
-#[macro_use]
 extern crate anyhow;
+#[macro_use]
+extern crate log;
 #[macro_use]
 extern crate version;
 
+use parking_lot::{Mutex, RwLock};
 use std::hash::Hash;
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
 
-use iced::advanced::subscription::EventStream;
-use iced::advanced::Hasher;
-use iced::widget::{Button, Column, Container, Row, Scrollable, Space, Text};
-use iced::{
-    alignment, font, Alignment, Application, Command, Element, Font, Length, Subscription, Theme,
-};
-use iced_aw::{TabLabel, Tabs};
-use std::collections::VecDeque;
-use std::sync::Mutex;
-
 use crate::install_frame::InstallFrameMessage;
 use crate::instance::{Instance, InstanceMessage, InstanceState, Progress};
+use crate::instances_frame::InstancesFrame;
 use crate::music::{MusicCommand, MusicState};
 use crate::plugins_frame::PluginMessage;
-use crate::settings::Settings;
-use crate::style::{icon_button, log_container, tab_bar};
+use crate::settings::{Settings, SettingsFrame, SettingsMessage};
+use crate::style::{icon_button, log_container};
+use iced::advanced::subscription;
+use iced::advanced::subscription::{EventStream, Hasher};
+use iced::widget::{column, row, space, text, Button, Column, Container, Row, Scrollable, Text};
+use iced::{alignment, font, Alignment, Element, Font, Length, Subscription, Task, Theme};
+// use iced_aw::{TabLabel, Tabs};
+use iced_dialog::{button, dialog};
+use std::collections::VecDeque;
+use std::fmt::Debug;
+use std::sync::Arc;
 
 mod archive;
 mod github;
@@ -44,6 +45,8 @@ mod plugins_frame;
 mod settings;
 mod style;
 mod update;
+
+// TODO: investigate use cases for Task::then
 
 // Yes, this is terrible abuse of globals.
 // I spent hours and hours trying to find a better solution:
@@ -66,25 +69,34 @@ mod update;
 static MESSAGE_QUEUE: Mutex<VecDeque<Message>> = Mutex::new(VecDeque::new());
 
 pub fn main() -> iced::Result {
-    ESLauncher::run(iced::Settings::default())
+    iced::application(ESLauncher::new, ESLauncher::update, ESLauncher::view)
+        .title(ESLauncher::title)
+        .subscription(ESLauncher::subscription)
+        .theme(ESLauncher::theme)
+        .run()
 }
+
+type SharedSettings = Arc<RwLock<Settings>>;
 
 #[derive(Debug)]
 struct ESLauncher {
     music_sender: Sender<MusicCommand>,
     install_frame: install_frame::InstallFrame,
-    instances_frame: instances_frame::InstancesFrame,
+    instances_frame: InstancesFrame,
     plugins_frame: plugins_frame::PluginsFrameState,
     message_receiver: MessageReceiver,
     log_buffer: Vec<String>,
     active_tab: Tab,
-    settings: Settings,
+    settings: SharedSettings,
+    settings_frame: SettingsFrame,
+    dialog: Option<DialogSpec>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Tab {
     Instances,
     Plugins,
+    Settings,
 }
 
 #[derive(Debug, Clone)]
@@ -92,22 +104,29 @@ pub enum Message {
     InstallFrameMessage(InstallFrameMessage),
     InstanceMessage(String, InstanceMessage),
     PluginMessage(String, PluginMessage),
+    SettingsMessage(SettingsMessage),
     AddInstance(Box<Instance>),
     RemoveInstance(Option<String>),
+    ReloadInstances(),
     Dummy(()),
     FontLoaded(Result<(), font::Error>),
     MusicMessage(MusicCommand),
     TabSelected(Tab),
     PluginFrameLoaded(Vec<plugins_frame::Plugin>),
     Log(String),
+    OpenDialog(DialogSpec),
+    DialogClosed(Box<Message>), // boxed to avoid recursive size calculation
 }
 
-impl Application for ESLauncher {
-    type Executor = iced::executor::Default;
-    type Message = Message;
-    type Flags = ();
+#[derive(Debug, Clone)]
+pub struct DialogSpec {
+    title: Option<String>,
+    content: String,
+    buttons: Vec<(String, Message)>,
+}
 
-    fn new(_flag: ()) -> (Self, Command<Message>) {
+impl ESLauncher {
+    fn new() -> (Self, Task<Message>) {
         logger::init();
         info!("Starting ESLauncher2 v{}", version!());
         if cfg!(target_os = "macos") {
@@ -120,8 +139,8 @@ impl Application for ESLauncher {
             info!("  running on target environment other");
         }
 
-        let settings = Settings::load();
-        let music_sender = music::spawn(settings.music_state);
+        let settings = Arc::new(RwLock::new(Settings::load()));
+        let music_sender = music::spawn(settings.read().music_state);
 
         check_for_update();
 
@@ -130,14 +149,16 @@ impl Application for ESLauncher {
             Self {
                 music_sender,
                 install_frame: install_frame::InstallFrame::default(),
-                instances_frame: instances_frame::InstancesFrame::default(),
+                instances_frame: InstancesFrame::new(settings.clone()),
                 plugins_frame: plugins_frame_state,
                 message_receiver: MessageReceiver {},
                 log_buffer: vec![],
                 active_tab: Tab::Instances,
+                settings_frame: SettingsFrame::new(settings.clone()),
                 settings,
+                dialog: None,
             },
-            Command::batch(vec![
+            Task::batch(vec![
                 plugins_frame_cmd,
                 font::load(include_bytes!("../assets/IcoMoon-Free.ttf").as_slice())
                     .map(Message::FontLoaded),
@@ -147,15 +168,11 @@ impl Application for ESLauncher {
         )
     }
 
-    fn title(&self) -> String {
-        format!("ESLauncher2 v{}", version!())
-    }
-
-    type Theme = Theme;
-
-    fn update(&mut self, message: Self::Message) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::InstallFrameMessage(msg) => return self.install_frame.update(msg),
+            Message::InstallFrameMessage(msg) => {
+                return self.install_frame.update(msg, self.settings.clone())
+            }
             Message::InstanceMessage(name, msg) => {
                 match self.instances_frame.instances.get_mut(&name) {
                     None => error!("Failed to find internal Instance with name {}", &name),
@@ -172,31 +189,40 @@ impl Application for ESLauncher {
                     }
                 }
             }
+            Message::SettingsMessage(msg) => return self.settings_frame.update(msg),
             Message::AddInstance(instance) => {
                 let is_ready = instance.state.is_ready();
                 self.instances_frame
                     .instances
                     .insert(instance.name.clone(), *instance);
                 if is_ready {
-                    instance::perform_save_instances(self.instances_frame.instances.clone());
+                    instance::perform_save_instances(
+                        self.instances_frame.instances.clone(),
+                        &self.settings,
+                    );
                 };
             }
             Message::RemoveInstance(option) => {
                 if let Some(name) = option {
                     self.instances_frame.instances.remove(&name);
-                    instance::perform_save_instances(self.instances_frame.instances.clone());
+                    instance::perform_save_instances(
+                        self.instances_frame.instances.clone(),
+                        &self.settings,
+                    );
                 }
+            }
+            Message::ReloadInstances() => {
+                self.instances_frame = InstancesFrame::new(self.settings.clone());
             }
             Message::MusicMessage(cmd) => {
                 self.music_sender.send(cmd).ok();
-                self.settings.music_state = match cmd {
+                let mut guard = self.settings.write();
+                guard.music_state = match cmd {
                     MusicCommand::Pause => MusicState::Paused,
                     MusicCommand::Play => MusicState::Playing,
-                    _ => self.settings.music_state,
+                    _ => guard.music_state,
                 };
-                if let Err(e) = self.settings.save() {
-                    error!("Failed to save settings.json: {:#?}", e);
-                };
+                guard.save();
             }
             Message::TabSelected(active_tab) => self.active_tab = active_tab,
             Message::PluginFrameLoaded(plugins) => {
@@ -205,8 +231,13 @@ impl Application for ESLauncher {
             Message::Log(line) => self.log_buffer.push(line),
             Message::Dummy(()) => (),
             Message::FontLoaded(_) => (),
+            Message::OpenDialog(spec) => self.dialog = Some(spec),
+            Message::DialogClosed(msg) => {
+                self.dialog = None;
+                return Task::done(*msg);
+            }
         }
-        Command::none()
+        Task::none()
     }
 
     /// Subscriptions are created from Recipes.
@@ -217,57 +248,87 @@ impl Application for ESLauncher {
     /// the old Subscription will keep running, otherwise a new one will be created.
     ///
     /// Having to clone the receiver is unfortunate, but there aren't actually multiple receivers being used:
-    /// the first the Subscription never stops returning values (unless something catastrophic happens),
+    /// the first Subscription never stops returning values (unless something catastrophic happens),
     /// so the cloned Recipe just gets dropped without being turned into a Subscription.
     fn subscription(&self) -> Subscription<Message> {
-        Subscription::from_recipe(self.message_receiver.clone())
+        subscription::from_recipe(self.message_receiver.clone())
     }
 
-    fn view(&self) -> Element<'_, Self::Message> {
-        let tabs = Tabs::new(Message::TabSelected)
-            .push::<Element<'_, Message>>(
-                Tab::Instances,
-                TabLabel::Text("Instances".into()),
-                iced::widget::column([
-                    iced::widget::horizontal_rule(2).into(),
-                    Row::new()
-                        .push(self.instances_frame.view())
-                        .push(iced::widget::vertical_rule(2))
-                        .push(self.install_frame.view().map(Message::InstallFrameMessage))
-                        .spacing(10)
-                        .padding(iced::Padding {
-                            top: 0.0,
-                            right: 15.0,
-                            bottom: 0.0,
-                            left: 15.0,
-                        })
-                        .into(),
-                ])
-                .into(),
-            )
-            .push(
-                Tab::Plugins,
-                TabLabel::Text("Plugins".into()),
-                iced::widget::column([
-                    iced::widget::horizontal_rule(2).into(),
-                    self.plugins_frame.view().into(),
-                ]),
-            )
-            .set_active_tab(&self.active_tab)
-            .tab_bar_style(tab_bar());
+    fn view(&self) -> Element<'_, Message> {
+        // let tabs = Tabs::new(Message::TabSelected)
+        //     .push::<Element<'_, Message>>(
+        //         Tab::Instances,
+        //         TabLabel::Text("Instances".into()),
+        //         iced::widget::column([
+        //             Row::new()
+        //                 .push(self.instances_frame.view())
+        //                 .push(iced::widget::vertical_rule(2))
+        //                 .push(self.install_frame.view().map(Message::InstallFrameMessage))
+        //                 .spacing(10)
+        //                 .padding(iced::Padding {
+        //                     top: 0.0,
+        //                     right: 15.0,
+        //                     bottom: 0.0,
+        //                     left: 15.0,
+        //                 })
+        //                 .into(),
+        //         ])
+        //         .into(),
+        //     )
+        //     .push(
+        //         Tab::Plugins,
+        //         TabLabel::Text("Plugins".into()),
+        //         iced::widget::column([
+        //             self.plugins_frame.view().into(),
+        //         ]),
+        //     )
+        //     .push(
+        //         Tab::Settings,
+        //         TabLabel::Text("Settings".into()),
+        //         iced::widget::column([
+        //             self.settings.view().into(),
+        //         ]),
+        //     )
+        //     .set_active_tab(&self.active_tab)
+        //     .tab_bar_style(tab_bar);
+        let show_tab = match self.active_tab {
+            Tab::Instances => iced::widget::column([Row::new()
+                .push(self.instances_frame.view())
+                .push(iced::widget::rule::vertical(2))
+                .push(self.install_frame.view().map(Message::InstallFrameMessage))
+                .spacing(10)
+                .padding(iced::Padding {
+                    top: 0.0,
+                    right: 15.0,
+                    bottom: 0.0,
+                    left: 15.0,
+                })
+                .into()]),
+            Tab::Plugins => iced::widget::column([self.plugins_frame.view().into()]),
+            Tab::Settings => iced::widget::column([self.settings_frame.view().into()]),
+        };
+        let tab_buttons = row![
+            button("Instances", Message::TabSelected(Tab::Instances)),
+            button("Plugins", Message::TabSelected(Tab::Plugins)),
+            button("Settings", Message::TabSelected(Tab::Settings))
+        ]
+        .width(Length::Fill);
+        let tabs = column![tab_buttons, show_tab];
+        // all of the above is a workaround, since iced_aw doesn't track the iced development branch
+        // TODO: return to TabBar when possible; consider if we need iced_aw at all
 
         let logbox = self.log_buffer.iter().fold(
             Column::new()
                 .spacing(1)
                 .padding(15)
-                .align_items(Alignment::Start),
+                .align_x(Alignment::Start),
             |column, log| {
                 column.push(
                     Container::new(
                         Text::new(log)
                             .size(11)
                             .font(Font::with_name("DejaVu Sans Mono"))
-                            .horizontal_alignment(alignment::Horizontal::Left),
+                            .align_x(alignment::Horizontal::Left),
                     )
                     .style(log_container(log))
                     .width(Length::Fill),
@@ -276,10 +337,10 @@ impl Application for ESLauncher {
         );
 
         let content = Column::new()
-            .align_items(Alignment::Center)
+            .align_x(Alignment::Center)
             .push(tabs.height(Length::FillPortion(3)))
             .push(
-                iced::widget::container(iced::widget::horizontal_rule(2)).padding(iced::Padding {
+                iced::widget::container(iced::widget::rule::vertical(2)).padding(iced::Padding {
                     top: 0.0,
                     right: 10.0,
                     bottom: 0.0,
@@ -294,17 +355,17 @@ impl Application for ESLauncher {
 
         let music_controls = Row::new()
             .width(Length::Fill)
-            .align_items(Alignment::Center)
+            .align_y(Alignment::Center)
             .padding(8)
-            .push(Space::new(Length::Fill, Length::Shrink))
+            .push(space().width(Length::Fill).height(Length::Shrink))
             .push(
-                Button::new(match self.settings.music_state {
+                Button::new(match self.settings.read().music_state {
                     MusicState::Playing => style::pause_icon(),
                     MusicState::Paused => style::play_icon(),
                 })
-                .style(icon_button())
+                .style(icon_button)
                 .on_press(Message::MusicMessage(
-                    match self.settings.music_state {
+                    match self.settings.read().music_state {
                         MusicState::Playing => MusicCommand::Pause,
                         MusicState::Paused => MusicCommand::Play,
                     },
@@ -312,29 +373,40 @@ impl Application for ESLauncher {
             )
             .push(Text::new("Endless Sky Prototype by JimmyZenith").size(13));
 
-        Container::new(
+        let base = Container::new(
             Column::new()
-                .align_items(Alignment::Start)
-                .push(
-                    Container::new(content)
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .center_x()
-                        .center_y(),
-                )
+                .align_x(Alignment::Start)
+                .push(Container::new(content).center(Length::Fill))
                 .push(music_controls.height(Length::Shrink)),
         )
         .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        .height(Length::Fill);
+
+        if let Some(spec) = &self.dialog {
+            let mut dialog = dialog(true, base, &*spec.content);
+            if let Some(title) = &spec.title {
+                dialog = dialog.title(title);
+            }
+            for (content, msg) in &spec.buttons {
+                dialog = dialog.push_button(iced_dialog::button(
+                    content,
+                    Message::DialogClosed(Box::new(msg.clone())),
+                ));
+            }
+            dialog.into()
+        } else {
+            dialog(false, base, text("")).into()
+        }
     }
 
-    fn theme(&self) -> Self::Theme {
-        iced::Theme::custom("LightModified".into(), {
-            let mut palette = iced::theme::Palette::LIGHT;
-            palette.primary = iced::Color::from_rgb(0.2, 0.2, 0.2);
-            palette
-        })
+    fn title(&self) -> String {
+        format!("ESLauncher2 v{}", version!())
+    }
+
+    fn theme(&self) -> Option<Theme> {
+        let guard = &self.settings.read();
+        let theme = guard.theme_preview.as_ref().unwrap_or_else(|| &guard.theme);
+        theme.into()
     }
 }
 
@@ -356,7 +428,7 @@ fn get_data_dir() -> Option<PathBuf> {
 #[derive(Debug, Clone)]
 pub struct MessageReceiver {}
 
-impl iced::advanced::subscription::Recipe for MessageReceiver {
+impl subscription::Recipe for MessageReceiver {
     type Output = Message;
 
     fn hash(&self, state: &mut Hasher) {
@@ -371,11 +443,7 @@ impl iced::advanced::subscription::Recipe for MessageReceiver {
             let mut interval = tokio::time::interval(Duration::from_millis(10));
             loop {
                 interval.tick().await;
-                if let Some(msg) = MESSAGE_QUEUE
-                    .try_lock()
-                    .ok()
-                    .and_then(|mut q| q.pop_front())
-                {
+                if let Some(msg) = MESSAGE_QUEUE.try_lock().and_then(|mut q| q.pop_front()) {
                     return Some((msg, state));
                 }
             }
@@ -384,15 +452,7 @@ impl iced::advanced::subscription::Recipe for MessageReceiver {
 }
 
 pub fn send_message(message: Message) {
-    match crate::MESSAGE_QUEUE.lock() {
-        Ok(mut queue) => queue.push_back(message),
-        Err(e) => {
-            // Don't use an error log here because that may cause an endless loop of logs
-            eprintln!(
-                "Failed to lock message queue:\n{e}\nThe message was as follows:\n{message:#?}"
-            );
-        }
-    }
+    MESSAGE_QUEUE.lock().push_back(message);
 }
 
 pub fn send_progress_message(instance_name: &str, progress: Progress) {

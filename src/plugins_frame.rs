@@ -3,17 +3,15 @@ use crate::{get_data_dir, style, Message};
 use anyhow::Context;
 use anyhow::Result;
 use espim::Plugin as EspimPlugin;
-use iced::widget::{button, image, Column, Container, Image, Row, Scrollable, Space, Text};
-use iced::{alignment, theme, Alignment, Color, Command, Element, Length};
-use lazy_static::lazy_static;
+use iced::widget::{button, image, rule, space, Column, Container, Image, Row, Scrollable, Text};
+use iced::{alignment, theme, Alignment, Color, Element, Length, Task};
 use regex::Regex;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::sync::LazyLock;
 
-lazy_static! {
-    static ref CACHE_FILENAME_REGEX: Regex = Regex::new(r"[^\w.-]").unwrap();
-}
+static CACHE_FILENAME_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^\w.-]").unwrap());
 
 #[derive(Debug, Clone)]
 pub enum PluginsFrameState {
@@ -22,10 +20,10 @@ pub enum PluginsFrameState {
 }
 
 impl PluginsFrameState {
-    pub fn new() -> (Self, Command<Message>) {
+    pub fn new() -> (Self, Task<Message>) {
         (
             Self::Loading,
-            Command::perform(load_plugins(), Message::PluginFrameLoaded),
+            Task::perform(load_plugins(), Message::PluginFrameLoaded),
         )
     }
 
@@ -36,11 +34,11 @@ impl PluginsFrameState {
     pub fn view(&self) -> Container<Message> {
         match self {
             Self::Loading => Container::new(
-                Column::new().align_items(Alignment::Center).push(
+                Column::new().align_x(Alignment::Center).push(
                     Text::new("Loading...")
                         .width(Length::Fill)
-                        .style(theme::Text::Color(Color::from_rgb(0.7, 0.7, 0.7)))
-                        .horizontal_alignment(alignment::Horizontal::Center),
+                        .color(Color::from_rgb(0.7, 0.7, 0.7))
+                        .align_x(alignment::Horizontal::Center),
                 ),
             ),
             Self::Ready { plugins } => {
@@ -50,19 +48,15 @@ impl PluginsFrameState {
                             .padding(20)
                             .spacing(5)
                             .width(Length::Fill)
-                            .align_items(Alignment::Center),
+                            .align_x(Alignment::Center),
                         |column, plugin| {
                             column
-                                .push(iced::widget::horizontal_rule(2).style(
-                                    iced::theme::Rule::from(|theme: &iced::Theme| {
-                                        let mut appearance =
-                                            iced::widget::rule::StyleSheet::appearance(
-                                                theme,
-                                                &Default::default(),
-                                            );
-                                        appearance.color.a *= 0.75;
-                                        appearance
-                                    }),
+                                .push(iced::widget::rule::horizontal(2).style(
+                                    |theme: &iced::Theme| {
+                                        let mut style = rule::default(theme);
+                                        style.color.a *= 0.75;
+                                        style
+                                    },
                                 ))
                                 .push(plugin.view().map(move |msg| {
                                     Message::PluginMessage(plugin.name.clone(), msg)
@@ -110,15 +104,17 @@ pub struct Plugin {
 }
 
 impl Plugin {
-    pub fn update(&mut self, message: PluginMessage) -> Command<Message> {
+    pub fn update(&mut self, message: PluginMessage) -> Task<Message> {
         match message {
             PluginMessage::Install => {
                 if let PluginState::Idle { espim_plugin } = &mut self.state {
-                    let name = self.name.clone();
                     let plugin = espim_plugin.clone();
                     self.state = PluginState::Working;
-                    return Command::perform(perform_install(*plugin), move |p| {
-                        Message::PluginMessage(name, PluginMessage::WorkFinished(Box::new(p)))
+                    return Task::perform(perform_install(*plugin), move |p| {
+                        Message::PluginMessage(
+                            p.name().into(),
+                            PluginMessage::WorkFinished(Box::new(p)),
+                        )
                     });
                 }
             }
@@ -151,7 +147,7 @@ impl Plugin {
                 };
             }
         }
-        Command::none()
+        Task::none()
     }
 
     fn view(&self) -> Element<PluginMessage> {
@@ -159,7 +155,7 @@ impl Plugin {
         const ICON_DIMENSION: f32 = 64.;
         let mut icon_container = Row::new()
             .width(Length::Fixed(ICON_DIMENSION))
-            .align_items(Alignment::Center);
+            .align_y(Alignment::Center);
         if let Some(icon) = &self.icon {
             icon_container = icon_container.push(
                 Image::new(icon.clone())
@@ -168,8 +164,8 @@ impl Plugin {
             );
         }
         let mut textbox = Column::new().width(Length::Fill);
-        let mut titlebox = Column::new()
-            .push(Text::new(&self.name).vertical_alignment(alignment::Vertical::Center));
+        let mut titlebox =
+            Column::new().push(Text::new(&self.name).align_y(alignment::Vertical::Center));
         let mut infos = Column::new();
 
         let mut controls = Row::new().spacing(10);
@@ -185,7 +181,7 @@ impl Plugin {
                             String::from("Not installed")
                         })
                         .size(14)
-                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     )
                     .push(
                         Text::new(if espim_plugin.is_available() {
@@ -194,31 +190,31 @@ impl Plugin {
                             String::from("Unavailable")
                         })
                         .size(14)
-                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     );
-                infos = infos.push(Space::with_height(5)).push(
+                infos = infos.push(space().height(5)).push(
                     Text::new(
                         espim_plugin
                             .description()
                             .unwrap_or("Not available".to_string()),
                     )
                     .size(14)
-                    .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                    .color(Color::from_rgb(0.6, 0.6, 0.6)),
                 );
 
                 let mut install_button =
-                    button::Button::new(style::update_icon()).style(icon_button()); // TODO: Use other icon here?
+                    button::Button::new(style::update_icon()).style(icon_button); // TODO: Use other icon here?
                 if espim_plugin.is_available() {
                     install_button = install_button.on_press(PluginMessage::Install);
                 }
 
-                let mut remove_button =
-                    button::Button::new(style::delete_icon()).style(theme::Button::Destructive);
+                let mut remove_button = button::Button::new(style::delete_icon());
+                // TODO .style(theme::Button::Destructive);
                 if espim_plugin.is_installed() {
                     remove_button = remove_button.on_press(PluginMessage::Remove);
                 }
 
-                let mut href_button = button::Button::new(style::href_icon()).style(icon_button()); // TODO: Use other icon here?
+                let mut href_button = button::Button::new(style::href_icon()).style(icon_button); // TODO: Use other icon here?
                 if espim_plugin.is_available() {
                     href_button = href_button.on_press(PluginMessage::OpenHREF);
                 }
@@ -232,13 +228,13 @@ impl Plugin {
                 infos = infos.push(
                     Text::new("Working...")
                         .size(14)
-                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
                 );
             }
         };
         let header = Row::new()
             .push(titlebox)
-            .push(Space::new(Length::Fill, Length::Shrink))
+            .push(space().width(Length::Fill).height(Length::Shrink))
             .push(controls);
         textbox = textbox.push(header).push(infos);
 
@@ -253,7 +249,7 @@ pub async fn load_plugins() -> Vec<Plugin> {
             for p in retrieved {
                 let name = String::from(p.name());
                 let icon = load_icon_cached(&p)
-                    .map(image::Handle::from_memory)
+                    .map(image::Handle::from_bytes)
                     .map_err(|e| debug!("failed to fetch icon: {}", e))
                     .ok();
                 plugins.push(Plugin {
