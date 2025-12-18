@@ -6,10 +6,10 @@ use cp_r::CopyStats;
 use futures::join;
 use iced::advanced::graphics::core::Element;
 use iced::task::{sipper, Sipper};
-use iced::widget::{combo_box, container, horizontal_space, row, text, Text};
+use iced::widget::{combo_box, container, row, space, text, Text};
 use iced::{
     widget::{button, Column, Container, Row},
-    Length, Theme,
+    Theme,
 };
 use iced::{Alignment, Padding, Renderer, Task};
 use serde::{Deserialize, Serialize};
@@ -83,6 +83,7 @@ impl Settings {
     }
 }
 
+// TODO: do we need this? or can we live with autodetect = None ?
 #[derive(Default, Debug, Clone, Deserialize, Serialize)]
 #[serde(from = "Option<String>", into = "Option<String>")]
 pub enum SelectableTheme {
@@ -101,7 +102,7 @@ impl From<Option<String>> for SelectableTheme {
                     .cloned()
                     .unwrap_or_else(|| {
                         warn!("Got unknown theme {s} from config, falling back to default");
-                        Theme::default()
+                        Theme::Light
                     })
             })
             .map(|t| Self::Preset(t.clone()))
@@ -127,11 +128,11 @@ impl Display for SelectableTheme {
     }
 }
 
-impl From<&SelectableTheme> for Theme {
-    fn from(st: &SelectableTheme) -> Theme {
+impl From<&SelectableTheme> for Option<Theme> {
+    fn from(st: &SelectableTheme) -> Option<Theme> {
         match st {
-            SelectableTheme::Autodetect => Theme::default(),
-            SelectableTheme::Preset(t) => t.clone(),
+            SelectableTheme::Autodetect => None,
+            SelectableTheme::Preset(t) => Some(t.clone()),
         }
     }
 }
@@ -177,7 +178,7 @@ impl SettingsFrame {
                     .push(
                         Row::new()
                             .push(Text::new(label))
-                            .push(horizontal_space())
+                            .push(space::horizontal())
                             .push(
                                 container(content).align_x(iced::alignment::Horizontal::Right), // .width(Length::Fill),
                             )
@@ -217,7 +218,7 @@ impl SettingsFrame {
                         .size(12.0),
                         install_dir_picker
                     )
-                    .push_maybe(install_dir_reset_btn)
+                    .push(install_dir_reset_btn)
                     .align_y(Alignment::Center)
                     .spacing(10.0)
                     .padding(Padding {

@@ -24,7 +24,7 @@ use crate::settings::{Settings, SettingsFrame, SettingsMessage};
 use crate::style::{icon_button, log_container};
 use iced::advanced::subscription;
 use iced::advanced::subscription::{EventStream, Hasher};
-use iced::widget::{column, row, text, Button, Column, Container, Row, Scrollable, Space, Text};
+use iced::widget::{column, row, space, text, Button, Column, Container, Row, Scrollable, Text};
 use iced::{alignment, font, Alignment, Element, Font, Length, Subscription, Task, Theme};
 // use iced_aw::{TabLabel, Tabs};
 use iced_dialog::{button, dialog};
@@ -169,7 +169,7 @@ impl ESLauncher {
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
-        match dbg!(message) {
+        match message {
             Message::InstallFrameMessage(msg) => {
                 return self.install_frame.update(msg, self.settings.clone())
             }
@@ -294,7 +294,7 @@ impl ESLauncher {
         let show_tab = match self.active_tab {
             Tab::Instances => iced::widget::column([Row::new()
                 .push(self.instances_frame.view())
-                .push(iced::widget::vertical_rule(2))
+                .push(iced::widget::rule::vertical(2))
                 .push(self.install_frame.view().map(Message::InstallFrameMessage))
                 .spacing(10)
                 .padding(iced::Padding {
@@ -340,7 +340,7 @@ impl ESLauncher {
             .align_x(Alignment::Center)
             .push(tabs.height(Length::FillPortion(3)))
             .push(
-                iced::widget::container(iced::widget::horizontal_rule(2)).padding(iced::Padding {
+                iced::widget::container(iced::widget::rule::vertical(2)).padding(iced::Padding {
                     top: 0.0,
                     right: 10.0,
                     bottom: 0.0,
@@ -357,7 +357,7 @@ impl ESLauncher {
             .width(Length::Fill)
             .align_y(Alignment::Center)
             .padding(8)
-            .push(Space::new(Length::Fill, Length::Shrink))
+            .push(space().width(Length::Fill).height(Length::Shrink))
             .push(
                 Button::new(match self.settings.read().music_state {
                     MusicState::Playing => style::pause_icon(),
@@ -403,7 +403,7 @@ impl ESLauncher {
         format!("ESLauncher2 v{}", version!())
     }
 
-    fn theme(&self) -> Theme {
+    fn theme(&self) -> Option<Theme> {
         let guard = &self.settings.read();
         let theme = guard.theme_preview.as_ref().unwrap_or_else(|| &guard.theme);
         theme.into()

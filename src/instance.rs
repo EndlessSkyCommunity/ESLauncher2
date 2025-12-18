@@ -3,7 +3,7 @@ use crate::music::MusicCommand;
 use crate::style::icon_button;
 use crate::{install, send_message, style, update, Message, SharedSettings};
 use anyhow::Result;
-use iced::widget::{Button, Column, ProgressBar, Row, Space, Text};
+use iced::widget::{space, Button, Column, ProgressBar, Row, Text};
 use iced::{alignment, theme, Alignment, Element, Length};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -232,7 +232,7 @@ impl Instance {
                         .size(10),
                     ),
             )
-            .push(Space::new(Length::Fill, Length::Shrink))
+            .push(space().width(Length::Fill).height(Length::Shrink))
             .push({
                 if let InstanceState::Working(progress) = &self.state {
                     let mut status_field = Column::new().align_x(Alignment::Center).push(
@@ -260,7 +260,7 @@ impl Instance {
                         );
                     }
                     Row::new()
-                        .push(Space::with_width(Length::FillPortion(1)))
+                        .push(space().width(Length::FillPortion(1)))
                         .push(status_field.width(Length::FillPortion(2)))
                 } else {
                     Row::new()

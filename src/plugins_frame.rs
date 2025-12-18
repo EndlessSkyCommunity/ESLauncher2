@@ -3,7 +3,7 @@ use crate::{get_data_dir, style, Message};
 use anyhow::Context;
 use anyhow::Result;
 use espim::Plugin as EspimPlugin;
-use iced::widget::{button, image, rule, Column, Container, Image, Row, Scrollable, Space, Text};
+use iced::widget::{button, image, rule, space, Column, Container, Image, Row, Scrollable, Text};
 use iced::{alignment, theme, Alignment, Color, Element, Length, Task};
 use regex::Regex;
 use std::fs::File;
@@ -51,7 +51,7 @@ impl PluginsFrameState {
                             .align_x(Alignment::Center),
                         |column, plugin| {
                             column
-                                .push(iced::widget::horizontal_rule(2).style(
+                                .push(iced::widget::rule::horizontal(2).style(
                                     |theme: &iced::Theme| {
                                         let mut style = rule::default(theme);
                                         style.color.a *= 0.75;
@@ -192,7 +192,7 @@ impl Plugin {
                         .size(14)
                         .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     );
-                infos = infos.push(Space::with_height(5)).push(
+                infos = infos.push(space().height(5)).push(
                     Text::new(
                         espim_plugin
                             .description()
@@ -234,7 +234,7 @@ impl Plugin {
         };
         let header = Row::new()
             .push(titlebox)
-            .push(Space::new(Length::Fill, Length::Shrink))
+            .push(space().width(Length::Fill).height(Length::Shrink))
             .push(controls);
         textbox = textbox.push(header).push(infos);
 

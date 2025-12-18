@@ -54,7 +54,7 @@ impl InstancesFrame {
                 .fold(instances_column, |column, instance| {
                     column
                         .push(
-                            iced::widget::horizontal_rule(2).style(|theme: &iced::Theme| {
+                            iced::widget::rule::horizontal(2).style(|theme: &iced::Theme| {
                                 let mut style = rule::default(theme);
                                 style.color.a *= 0.75;
                                 style
