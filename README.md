@@ -46,4 +46,17 @@ above step
 - The Launcher should open and from now on you can run it by just double-clicking
 on it.
 
+**Instructions for MacOS Sonoma, Sequoia and later:** On the newest versions of MacOS (15.x 26.x+)
+you may see a different error message when trying to run the application. If you see a dialogue
+saying that the app is damaged and cannot be opened then you need to remove the MacOS quarantine flags:
+
+![Screenshot 3](doc/mac_screenshot_3.png?raw=true)
+
+- Take note of where you downloaded and extracted the application. You'll need to run a command against the unzipped `.app`
+- Open the Terminal (use your Launchpad or press command-space on your keyboard to bring up Spotlight Search and start typing `terminal.app`)
+- Once the Terminal opens, you'll need to change directory to your download location `cd ~/Downloads`
+- Run this command `xattr -d com.apple.quarantine ESLauncher2.app`
+- The command will not produce any output if it is successful. If you see an error "No such file" check your location
+- Close the Terminal. You should now be able to run the launcher, or move it to a location of your choice using Finder
+
 Please note: sometimes the launcher may open in the background. If you hear the music playing, check in the Dock, you should find it running there.
