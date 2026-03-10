@@ -1,9 +1,9 @@
-use crate::instance::{get_instances_dir, InstanceType};
+use crate::instance::InstanceType;
 use crate::style::text_button;
-use crate::{instance, Message};
+use crate::{instance, Message, SharedSettings};
 use core::fmt;
 use iced::widget::{Button, Column, Container, Radio, Scrollable, Text, TextInput};
-use iced::{alignment, Alignment, Command, Element, Length};
+use iced::{alignment, Alignment, Element, Length, Task};
 use serde::{Deserialize, Serialize};
 
 // Characters that shall not be allowed to enter. This does not cover all cases!
@@ -57,23 +57,22 @@ impl fmt::Display for InstanceSourceType {
 }
 
 impl InstallFrame {
-    pub fn update(&mut self, message: InstallFrameMessage) -> Command<Message> {
+    pub fn update(
+        &mut self,
+        message: InstallFrameMessage,
+        settings: SharedSettings,
+    ) -> Task<Message> {
         match message {
             InstallFrameMessage::StartInstallation(instance_type) => {
-                if let Some(mut destination) = get_instances_dir() {
-                    destination.push(&self.name);
-                    return Command::perform(
-                        instance::perform_install(
-                            destination,
-                            self.name.clone(),
-                            instance_type,
-                            self.source.clone(),
-                        ),
-                        Message::Dummy,
-                    );
-                } else {
-                    error!("Could not get instances directory from AppDirs");
-                }
+                return Task::perform(
+                    instance::perform_install(
+                        settings.read().install_dir.join(&self.name),
+                        self.name.clone(),
+                        instance_type,
+                        self.source.clone(),
+                    ),
+                    Message::Dummy,
+                );
             }
             InstallFrameMessage::SourceTypeChanged(source_type) => self.source.r#type = source_type,
             InstallFrameMessage::NameChanged(name) => {
@@ -87,7 +86,7 @@ impl InstallFrame {
                 self.source.identifier = identifier;
             }
         }
-        Command::none()
+        Task::none()
     }
 
     pub fn view(&self) -> Element<InstallFrameMessage> {
@@ -110,7 +109,7 @@ impl InstallFrame {
             );
         }
 
-        let mut install_button = Button::new(Text::new("Install")).style(text_button());
+        let mut install_button = Button::new(Text::new("Install")).style(text_button);
         if !self.name.trim().is_empty() {
             install_button =
                 install_button.on_press(InstallFrameMessage::StartInstallation(if cfg!(windows) {
@@ -127,7 +126,7 @@ impl InstallFrame {
                 .padding(20)
                 .push(
                     Text::new("Install")
-                        .horizontal_alignment(alignment::Horizontal::Center)
+                        .align_x(alignment::Horizontal::Center)
                         .width(Length::Fill)
                         .size(26),
                 )
@@ -139,7 +138,7 @@ impl InstallFrame {
                 .push(controls)
                 .push(install_button)
                 .spacing(20)
-                .align_items(Alignment::End),
+                .align_x(Alignment::End),
         ))
         .width(Length::FillPortion(2))
         .into()

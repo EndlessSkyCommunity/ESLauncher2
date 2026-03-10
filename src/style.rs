@@ -1,14 +1,14 @@
 use iced::border::Radius;
 use iced::widget::{button, container, Text};
-use iced::{alignment, Background, Border, Color, Font, Length, Theme, Vector};
-use std::rc::Rc;
+use iced::{alignment, color, Background, Border, Color, Font, Length, Shadow, Theme, Vector};
+// use iced_aw::tab_bar;
 
 fn icon(unicode: char) -> Text<'static> {
     Text::new(unicode.to_string())
         .font(Font::with_name("IcoMoon-Free"))
         .width(Length::Fixed(20.))
-        .horizontal_alignment(alignment::Horizontal::Center)
-        .vertical_alignment(alignment::Vertical::Center)
+        .align_x(alignment::Horizontal::Center)
+        .align_y(alignment::Vertical::Center)
         .size(20)
 }
 
@@ -39,19 +39,57 @@ pub fn folder_icon() -> Text<'static> {
     icon('\u{E930}')
 }
 
-pub fn icon_button() -> iced::theme::Button {
-    iced::theme::Button::Custom(Box::new(ButtonStyle::Icon))
-}
-pub fn text_button() -> iced::theme::Button {
-    iced::theme::Button::Custom(Box::new(ButtonStyle::Text))
+pub fn reset_icon() -> Text<'static> {
+    icon('\u{E965}')
 }
 
-pub fn tab_bar() -> iced_aw::style::tab_bar::TabBarStyles {
-    iced_aw::style::tab_bar::TabBarStyles::Custom(Rc::new(CustomTabBar))
+// TODO: This is whack. doesn't feel like intended => rethink
+pub fn icon_button(_theme: &Theme, status: button::Status) -> button::Style {
+    use button::Catalog;
+    ButtonStyle::Icon.style(&ButtonStyle::Icon, status)
+}
+pub fn text_button(_theme: &Theme, status: button::Status) -> button::Style {
+    use button::Catalog;
+    ButtonStyle::Text.style(&ButtonStyle::Text, status)
 }
 
-pub fn log_container(log: &str) -> iced::theme::Container {
-    iced::theme::Container::Custom(Box::new(LogContainer::from(log)))
+// pub fn tab_bar(theme: &Theme, status: tab_bar::Status) -> tab_bar::Style {
+//     use iced_aw::tab_bar::*;
+//     let background = theme.palette().background;
+//     let primary = theme.extended_palette().primary;
+//     let secondary = theme.extended_palette().secondary;
+//
+//     let default = Style {
+//         tab_label_background: background.into(),
+//         tab_label_border_color: secondary.weak.color,
+//         text_color: theme.palette().text,
+//         ..Default::default()
+//     };
+//
+//     match status {
+//         Status::Active => Style {
+//             tab_label_background: primary.base.color.into(),
+//             text_color: primary.base.text,
+//             ..default
+//         },
+//         Status::Hovered => Style {
+//             tab_label_background: primary.weak.color.into(),
+//             text_color: primary.weak.text,
+//             ..default
+//         },
+//         Status::Disabled => Style { ..default },
+//         _ => Style {
+//             // We don't use these - make it jarring, so if we ever do, it's noticeable
+//             tab_label_background: color!(0xff0000).into(),
+//             text_color: color!(0x00ff00),
+//             ..default
+//         },
+//     }
+// }
+
+pub fn log_container(log: &str) -> container::StyleFn<Theme> {
+    use container::Catalog;
+    Box::new(move |_| LogContainer::from(log).style(&LogContainer::default()))
 }
 
 /// graphic design is my passion
@@ -60,56 +98,70 @@ pub enum ButtonStyle {
     Text,
 }
 
-impl button::StyleSheet for ButtonStyle {
-    type Style = Theme;
+impl button::Catalog for ButtonStyle {
+    type Class<'a> = ButtonStyle;
 
-    fn active(&self, _: &Self::Style) -> button::Appearance {
-        match self {
-            Self::Icon => button::Appearance {
-                text_color: Color::from_rgb(0.5, 0.5, 0.5),
-                ..Default::default()
-            },
-            Self::Text => button::Appearance {
-                background: Some(Background::Color(Color::WHITE)),
-                border: Border {
-                    color: Color::from_rgb(0.8, 0.8, 0.8),
-                    width: 0.3,
-                    radius: Radius::from(2.0),
-                },
-                shadow_offset: Vector::new(0.3, 0.3),
-                ..Default::default()
-            },
-        }
+    fn default<'a>() -> Self::Class<'a> {
+        ButtonStyle::Text
     }
 
-    fn hovered(&self, style: &Self::Style) -> button::Appearance {
-        let active = self.active(style);
+    fn style(&self, class: &Self::Class<'_>, status: button::Status) -> button::Style {
+        let active = if button::Status::Active == status {
+            // Avoid Stack overflow
+            button::Style::default()
+        } else {
+            self.style(class, button::Status::Active)
+        };
 
-        match self {
-            Self::Icon => button::Appearance {
-                text_color: Color::from_rgb(0.3, 0.3, 0.3),
-                shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
-                ..active
-            },
-            Self::Text => button::Appearance {
-                border: Border {
-                    color: Color::from_rgb(0.4, 0.4, 0.4),
+        match status {
+            button::Status::Active => match self {
+                Self::Icon => button::Style {
+                    text_color: Color::from_rgb(0.5, 0.5, 0.5),
                     ..Default::default()
                 },
-                shadow_offset: active.shadow_offset + Vector::new(0.1, 0.3),
-                ..active
+                Self::Text => button::Style {
+                    background: Some(Background::Color(Color::WHITE)),
+                    border: Border {
+                        color: Color::from_rgb(0.8, 0.8, 0.8),
+                        width: 0.3,
+                        radius: Radius::from(2.0),
+                    },
+                    shadow: Shadow {
+                        offset: Vector::new(0.3, 0.3),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
             },
-        }
-    }
-
-    fn disabled(&self, style: &Self::Style) -> button::Appearance {
-        let active = self.active(style);
-        match self {
-            Self::Text => button::Appearance {
-                text_color: Color::from_rgb(0.5, 0.5, 0.5),
-                ..active
+            button::Status::Hovered => match self {
+                Self::Icon => button::Style {
+                    text_color: Color::from_rgb(0.3, 0.3, 0.3),
+                    shadow: Shadow {
+                        offset: active.shadow.offset + Vector::new(0.0, 1.0),
+                        ..Default::default()
+                    },
+                    ..active
+                },
+                Self::Text => button::Style {
+                    border: Border {
+                        color: Color::from_rgb(0.4, 0.4, 0.4),
+                        ..Default::default()
+                    },
+                    shadow: Shadow {
+                        offset: active.shadow.offset + Vector::new(0.1, 0.3),
+                        ..Default::default()
+                    },
+                    ..active
+                },
             },
-            _ => active,
+            button::Status::Pressed => Default::default(),
+            button::Status::Disabled => match self {
+                Self::Text => button::Style {
+                    text_color: Color::from_rgb(0.5, 0.5, 0.5),
+                    ..active
+                },
+                _ => active,
+            },
         }
     }
 }
@@ -122,9 +174,9 @@ impl From<&str> for LogContainer {
     fn from(log: &str) -> Self {
         Self {
             background: if log.starts_with("WARN") {
-                Some(Color::new(1., 1., 0.5, 0.5))
+                Some(Color::from_rgba(1.0, 1.0, 0.5, 0.5))
             } else if log.starts_with("ERROR") {
-                Some(Color::new(1., 0.5, 0.5, 0.5))
+                Some(Color::from_rgba(1.0, 0.5, 0.5, 0.5))
             } else {
                 None
             },
@@ -132,45 +184,17 @@ impl From<&str> for LogContainer {
     }
 }
 
-impl container::StyleSheet for LogContainer {
-    type Style = Theme;
+impl container::Catalog for LogContainer {
+    type Class<'a> = LogContainer;
 
-    fn appearance(&self, _: &Self::Style) -> container::Appearance {
-        container::Appearance {
+    fn default<'a>() -> Self::Class<'a> {
+        LogContainer { background: None }
+    }
+
+    fn style(&self, _: &Self::Class<'_>) -> container::Style {
+        container::Style {
             text_color: Some(Color::from_rgb(0.6, 0.6, 0.6)),
             background: self.background.map(Background::Color),
-            ..Default::default()
-        }
-    }
-}
-
-pub struct CustomTabBar;
-
-impl iced_aw::style::tab_bar::StyleSheet for CustomTabBar {
-    type Style = Theme;
-
-    fn active(&self, _: &Self::Style, is_active: bool) -> iced_aw::style::tab_bar::Appearance {
-        let tab_label_background = Background::Color(if is_active {
-            Color::WHITE
-        } else {
-            Color::from_rgb(0.87, 0.87, 0.87)
-        });
-        iced_aw::style::tab_bar::Appearance {
-            tab_label_background,
-            tab_label_border_width: 0.,
-            ..Default::default()
-        }
-    }
-
-    fn hovered(&self, _: &Self::Style, is_active: bool) -> iced_aw::style::tab_bar::Appearance {
-        let tab_label_background = Background::Color(if is_active {
-            Color::WHITE
-        } else {
-            Color::from_rgb(0.94, 0.94, 0.94)
-        });
-        iced_aw::style::tab_bar::Appearance {
-            tab_label_background,
-            tab_label_border_width: 0.,
             ..Default::default()
         }
     }
