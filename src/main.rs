@@ -66,7 +66,16 @@ mod update;
 static MESSAGE_QUEUE: Mutex<VecDeque<Message>> = Mutex::new(VecDeque::new());
 
 pub fn main() -> iced::Result {
-    ESLauncher::run(iced::Settings::default())
+    ESLauncher::run(iced::Settings {
+        window: iced::window::Settings {
+            icon: iced::window::icon::from_file_data(
+                include_bytes!("../icons/icon.ico"),
+                Some(image::ImageFormat::Ico)
+            ).ok(),
+            ..Default::default()
+        },
+        ..Default::default()
+    })
 }
 
 #[derive(Debug)]

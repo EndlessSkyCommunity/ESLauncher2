@@ -961,6 +961,7 @@ dependencies = [
  "futures",
  "iced",
  "iced_aw",
+ "image",
  "lazy_static",
  "log",
  "open",
