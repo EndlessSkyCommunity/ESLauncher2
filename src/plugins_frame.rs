@@ -196,12 +196,15 @@ impl Plugin {
                         .size(14)
                         .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                     );
+                let mut description = espim_plugin.description().unwrap_or_default();
+                if description.is_empty() {
+                    description = espim_plugin.short_description().unwrap_or_default();
+                    if description.is_empty() {
+                        description = "No description available".to_string();
+                    }
+                }
                 infos = infos.push(Space::with_height(5)).push(
-                    Text::new(
-                        espim_plugin
-                            .description()
-                            .unwrap_or("Not available".to_string()),
-                    )
+                    Text::new(description)
                     .size(14)
                     .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                 );
