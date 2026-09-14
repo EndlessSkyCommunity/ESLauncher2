@@ -196,17 +196,14 @@ impl Plugin {
                         .size(14)
                         .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                     );
-                let mut description = espim_plugin.description().unwrap_or_default();
-                if description.is_empty() {
-                    description = espim_plugin.short_description().unwrap_or_default();
-                    if description.is_empty() {
-                        description = "No description available".to_string();
-                    }
-                }
+                let description = espim_plugin
+                    .description()
+                    .or(espim_plugin.short_description())
+                    .unwrap_or_else(|| "No description available".to_string());
                 infos = infos.push(Space::with_height(5)).push(
                     Text::new(description)
-                    .size(14)
-                    .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                        .size(14)
+                        .style(theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                 );
 
                 let mut install_button =
