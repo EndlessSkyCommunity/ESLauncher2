@@ -12,7 +12,9 @@ identifier = "com.github.EndlessSkyCommunity.ESLauncher2"
 icon = ["icons/ESLauncher2.icns"]
 resources = ["assets", "icons/**/*.png"]
 short_description = "Endless Sky Launcher"
-osx_minimum_system_version = "10.7"
+
+[package.metadata.bundle.osx]
+minimum_system_version = "10.7"
 
 [dependencies]
 anyhow = "1.0"
